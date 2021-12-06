@@ -42,8 +42,10 @@ class UOV():
 
     def hide_central_map(self):
         m, n = self.m, self.n
-        T = random_matrix(self.F, n)
-        assert T.rank() == n
+        while True:
+            T = random_matrix(self.F, n)
+            if T.rank() == n:
+                break
         PP = [T.transpose() * Q * T for Q in self.FF]
         MM = [T.transpose() * get_polar_form(Q) * T for Q in self.FF]
         assert MM == [get_polar_form(P) for P in PP]
