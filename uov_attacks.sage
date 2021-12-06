@@ -19,7 +19,7 @@ class UOV():
         self.V = VectorSpace(F, n)
         self.W = VectorSpace(F, m)
         self.R = PolynomialRing(F, ['x%s' % p for p in range(
-            1, n + 1)] + ['y%s' % p for p in range(1, n + 1)])
+            1, n + 1)])
         self.R.inject_variables()
         self.xx = vector(self.R.gens()[:n])
         self.yy = vector(self.R.gens()[n:])
@@ -152,7 +152,48 @@ class UOV():
         return (equations, None, None)
 
 
-uov = UOV(q=11, m=3, n=7)
-equations, _, _ = uov.intersection_attack_advanced()
+def guess_solve(equations, m, n, xx):
+    assert len(equations) == 3 * m
+    head = 2 * n - 3 * m
+    tail = 3 * m - n
+    solution = [1] * tail
+    for eq in equations:
+        eq = eq(*xx[:head], *([1] * tail))
+    for guesses in product(*([GF(q)] * head)):
+        solved = 0
+        for eq in equations:
+            if eq(*guesses, *([1] * tail)) == 0:
+                solved += 1
+            else:
+                continue
+        if solved == len(equations):
+            return vector(list(guesses) + solution)
+    return vector([])
+
+
+def check_solution(equations, solution):
+    for eq in equations:
+        assert eq(*solution) == 0
+    print("The solution is correct")
+
+
+q = 11
+m = 3
+n = 6
+uov = UOV(q, m, n)
+xx = uov.xx
+equations, i, j = uov.intersection_attack()
+print("The system to be solved:")
 for eq in equations:
     print(eq)
+solution = guess_solve(equations, m, n, xx)
+if solution == vector([]):
+    print("No solution found")
+else:
+    print(solution)
+    check_solution(equations, solution)
+    if uov.MM[i].inverse() * uov.V(solution) in uov.O:
+        print("The solution corresponds to a vector in O")
+
+    if uov.MM[j].inverse() * uov.V(solution) in uov.O:
+        print("The solution corresponds to a vector in O")
