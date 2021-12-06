@@ -122,17 +122,8 @@ class UOV():
 
     def intersection_attack_advanced(self, verbose=False):
         m, n = self.m, self.n
-        assert n > 2 * m and n < 3 * m
-        k = 2
-        while True:
-            if verbose:
-                print(k, RR(n / m), RR((2 * k - 1) / (k - 1)))
-            if n >= (2 * k - 1) / (k - 1) * m:
-                k -= 1
-                break
-            k += 1
-        if verbose:
-            print("k:", k)
+        assert n >= 2 * m and n < 3 * m
+        k = find_max_k(m, n, True)
         LL = []
         for i in range(k):
             L = Matrix(self.F, n)
@@ -154,10 +145,34 @@ class UOV():
         return (equations, None, None)
 
 
-def guess_solve(equations, m, n, xx):
-    assert len(equations) == 3 * m
-    head = 2 * n - 3 * m
-    tail = 3 * m - n
+def find_max_k(m, n, verbose=False):
+    k = 2
+    while True:
+        if verbose:
+            print("current k:", k, ", n/m:", RR(n / m),
+                  ", (2 * k - 1) / (k - 1):", RR((2 * k - 1) / (k - 1)))
+        if n >= (2 * k - 1) / (k - 1) * m:
+            k -= 1
+            break
+        if k > max(sqrt(m), 10):
+            break
+        k += 1
+    if verbose:
+        print("k:", k)
+    return k
+
+
+def guess_solve(equations, q, m, n, xx, advanced=False):
+    if advanced:
+        k = find_max_k(m, n)
+        total = ZZ(m * k * (k + 1) / 2)
+        assert len(equations) == total
+        head = k * n - (2 * k - 1) * m
+        tail = k * m - (k - 1) * (n - m)
+    else:
+        assert len(equations) == 3 * m
+        head = 2 * n - 3 * m
+        tail = 3 * m - n
     solution = [1] * tail
     for eq in equations:
         eq = eq(*xx[:head], *([1] * tail))
@@ -172,24 +187,6 @@ def guess_solve(equations, m, n, xx):
             return vector(list(guesses) + solution)
     return vector([])
 
-# def guess_solve_advanced(equations, m, n, k, xx):
-#     assert len(equations) == m * k * (k + 1) / 2
-#     head = k * n - (2 * k - 1) * m
-#     tail = k * m - (k - 1) * (n - m)
-#     print(len(equations) - head - tail)
-#     solution = [1] * tail
-#     for eq in equations:
-#         eq = eq(*xx[:head], *([1] * tail), *xx)
-#     for guesses in product(*([GF(q)] * head)):
-#         solved = 0
-#         for eq in equations:
-#             if eq(*guesses, *([1] * tail), *xx) == 0:
-#                 solved += 1
-#             else:
-#                 continue
-#         if solved == len(equations):
-#             return vector(list(guesses) + solution)
-#     return vector([])
 
 def check_solution(equations, solution):
     for eq in equations:
@@ -198,22 +195,25 @@ def check_solution(equations, solution):
 
 
 q = 11
-m = 3
-n = 6
+m = 2
+n = 5
 uov = UOV(q, m, n)
 xx = uov.xx
-equations, i, j = uov.intersection_attack()
+# equations, i, j = uov.intersection_attack()
+equations, _, _ = uov.intersection_attack_advanced()
 print("The system to be solved:")
 for eq in equations:
     print(eq)
-solution = guess_solve(equations, m, n, xx)
-if solution == vector([]):
-    print("No solution found")
-else:
-    print(solution)
-    check_solution(equations, solution)
-    if uov.MM[i].inverse() * uov.V(solution) in uov.O:
-        print("The solution corresponds to a vector in O")
 
-    if uov.MM[j].inverse() * uov.V(solution) in uov.O:
-        print("The solution corresponds to a vector in O")
+solution = guess_solve(equations, q, m, n, xx, advanced=True)
+
+# if solution == vector([]):
+#     print("No solution found")
+# else:
+#     print(solution)
+#     check_solution(equations, solution)
+#     if uov.MM[i].inverse() * uov.V(solution) in uov.O:
+#         print("The solution corresponds to a vector in O")
+
+#     if uov.MM[j].inverse() * uov.V(solution) in uov.O:
+#         print("The solution corresponds to a vector in O")
