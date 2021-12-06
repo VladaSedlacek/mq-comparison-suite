@@ -6,7 +6,7 @@ def get_polar_form(Q):
 
 
 class UOV():
-    """A class for the (U)OV scheme."""
+    """A class for the (Unbalanced) Oil and Vinegar scheme."""
 
     def __init__(self, q, m, n, debug=True):
         assert m < n
@@ -172,6 +172,24 @@ def guess_solve(equations, m, n, xx):
             return vector(list(guesses) + solution)
     return vector([])
 
+# def guess_solve_advanced(equations, m, n, k, xx):
+#     assert len(equations) == m * k * (k + 1) / 2
+#     head = k * n - (2 * k - 1) * m
+#     tail = k * m - (k - 1) * (n - m)
+#     print(len(equations) - head - tail)
+#     solution = [1] * tail
+#     for eq in equations:
+#         eq = eq(*xx[:head], *([1] * tail), *xx)
+#     for guesses in product(*([GF(q)] * head)):
+#         solved = 0
+#         for eq in equations:
+#             if eq(*guesses, *([1] * tail), *xx) == 0:
+#                 solved += 1
+#             else:
+#                 continue
+#         if solved == len(equations):
+#             return vector(list(guesses) + solution)
+#     return vector([])
 
 def check_solution(equations, solution):
     for eq in equations:
