@@ -47,7 +47,7 @@ class UOV():
             if T.rank() == n:
                 break
         PP = [T.transpose() * Q * T for Q in self.FF]
-        MM = [T.transpose() * get_polar_form(Q) * T for Q in self.FF]
+        MM = [get_polar_form(P) for P in PP]
         assert MM == [get_polar_form(P) for P in PP]
         return T, PP, MM
 
