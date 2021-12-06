@@ -92,57 +92,56 @@ class UOV():
                 inv_subspaces.append(poly(Mij).kernel())
         return inv_subspaces
 
-    def intersection_attack(self, verbose=False):
+    def intersection_attack(self, verbose=False, advanced=True):
         m, n = self.m, self.n
-        assert n < 3 * m
-        found = 0
-        equations = []
-        for i in range(m):
-            for j in range(i + 1, m):
-                try:
-                    Mi_inv = self.MM[i].inverse()
-                    Mj_inv = self.MM[j].inverse()
-                    found = 1
-                except ZeroDivisionError:
-                    continue
-                if verbose:
-                    print("i,j:", i, j)
-                    print("Mi_inv, Mj_inv:\n", Mi_inv,
-                          "\n\n", Mj_inv, Mj_inv * self.xx)
-                if found == 1:
-                    u = Mi_inv * self.xx
-                    v = Mj_inv * self.xx
-                    for P in self.PP:
-                        equations.append(u * P * u)
-                        equations.append(v * P * v)
+        if advanced:
+            assert n >= 2 * m and n < 3 * m
+            k = find_max_k(m, n, True)
+            LL = []
+            for i in range(k):
+                L = Matrix(self.F, n)
+                while not L.is_invertible():
+                    for j in range(len(self.MM)):
+                        L += self.F.random_element() * self.MM[j]
+                LL.append(L)
+            if verbose:
+                print(LL)
+            equations = []
+            for i in range(k):
+                u = LL[i].inverse() * self.xx
+                for P in self.PP:
+                    equations.append(u * P * u)
+                for j in range(i + 1, k):
+                    v = LL[j].inverse() * self.xx
                     for M in self.MM:
                         equations.append(u * M * v)
-                    return (equations, i, j)
-                return ([], i, j)
-
-    def intersection_attack_advanced(self, verbose=False):
-        m, n = self.m, self.n
-        assert n >= 2 * m and n < 3 * m
-        k = find_max_k(m, n, True)
-        LL = []
-        for i in range(k):
-            L = Matrix(self.F, n)
-            while not L.is_invertible():
-                for j in range(len(self.MM)):
-                    L += self.F.random_element() * self.MM[j]
-            LL.append(L)
-        if verbose:
-            print(LL)
-        equations = []
-        for i in range(k):
-            u = LL[i].inverse() * self.xx
-            for P in self.PP:
-                equations.append(u * P * u)
-            for j in range(i + 1, k):
-                v = LL[j].inverse() * self.xx
-                for M in self.MM:
-                    equations.append(u * M * v)
-        return (equations, None, None)
+            matrices = [L.inverse() for L in LL]
+        else:
+            assert n < 3 * m
+            found = 0
+            equations = []
+            for i in range(m):
+                for j in range(i + 1, m):
+                    try:
+                        Mi_inv = self.MM[i].inverse()
+                        Mj_inv = self.MM[j].inverse()
+                        found = 1
+                    except ZeroDivisionError:
+                        continue
+                    if verbose:
+                        print("i,j:", i, j)
+                        print("Mi_inv, Mj_inv:\n", Mi_inv,
+                              "\n\n", Mj_inv, Mj_inv * self.xx)
+                    if found == 1:
+                        u = Mi_inv * self.xx
+                        v = Mj_inv * self.xx
+                        for P in self.PP:
+                            equations.append(u * P * u)
+                            equations.append(v * P * v)
+                        for M in self.MM:
+                            equations.append(u * M * v)
+                        matrices = [Mi_inv, Mj_inv]
+        return equations, matrices
 
 
 def find_max_k(m, n, verbose=False):
@@ -194,26 +193,34 @@ def check_solution(equations, solution):
     print("The solution is correct")
 
 
-q = 11
-m = 2
-n = 5
-uov = UOV(q, m, n)
-xx = uov.xx
-# equations, i, j = uov.intersection_attack()
-equations, _, _ = uov.intersection_attack_advanced()
-print("The system to be solved:")
-for eq in equations:
-    print(eq)
+def main():
+    q = 11
+    m = 3
+    n = 7
+    uov = UOV(q, m, n)
+    xx = uov.xx
+    equations, matrices = uov.intersection_attack(advanced=True)
 
-solution = guess_solve(equations, q, m, n, xx, advanced=True)
+    print("")
+    print("Number of equations:", len(equations))
+    print("The system to be solved:")
+    for eq in equations:
+        print(eq)
+    print("")
 
-# if solution == vector([]):
-#     print("No solution found")
-# else:
-#     print(solution)
-#     check_solution(equations, solution)
-#     if uov.MM[i].inverse() * uov.V(solution) in uov.O:
-#         print("The solution corresponds to a vector in O")
+    solution = guess_solve(equations, q, m, n, xx, advanced=True)
 
-#     if uov.MM[j].inverse() * uov.V(solution) in uov.O:
-#         print("The solution corresponds to a vector in O")
+    if solution == vector([]):
+        print("No solution found")
+    else:
+        print("Solution found:", solution)
+        check_solution(equations, solution)
+        for matrix in matrices:
+            transformed_vector = matrix * uov.V(solution)
+            if transformed_vector in uov.O:
+                print("The solution corresponds to a vector in O:",
+                      transformed_vector)
+
+
+if __name__ == '__main__':
+    main()
