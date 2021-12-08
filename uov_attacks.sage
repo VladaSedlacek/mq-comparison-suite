@@ -20,7 +20,7 @@ class UOV():
         self.V = VectorSpace(F, n)
         self.W = VectorSpace(F, m)
         self.R = PolynomialRing(F, ['x%s' % p for p in range(
-            1, n + 1)])
+            1, n + 1)], order="neglex")
         self.R.inject_variables()
         self.xx = vector(self.R.gens()[:n])
         self.yy = vector(self.R.gens()[n:])
@@ -230,6 +230,14 @@ def check_solution(equations, solution, reduced=False):
     print("The solution is correct")
 
 
+def count_monomials(equations):
+    monomials = set()
+    for eq in equations:
+        for mon in eq.monomials():
+            monomials.add(mon)
+    return sorted(list(monomials))
+
+
 def main():
     q = 4
     m = 4
@@ -242,6 +250,7 @@ def main():
     equations, matrices = uov.intersection_attack(
         advanced=True, verbose=verbose)
     print("Number of equations:", len(equations))
+    print("Number of monomials:", len(count_monomials(equations)))
     if verbose:
         print("")
         print("The system to be solved:")
