@@ -137,6 +137,8 @@ def linear_combination(coefficients, objects):
 
 
 def find_max_k(m, n, verbose=False):
+    if n == 2 * m:
+        return ceil(sqrt(m))
     k = 2
     while True:
         if verbose:
@@ -144,8 +146,6 @@ def find_max_k(m, n, verbose=False):
                   ", (2 * k - 1) / (k - 1):", ((2 * k - 1) / (k - 1)).numerical_approx(digits=3))
         if n >= (2 * k - 1) / (k - 1) * m:
             k -= 1
-            break
-        if k > max(sqrt(m), 3):
             break
         k += 1
     if verbose:
