@@ -198,11 +198,11 @@ def guess_solve(equations, q, m, n, xx, advanced=False, reduced=False):
         else:
             eq = eq(*xx[:head], *([1] * tail))
     if reduced:
-        for guesses in product(*([[0]] + [GF(q)] * (head - 1))):
-            print("guess:", *guesses, *([1] * tail))
+        for guesses in product(*([GF(q)] * (head - 1))):
+            print("guess:", 0, *guesses, *([1] * tail))
             solved = 0
             for eq in equations:
-                if eq(*guesses, *([1] * tail)) == 0:
+                if eq(0, *guesses, *([1] * tail)) == 0:
                     solved += 1
                 else:
                     continue
