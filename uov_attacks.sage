@@ -97,19 +97,20 @@ class UOV():
         return inv_subspaces
 
     def intersection_attack(self, verbose=False, advanced=True):
+        m, n = self.m, self.n
+        assert 2 * m <= n and n < 3 * m
+        k = find_max_k(self.m, self.n, verbose=verbose)
         if self.reduced:
-            m, n = self.m - 1, self.n - 1
+            m -= 1
+            n -= 1
             MM = [M[1:, 1:] for M in self.MM]
             PP = [P[1:, 1:] for P in self.PP]
             xx = (self.xx)[1:]
         else:
-            m, n = self.m, self.n
             MM = self.MM
             PP = self.PP
             xx = self.xx
         if advanced:
-            assert n >= 2 * m and n < 3 * m
-            k = find_max_k(m, n, True, verbose=verbose)
             LL = []
             for i in range(k):
                 while True:
@@ -129,7 +130,6 @@ class UOV():
                         equations.append(u * M * v)
             matrices = [L.inverse() for L in LL]
         else:
-            assert n < 3 * m
             found = 0
             equations = []
             for i in range(m):
@@ -175,6 +175,7 @@ def find_max_k(m, n, verbose=False):
         k += 1
     if verbose:
         print("k:", k)
+    assert n > k * m - (k - 1) * (n - m)
     return k
 
 
