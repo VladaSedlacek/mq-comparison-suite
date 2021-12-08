@@ -72,6 +72,9 @@ class UOV():
                         assert O_basis[i] * M * O_basis[j] == 0
         return O
 
+    def test_oil_space_membership(self, v):
+        return (v in self.O, [v * P * v for P in self.PP])
+
     def kipnis_shamir(self, verbose=False):
         m, n = self.m, self.n
         assert n == 2 * m
@@ -216,10 +219,9 @@ def main():
         print("Solution found:", solution)
         check_solution(equations, solution)
         for matrix in matrices:
-            transformed_vector = matrix * uov.V(solution)
-            if transformed_vector in uov.O:
-                print("The solution corresponds to a vector in O:",
-                      transformed_vector)
+            transformed_solution = matrix * uov.V(solution)
+            print("Does the transformed solution ", transformed_solution, " correspond to a vector in O?",
+                  uov.test_oil_space_membership(transformed_solution))
 
 
 if __name__ == '__main__':
