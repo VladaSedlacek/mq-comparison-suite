@@ -109,7 +109,7 @@ class UOV():
             xx = self.xx
         if advanced:
             assert n >= 2 * m and n < 3 * m
-            k = find_max_k(m, n, True)
+            k = find_max_k(m, n, True, verbose=verbose)
             LL = []
             for i in range(k):
                 while True:
@@ -118,8 +118,6 @@ class UOV():
                     if L.is_invertible():
                         LL.append(L)
                         break
-            if verbose:
-                print(LL)
             equations = []
             for i in range(k):
                 u = LL[i].inverse() * xx
@@ -180,9 +178,9 @@ def find_max_k(m, n, verbose=False):
     return k
 
 
-def guess_solve(equations, q, m, n, xx, advanced=False, reduced=False):
+def guess_solve(equations, q, m, n, xx, advanced=False, reduced=False, verbose=False):
     if advanced:
-        k = find_max_k(m, n)
+        k = find_max_k(m, n, verbose=False)
         total = ZZ(m * k * (k + 1) / 2)
         assert len(equations) == total
         head = k * n - (2 * k - 1) * m
@@ -199,7 +197,8 @@ def guess_solve(equations, q, m, n, xx, advanced=False, reduced=False):
             eq = eq(*xx[:head], *([1] * tail))
     if reduced:
         for guesses in product(*([GF(q)] * (head - 1))):
-            print("guess:", 0, *guesses, *([1] * tail))
+            if verbose:
+                print("guess:", 0, *guesses, *([1] * tail))
             solved = 0
             for eq in equations:
                 if eq(0, *guesses, *([1] * tail)) == 0:
@@ -236,19 +235,22 @@ def main():
     m = 4
     n = 8
     uov = UOV(q, m, n)
-    xx = uov.xx
-    print("Reduced?", uov.reduced)
-    equations, matrices = uov.intersection_attack(advanced=True)
-
-    print("")
+    verbose = False
+    if verbose:
+        print("q:", q, ", m:", m, ", n:", n)
+        print("Reduced?", uov.reduced)
+    equations, matrices = uov.intersection_attack(
+        advanced=True, verbose=verbose)
     print("Number of equations:", len(equations))
-    print("The system to be solved:")
-    # for eq in equations:
-    #     print(eq)
-    # print("")
+    if verbose:
+        print("")
+        print("The system to be solved:")
+        for eq in equations:
+            print(eq)
+        print("")
 
-    solution = guess_solve(equations, q, m, n, xx,
-                           advanced=True, reduced=uov.reduced)
+    solution = guess_solve(equations, q, m, n, xx=uov.xx,
+                           advanced=True, reduced=uov.reduced, verbose=verbose)
 
     if solution == vector([]):
         print("No solution found")
@@ -259,7 +261,8 @@ def main():
             transformed_solution = matrix * solution
             if uov.reduced:
                 transformed_solution = vector([0] + list(transformed_solution))
-            print("Does ", transformed_solution, " lie in O?")
+            if verbose:
+                print("Does ", transformed_solution, " lie in O?")
             print(uov.test_oil_space_membership(transformed_solution))
 
 
