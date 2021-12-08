@@ -221,9 +221,13 @@ def guess_solve(equations, q, m, n, xx, advanced=False, reduced=False):
     return vector([])
 
 
-def check_solution(equations, solution):
-    for eq in equations:
-        assert eq(*solution) == 0
+def check_solution(equations, solution, reduced=False):
+    if reduced:
+        for eq in equations:
+            assert eq(0, *solution) == 0
+    else:
+        for eq in equations:
+            assert eq(*solution) == 0
     print("The solution is correct")
 
 
@@ -250,9 +254,11 @@ def main():
         print("No solution found")
     else:
         print("Solution found:", solution)
-        check_solution(equations, solution)
+        check_solution(equations, solution, uov.reduced)
         for matrix in matrices:
-            transformed_solution = matrix * uov.V(solution)
+            transformed_solution = matrix * solution
+            if uov.reduced:
+                transformed_solution = vector([0] + list(transformed_solution))
             print("Does ", transformed_solution, " lie in O?")
             print(uov.test_oil_space_membership(transformed_solution))
 
