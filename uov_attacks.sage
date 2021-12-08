@@ -223,8 +223,8 @@ def check_solution(equations, solution):
 
 def main():
     q = 4
-    m = 5
-    n = 9
+    m = 4
+    n = 8
     uov = UOV(q, m, n)
     xx = uov.xx
     print("Reduced?", uov.reduced)
@@ -247,8 +247,8 @@ def main():
         check_solution(equations, solution)
         for matrix in matrices:
             transformed_solution = matrix * uov.V(solution)
-            print("Does the transformed solution ", transformed_solution, " correspond to a vector in O?",
-                  uov.test_oil_space_membership(transformed_solution))
+            print("Does ", transformed_solution, " lie in O?")
+            print(uov.test_oil_space_membership(transformed_solution))
 
 
 if __name__ == '__main__':
