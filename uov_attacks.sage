@@ -112,11 +112,12 @@ class UOV():
             k = find_max_k(m, n, True)
             LL = []
             for i in range(k):
-                L = Matrix(self.F, n)
-                while not L.is_invertible():
-                    for j in range(len(MM)):
-                        L += self.F.random_element() * MM[j]
-                LL.append(L)
+                while True:
+                    coefficients = self.W.random_element()
+                    L = linear_combination(coefficients, MM)
+                    if L.is_invertible():
+                        LL.append(L)
+                        break
             if verbose:
                 print(LL)
             equations = []
@@ -155,6 +156,11 @@ class UOV():
                             equations.append(u * M * v)
                         matrices = [Mi_inv, Mj_inv]
         return equations, matrices
+
+
+def linear_combination(coefficients, objects):
+    assert len(coefficients) == len(objects)
+    return sum(c * o for c, o in zip(coefficients, objects))
 
 
 def find_max_k(m, n, verbose=False):
