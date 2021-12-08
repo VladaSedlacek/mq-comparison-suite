@@ -111,24 +111,50 @@ class UOV():
             PP = self.PP
             xx = self.xx
         LL = []
+        combinations = []
         for i in range(self.k):
             while True:
                 coefficients = self.W.random_element()
                 L = linear_combination(coefficients, MM)
                 if L.is_invertible():
                     LL.append(L)
+                    combinations.append(coefficients)
                     break
         equations = []
+        redundant = []
         for i in range(self.k):
             u = LL[i].inverse() * xx
             for P in PP:
                 equations.append(u * P * u)
             for j in range(i + 1, self.k):
                 v = LL[j].inverse() * xx
-                for M in MM:
-                    equations.append(u * M * v)
+                for l, M in enumerate(MM):
+                    eq = u * M * v
+                    nonzero_index_i, nonzero_index_j = first_different_nonzero_indices(
+                        combinations[i], combinations[j])
+                    if l != nonzero_index_i and l != nonzero_index_j:
+                        equations.append(eq)
+                    else:
+                        redundant.append(eq)
         matrices = [L.inverse() for L in LL]
-        return equations, matrices
+        return equations, redundant, matrices
+
+
+def first_nonzero_index(it):
+    for i, _ in enumerate(it):
+        if it[i] != 0:
+            return i
+    return None
+
+
+def first_different_nonzero_indices(it1, it2):
+    i = first_nonzero_index(it1)
+    j = first_nonzero_index(it2)
+    if i == j:
+        j = first_nonzero_index(
+            [0] + list(it2))
+    assert i != j
+    return i, j
 
 
 def linear_combination(coefficients, objects):
@@ -155,8 +181,9 @@ def find_max_k(m, n, verbose=False):
 
 
 def guess_solve(equations, q, m, n, k, xx, reduced=False, verbose=False):
-    total = ZZ(m * k * (k + 1) / 2)
-    assert len(equations) == total
+    total_count = ZZ(m * k * (k + 1) / 2)
+    redundant_count = k * (k - 1)
+    assert len(equations) == total_count - redundant_count
     tail = k * m - (k - 1) * (n - m)
     constraints = [1] * tail
     head = n - tail
@@ -210,14 +237,14 @@ def count_monomials(equations):
 def main():
     q = 4
     m = 4
-    n = 8
+    n = 9
     uov = UOV(q, m, n)
     k = uov.k
     verbose = False
     if verbose:
         print("q:", q, ", m:", m, ", n:", n, " k:", k)
         print("Reduced?", uov.reduced)
-    equations, matrices = uov.intersection_attack(verbose=verbose)
+    equations, _, matrices = uov.intersection_attack(verbose=verbose)
     print("Number of equations:", len(equations))
     print("Number of monomials:", len(count_monomials(equations)))
     if verbose:
