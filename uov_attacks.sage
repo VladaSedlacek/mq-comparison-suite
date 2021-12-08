@@ -16,6 +16,7 @@ class UOV():
         self.F = F
         self.m = m
         self.n = n
+        self.k = find_max_k(self.m, self.n, verbose=False)
         self.reduced = self.q % 2 == 0 and self.n % 2 == 1
         self.V = VectorSpace(F, n)
         self.W = VectorSpace(F, m)
@@ -99,7 +100,6 @@ class UOV():
     def intersection_attack(self, verbose=False):
         m, n = self.m, self.n
         assert 2 * m <= n and n < 3 * m
-        k = find_max_k(self.m, self.n, verbose=verbose)
         if self.reduced:
             m -= 1
             n -= 1
@@ -111,7 +111,7 @@ class UOV():
             PP = self.PP
             xx = self.xx
         LL = []
-        for i in range(k):
+        for i in range(self.k):
             while True:
                 coefficients = self.W.random_element()
                 L = linear_combination(coefficients, MM)
@@ -119,11 +119,11 @@ class UOV():
                     LL.append(L)
                     break
         equations = []
-        for i in range(k):
+        for i in range(self.k):
             u = LL[i].inverse() * xx
             for P in PP:
                 equations.append(u * P * u)
-            for j in range(i + 1, k):
+            for j in range(i + 1, self.k):
                 v = LL[j].inverse() * xx
                 for M in MM:
                     equations.append(u * M * v)
@@ -154,8 +154,7 @@ def find_max_k(m, n, verbose=False):
     return k
 
 
-def guess_solve(equations, q, m, n, xx, reduced=False, verbose=False):
-    k = find_max_k(m, n, verbose=False)
+def guess_solve(equations, q, m, n, k, xx, reduced=False, verbose=False):
     total = ZZ(m * k * (k + 1) / 2)
     assert len(equations) == total
     tail = k * m - (k - 1) * (n - m)
@@ -213,9 +212,10 @@ def main():
     m = 4
     n = 8
     uov = UOV(q, m, n)
+    k = uov.k
     verbose = False
     if verbose:
-        print("q:", q, ", m:", m, ", n:", n)
+        print("q:", q, ", m:", m, ", n:", n, " k:", k)
         print("Reduced?", uov.reduced)
     equations, matrices = uov.intersection_attack(verbose=verbose)
     print("Number of equations:", len(equations))
@@ -227,7 +227,7 @@ def main():
             print(eq)
         print("")
 
-    solution = guess_solve(equations, q, m, n, xx=uov.xx,
+    solution = guess_solve(equations, q, m, n, k, xx=uov.xx,
                            reduced=uov.reduced, verbose=verbose)
 
     if solution == vector([]):
