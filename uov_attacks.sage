@@ -183,40 +183,38 @@ def guess_solve(equations, q, m, n, xx, advanced=False, reduced=False, verbose=F
         k = find_max_k(m, n, verbose=False)
         total = ZZ(m * k * (k + 1) / 2)
         assert len(equations) == total
-        head = k * n - (2 * k - 1) * m
         tail = k * m - (k - 1) * (n - m)
     else:
         assert len(equations) == 3 * m
-        head = 2 * n - 3 * m
         tail = 3 * m - n
-    solution = [1] * tail
+    constraints = [1] * tail
+    head = n - tail
     for eq in equations:
         if reduced:
-            eq = eq(0, *xx[1:head], *([1] * (n - head)))
+            first_var = 0
         else:
-            eq = eq(*xx[:head], *([1] * tail))
+            first_var = xx[0]
+        eq = eq(first_var, *xx[1:head], *constraints)
     if reduced:
-        for guesses in product(*([GF(q)] * (head - 1))):
-            if verbose:
-                print("guess:", 0, *guesses, *([1] * tail))
-            solved = 0
-            for eq in equations:
-                if eq(0, *guesses, *([1] * tail)) == 0:
-                    solved += 1
-                else:
-                    continue
-            if solved == len(equations):
-                return vector(list(guesses) + solution)
+        guess_space = product(*([GF(q)] * (head - 1)))
     else:
-        for guesses in product(*([GF(q)] * head)):
-            solved = 0
-            for eq in equations:
-                if eq(*guesses, *([1] * tail)) == 0:
-                    solved += 1
-                else:
-                    continue
-            if solved == len(equations):
-                return vector(list(guesses) + solution)
+        guess_space = product(*([GF(q)] * head))
+
+    for guesses in guess_space:
+        if reduced:
+            values = 0, *guesses, *constraints
+        else:
+            values = *guesses, *constraints
+        if verbose:
+            print("guess:", values)
+        solved = 0
+        for eq in equations:
+            if eq(values) == 0:
+                solved += 1
+            else:
+                continue
+        if solved == len(equations):
+            return vector(list(guesses) + constraints)
     return vector([])
 
 
