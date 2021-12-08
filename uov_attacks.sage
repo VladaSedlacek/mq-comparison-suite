@@ -161,8 +161,8 @@ def find_max_k(m, n, verbose=False):
     k = 2
     while True:
         if verbose:
-            print("current k:", k, ", n/m:", RR(n / m),
-                  ", (2 * k - 1) / (k - 1):", RR((2 * k - 1) / (k - 1)))
+            print("current k:", k, ", n/m:", (n / m).numerical_approx(digits=3),
+                  ", (2 * k - 1) / (k - 1):", ((2 * k - 1) / (k - 1)).numerical_approx(digits=3))
         if n >= (2 * k - 1) / (k - 1) * m:
             k -= 1
             break
@@ -233,9 +233,9 @@ def main():
     print("")
     print("Number of equations:", len(equations))
     print("The system to be solved:")
-    for eq in equations:
-        print(eq)
-    print("")
+    # for eq in equations:
+    #     print(eq)
+    # print("")
 
     solution = guess_solve(equations, q, m, n, xx,
                            advanced=True, reduced=uov.reduced)
