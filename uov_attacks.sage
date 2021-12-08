@@ -16,6 +16,7 @@ class UOV():
         self.F = F
         self.m = m
         self.n = n
+        self.reduced = self.q % 2 == 0 and self.n % 2 == 1
         self.V = VectorSpace(F, n)
         self.W = VectorSpace(F, m)
         self.R = PolynomialRing(F, ['x%s' % p for p in range(
@@ -96,7 +97,16 @@ class UOV():
         return inv_subspaces
 
     def intersection_attack(self, verbose=False, advanced=True):
-        m, n = self.m, self.n
+        if self.reduced:
+            m, n = self.m - 1, self.n - 1
+            MM = [M[1:, 1:] for M in self.MM]
+            PP = [P[1:, 1:] for P in self.PP]
+            xx = (self.xx)[1:]
+        else:
+            m, n = self.m, self.n
+            MM = self.MM
+            PP = self.PP
+            xx = self.xx
         if advanced:
             assert n >= 2 * m and n < 3 * m
             k = find_max_k(m, n, True)
@@ -104,19 +114,19 @@ class UOV():
             for i in range(k):
                 L = Matrix(self.F, n)
                 while not L.is_invertible():
-                    for j in range(len(self.MM)):
-                        L += self.F.random_element() * self.MM[j]
+                    for j in range(len(MM)):
+                        L += self.F.random_element() * MM[j]
                 LL.append(L)
             if verbose:
                 print(LL)
             equations = []
             for i in range(k):
-                u = LL[i].inverse() * self.xx
-                for P in self.PP:
+                u = LL[i].inverse() * xx
+                for P in PP:
                     equations.append(u * P * u)
                 for j in range(i + 1, k):
-                    v = LL[j].inverse() * self.xx
-                    for M in self.MM:
+                    v = LL[j].inverse() * xx
+                    for M in MM:
                         equations.append(u * M * v)
             matrices = [L.inverse() for L in LL]
         else:
@@ -126,22 +136,22 @@ class UOV():
             for i in range(m):
                 for j in range(i + 1, m):
                     try:
-                        Mi_inv = self.MM[i].inverse()
-                        Mj_inv = self.MM[j].inverse()
+                        Mi_inv = MM[i].inverse()
+                        Mj_inv = MM[j].inverse()
                         found = 1
                     except ZeroDivisionError:
                         continue
                     if verbose:
                         print("i,j:", i, j)
                         print("Mi_inv, Mj_inv:\n", Mi_inv,
-                              "\n\n", Mj_inv, Mj_inv * self.xx)
+                              "\n\n", Mj_inv, Mj_inv * xx)
                     if found == 1:
                         u = Mi_inv * self.xx
                         v = Mj_inv * self.xx
-                        for P in self.PP:
+                        for P in PP:
                             equations.append(u * P * u)
                             equations.append(v * P * v)
-                        for M in self.MM:
+                        for M in MM:
                             equations.append(u * M * v)
                         matrices = [Mi_inv, Mj_inv]
         return equations, matrices
@@ -156,7 +166,7 @@ def find_max_k(m, n, verbose=False):
         if n >= (2 * k - 1) / (k - 1) * m:
             k -= 1
             break
-        if k > max(sqrt(m), 10):
+        if k > max(sqrt(m), 3):
             break
         k += 1
     if verbose:
@@ -164,7 +174,7 @@ def find_max_k(m, n, verbose=False):
     return k
 
 
-def guess_solve(equations, q, m, n, xx, advanced=False):
+def guess_solve(equations, q, m, n, xx, advanced=False, reduced=False):
     if advanced:
         k = find_max_k(m, n)
         total = ZZ(m * k * (k + 1) / 2)
@@ -177,16 +187,31 @@ def guess_solve(equations, q, m, n, xx, advanced=False):
         tail = 3 * m - n
     solution = [1] * tail
     for eq in equations:
-        eq = eq(*xx[:head], *([1] * tail))
-    for guesses in product(*([GF(q)] * head)):
-        solved = 0
-        for eq in equations:
-            if eq(*guesses, *([1] * tail)) == 0:
-                solved += 1
-            else:
-                continue
-        if solved == len(equations):
-            return vector(list(guesses) + solution)
+        if reduced:
+            eq = eq(0, *xx[1:head], *([1] * (n - head)))
+        else:
+            eq = eq(*xx[:head], *([1] * tail))
+    if reduced:
+        for guesses in product(*([[0]] + [GF(q)] * (head - 1))):
+            print("guess:", *guesses, *([1] * tail))
+            solved = 0
+            for eq in equations:
+                if eq(*guesses, *([1] * tail)) == 0:
+                    solved += 1
+                else:
+                    continue
+            if solved == len(equations):
+                return vector(list(guesses) + solution)
+    else:
+        for guesses in product(*([GF(q)] * head)):
+            solved = 0
+            for eq in equations:
+                if eq(*guesses, *([1] * tail)) == 0:
+                    solved += 1
+                else:
+                    continue
+            if solved == len(equations):
+                return vector(list(guesses) + solution)
     return vector([])
 
 
@@ -197,11 +222,12 @@ def check_solution(equations, solution):
 
 
 def main():
-    q = 11
-    m = 3
-    n = 7
+    q = 4
+    m = 5
+    n = 9
     uov = UOV(q, m, n)
     xx = uov.xx
+    print("Reduced?", uov.reduced)
     equations, matrices = uov.intersection_attack(advanced=True)
 
     print("")
@@ -211,7 +237,8 @@ def main():
         print(eq)
     print("")
 
-    solution = guess_solve(equations, q, m, n, xx, advanced=True)
+    solution = guess_solve(equations, q, m, n, xx,
+                           advanced=True, reduced=uov.reduced)
 
     if solution == vector([]):
         print("No solution found")
