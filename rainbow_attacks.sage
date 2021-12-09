@@ -17,7 +17,7 @@ class Rainbow():
         self.m = m
         self.n = n
         self.o2 = o2
-        self.k = find_max_k(self.m, self.o2, verbose=False)
+        self.k = find_max_k(m=self.o2, n=self.n, verbose=False)
         self.reduced = self.q % 2 == 0 and self.n % 2 == 1
         self.V = VectorSpace(F, n)
         self.R = PolynomialRing(F, ['x%s' % p for p in range(
@@ -63,21 +63,22 @@ class Rainbow():
         assert MM == [get_polar_form(P) for P in PP]
         return T, S, PP, MM
 
-    def find_max_k(m, n, verbose=False):
-        if n == 3 * m:
-            return 2
-        if n == 2 * m:
-            return ceil(sqrt(m))
-        k = 2
-        while True:
-            if verbose:
-                print("current k:", k, ", n/m:", (n / m).numerical_approx(digits=3),
-                      ", (2 * k - 1) / (k - 1):", ((2 * k - 1) / (k - 1)).numerical_approx(digits=3))
-            if n >= (2 * k - 1) / (k - 1) * m:
-                k -= 1
-                break
-            k += 1
+
+def find_max_k(m, n, verbose=False):
+    if n == 3 * m:
+        return 2
+    if n == 2 * m:
+        return ceil(sqrt(m))
+    k = 2
+    while True:
         if verbose:
-            print("k:", k)
-        assert n > k * m - (k - 1) * (n - m)
-        return k
+            print("current k:", k, ", n/m:", (n / m).numerical_approx(digits=3),
+                  ", (2 * k - 1) / (k - 1):", ((2 * k - 1) / (k - 1)).numerical_approx(digits=3))
+        if n >= (2 * k - 1) / (k - 1) * m:
+            k -= 1
+            break
+        k += 1
+    if verbose:
+        print("k:", k)
+    assert n > k * m - (k - 1) * (n - m)
+    return k
