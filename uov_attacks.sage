@@ -19,7 +19,7 @@ class UOV():
         self.k = find_max_k(self.m, self.n, verbose=False)
         self.reduced = self.q % 2 == 0 and self.n % 2 == 1
         self.V = VectorSpace(F, n)
-        self.W = VectorSpace(F, m)
+        self.V2 = VectorSpace(F, m)
         self.R = PolynomialRing(F, ['x%s' % p for p in range(
             1, n + 1)], order="neglex")
         self.R.inject_variables()
@@ -113,7 +113,7 @@ class UOV():
         combinations = []
         for i in range(self.k):
             while True:
-                coefficients = self.W.random_element()
+                coefficients = self.V2.random_element()
                 L = linear_combination(coefficients, MM)
                 if L.is_invertible():
                     LL.append(L)
