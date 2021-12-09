@@ -79,7 +79,6 @@ class Rainbow():
         W_prime_basis = [self.V2([0] * m) for _ in range(m - o2)]
         for i in range(m - o2):
             W_prime_basis[i][i + o2] = 1
-        print(W_prime_basis)
         O1_basis = [self.T.inverse() * o for o in O1_prime_basis]
         O1 = self.V.subspace(O1_basis)
         O2_basis = [self.T.inverse() * o for o in O2_prime_basis]
