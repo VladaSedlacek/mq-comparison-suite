@@ -54,14 +54,14 @@ class UOV():
 
     def find_oil_subspace(self):
         m, n = self.m, self.n
-        O2_basis = [self.V([0] * n) for _ in range(m)]
+        O_prime_basis = [self.V([0] * n) for _ in range(m)]
         for i in range(m):
-            O2_basis[i][i + n - m] = 1
-        O_basis = [self.T.inverse() * o for o in O2_basis]
+            O_prime_basis[i][i + n - m] = 1
+        O_basis = [self.T.inverse() * o for o in O_prime_basis]
         O = self.V.subspace(O_basis)
 
         if self.debug:
-            for o in O2_basis:
+            for o in O_prime_basis:
                 for Q in self.FF:
                     assert o * Q * o == 0
             for o in O_basis:
