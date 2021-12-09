@@ -20,12 +20,14 @@ class Rainbow():
         self.k = find_max_k(m=self.o2, n=self.n, verbose=False)
         self.reduced = self.q % 2 == 0 and self.n % 2 == 1
         self.V = VectorSpace(F, n)
+        self.V2 = VectorSpace(F, m)
         self.R = PolynomialRing(F, ['x%s' % p for p in range(
             1, n + 1)], order="neglex")
         self.R.inject_variables()
         self.xx = vector(self.R.gens()[:n])
         self.FF = self.construct_central_map()
         self.T, self.S, self.PP, self.MM = self.hide_central_map()
+        self.O1, self.O2, self.W = self.find_subspaces()
 
     def construct_central_map(self):
         m, n, o2 = self.m, self.n, self.o2
@@ -66,6 +68,26 @@ class Rainbow():
         assert MM == [get_polar_form(P) for P in PP]
         return T, S, PP, MM
 
+    def find_subspaces(self):
+        m, n, o2 = self.m, self.n, self.o2
+        O1_prime_basis = [self.V([0] * n) for _ in range(m)]
+        for i in range(m):
+            O1_prime_basis[i][i + n - m] = 1
+        O2_prime_basis = [self.V([0] * n) for _ in range(o2)]
+        for i in range(o2):
+            O2_prime_basis[i][i + n - o2] = 1
+        W_prime_basis = [self.V2([0] * m) for _ in range(m - o2)]
+        for i in range(m - o2):
+            W_prime_basis[i][i + o2] = 1
+        print(W_prime_basis)
+        O1_basis = [self.T.inverse() * o for o in O1_prime_basis]
+        O1 = self.V.subspace(O1_basis)
+        O2_basis = [self.T.inverse() * o for o in O2_prime_basis]
+        O2 = self.V.subspace(O2_basis)
+        W_basis = [self.S.inverse() * o for o in W_prime_basis]
+        W = self.V2.subspace(W_basis)
+        return O1, O2, W
+
 
 def linear_combination(coefficients, objects):
     assert len(coefficients) == len(objects)
@@ -98,7 +120,7 @@ def main():
     m = 4
     n = 8
     rainbow = Rainbow(q, m, n, o2)
-    print(rainbow.PP)
+    print(rainbow.O1, rainbow.O2, rainbow.W)
 
 
 if __name__ == '__main__':
