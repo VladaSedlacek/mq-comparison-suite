@@ -22,9 +22,11 @@ class Rainbow():
         self.V = VectorSpace(F, n)
         self.V2 = VectorSpace(F, m)
         self.R = PolynomialRing(F, ['x%s' % p for p in range(
-            1, n + 1)], order="neglex")
+            1, n + 1)] + ['v%s' % p for p in range(
+                1, m + 1)], order="neglex")
         self.R.inject_variables()
         self.xx = vector(self.R.gens()[:n])
+        self.vv = vector(self.R.gens()[n:])
         self.FF = self.construct_central_map()
         self.T, self.S, self.PP, self.MM = self.hide_central_map()
         self.O1, self.O2, self.W = self.find_subspaces()
@@ -87,6 +89,60 @@ class Rainbow():
         W = self.V2.subspace(W_basis)
         return O1, O2, W
 
+    def intersection_attack(self, verbose=False):
+        MM = self.MM
+        PP = self.PP
+        xx = self.xx
+        vv = self.vv
+        LL = []
+        combinations = []
+        for i in range(self.k):
+            while True:
+                coefficients = self.V2.random_element()
+                L = linear_combination(coefficients, MM)
+                if L.is_invertible():
+                    LL.append(L)
+                    combinations.append(coefficients)
+                    break
+        equations = []
+        redundant = []
+        for i in range(self.k):
+            u = LL[i].inverse() * xx
+            for P in PP:
+                equations.append(u * P * u)
+            for j in range(i + 1, self.k):
+                v = LL[j].inverse() * xx
+                for l, M in enumerate(MM):
+                    eq = u * M * v
+                    nonzero_index_i, nonzero_index_j = first_different_nonzero_indices(
+                        combinations[i], combinations[j])
+                    if l != nonzero_index_i and l != nonzero_index_j:
+                        equations.append(eq)
+                    else:
+                        redundant.append(eq)
+            for e in self.V.basis():
+                eq = linear_combination(vv, [u * M * e for M in MM])
+                equations.append(eq)
+        matrices = [L.inverse() for L in LL]
+        return equations, redundant, matrices
+
+
+def first_nonzero_index(it):
+    for i, _ in enumerate(it):
+        if it[i] != 0:
+            return i
+    return None
+
+
+def first_different_nonzero_indices(it1, it2):
+    i = first_nonzero_index(it1)
+    j = first_nonzero_index(it2)
+    if i == j:
+        j = first_nonzero_index(
+            [0] + list(it2))
+    assert i != j
+    return i, j
+
 
 def linear_combination(coefficients, objects):
     assert len(coefficients) == len(objects)
@@ -114,12 +170,15 @@ def find_max_k(m, n, verbose=False):
 
 
 def main():
-    q = 4
+    q = 2
     o2 = 2
     m = 4
     n = 8
     rainbow = Rainbow(q, m, n, o2)
     print(rainbow.O1, rainbow.O2, rainbow.W)
+    equations, _, matrics = rainbow.intersection_attack()
+    for eq in equations:
+        print(eq)
 
 
 if __name__ == '__main__':
