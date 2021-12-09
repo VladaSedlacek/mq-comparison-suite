@@ -28,7 +28,7 @@ class Rainbow():
         self.T, self.S, self.PP, self.MM = self.hide_central_map()
 
     def construct_central_map(self):
-        m, n = self.m, self.n
+        m, n, o2 = self.m, self.n, self.o2
         FF = []
         for _ in range(o2):
             Q = Matrix(self.F, n)
@@ -56,12 +56,20 @@ class Rainbow():
                 break
         while True:
             S = random_matrix(self.F, m)
-            if T.rank() == m:
+            if S.rank() == m:
                 break
-        PP = [S * T.transpose() * Q * T for Q in self.FF]
+        PP_untransformed = [T.transpose() * Q * T for Q in self.FF]
+        PP = PP_untransformed
+        PP = [linear_combination(S_row, PP_untransformed)
+              for S_row in S.rows()]
         MM = [get_polar_form(P) for P in PP]
         assert MM == [get_polar_form(P) for P in PP]
         return T, S, PP, MM
+
+
+def linear_combination(coefficients, objects):
+    assert len(coefficients) == len(objects)
+    return sum(c * o for c, o in zip(coefficients, objects))
 
 
 def find_max_k(m, n, verbose=False):
