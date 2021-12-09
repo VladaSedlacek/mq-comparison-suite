@@ -90,3 +90,16 @@ def find_max_k(m, n, verbose=False):
         print("k:", k)
     assert n > k * m - (k - 1) * (n - m)
     return k
+
+
+def main():
+    q = 4
+    o2 = 2
+    m = 4
+    n = 8
+    rainbow = Rainbow(q, m, n, o2)
+    print(rainbow.PP)
+
+
+if __name__ == '__main__':
+    main()
