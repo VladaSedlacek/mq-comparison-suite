@@ -24,7 +24,6 @@ class UOV():
             1, n + 1)], order="neglex")
         self.R.inject_variables()
         self.xx = vector(self.R.gens()[:n])
-        self.yy = vector(self.R.gens()[n:])
         self.FF = self.construct_central_map()
         self.T, self.PP, self.MM = self.hide_central_map()
         self.O = self.find_oil_subspace()
