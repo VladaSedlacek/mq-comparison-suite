@@ -201,7 +201,7 @@ def check_attack_success(equations, solution, rainbow, verbose=True):
     else:
         print("Solution found:", solution)
         check_solution(equations, solution, rainbow.reduced)
-        v = solution[n:]
+        v = solution[rainbow.n:]
         Mv = linear_combination(v, rainbow.MM)
         return Mv.kernel().is_subspace(rainbow.O2)
 
