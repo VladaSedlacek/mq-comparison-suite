@@ -172,16 +172,33 @@ def find_max_k(m, n, verbose=False):
     return k
 
 
+def count_monomials(equations):
+    monomials = set()
+    for eq in equations:
+        for mon in eq.monomials():
+            monomials.add(mon)
+    return sorted(list(monomials))
+
+
 def main():
     q = 2
     o2 = 2
     m = 4
     n = 8
+    verbose = True
     rainbow = Rainbow(q, m, n, o2)
-    print(rainbow.O1, rainbow.O2, rainbow.W)
+    print("O1:", rainbow.O1, "\n")
+    print("O2:", rainbow.O2, "\n")
+    print("W:", rainbow.W, "\n")
     equations, _, matrics = rainbow.intersection_attack()
-    for eq in equations:
-        print(eq)
+    print("Number of equations:", len(equations))
+    print("Number of monomials:", len(count_monomials(equations)))
+    if verbose:
+        print("")
+        print("The system to be solved:")
+        for eq in equations:
+            print(eq)
+        print("")
 
 
 if __name__ == '__main__':
