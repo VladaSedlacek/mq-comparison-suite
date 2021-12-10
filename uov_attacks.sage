@@ -179,7 +179,8 @@ def find_max_k(m, n, verbose=False):
     return k
 
 
-def guess_solve(equations, q, m, n, k, xx, reduced=False, verbose=False):
+def guess_solve(equations, uov, verbose=False):
+    q, m, n, k, xx, reduced = uov.q, uov.m, uov.n, uov.k, uov.xx, uov.reduced
     total_count = ZZ(m * k * (k + 1) / 2)
     redundant_count = k * (k - 1)
     assert len(equations) == total_count - redundant_count
@@ -253,8 +254,7 @@ def main():
             print(eq)
         print("")
 
-    solution = guess_solve(equations, q, m, n, k, xx=uov.xx,
-                           reduced=uov.reduced, verbose=verbose)
+    solution = guess_solve(equations, uov, verbose=verbose)
 
     if solution == vector([]):
         print("No solution found")
