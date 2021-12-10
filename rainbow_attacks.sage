@@ -98,7 +98,7 @@ class Rainbow():
                                   ) in self.V2.subspace(W_basis)
             for v in W.complement().basis():
                 Mv = linear_combination(v, self.MM)
-                assert Mv.kernel().is_subspace(O2)
+                assert O2.is_subspace(Mv.kernel())
         return O1, O2, W
 
     def intersection_attack(self, verbose=False):
@@ -203,7 +203,7 @@ def check_attack_success(equations, solution, rainbow, verbose=True):
         check_solution(equations, solution, rainbow.reduced)
         v = solution[rainbow.n:]
         Mv = linear_combination(v, rainbow.MM)
-        return Mv.kernel().is_subspace(rainbow.O2)
+        return rainbow.O2.is_subspace(Mv.kernel())
 
 
 def count_monomials(equations):
