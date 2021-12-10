@@ -226,6 +226,26 @@ def check_solution(equations, solution, reduced=False):
     print("The solution is correct")
 
 
+def check_attack_success(equations, solution, matrices, uov, verbose=True):
+    if len(solution) == 0:
+        print("No solution found")
+        return False
+    else:
+        print("Solution found:", solution)
+        check_solution(equations, solution, uov.reduced)
+        for matrix in matrices:
+            transformed_solution = matrix * solution
+            if uov.reduced:
+                transformed_solution = vector([0] + list(transformed_solution))
+            result = uov.test_oil_space_membership(transformed_solution)
+            if verbose:
+                print("Does ", transformed_solution, " lie in O?")
+                print(result)
+            if not result[0]:
+                return False
+    return True
+
+
 def count_monomials(equations):
     monomials = set()
     for eq in equations:
@@ -255,19 +275,12 @@ def main():
         print("")
 
     solution = guess_solve(equations, uov, verbose=verbose)
-
-    if solution == vector([]):
-        print("No solution found")
+    success = check_attack_success(
+        equations, solution, matrices, uov, verbose=True)
+    if success:
+        print("Attack successful!")
     else:
-        print("Solution found:", solution)
-        check_solution(equations, solution, uov.reduced)
-        for matrix in matrices:
-            transformed_solution = matrix * solution
-            if uov.reduced:
-                transformed_solution = vector([0] + list(transformed_solution))
-            if verbose:
-                print("Does ", transformed_solution, " lie in O?")
-            print(uov.test_oil_space_membership(transformed_solution))
+        print("Attack not successful :(")
 
 
 if __name__ == '__main__':
