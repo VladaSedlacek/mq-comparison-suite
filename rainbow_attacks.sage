@@ -90,6 +90,9 @@ class Rainbow():
         return O1, O2, W
 
     def intersection_attack(self, verbose=False):
+        if self.reduced:
+            print("Reduced variant not implemented yet")
+            exit()
         MM = self.MM
         PP = self.PP
         xx = self.xx
