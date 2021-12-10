@@ -172,6 +172,28 @@ def find_max_k(m, n, verbose=False):
     return k
 
 
+def check_solution(equations, solution, reduced=False):
+    if reduced:
+        for eq in equations:
+            assert eq(0, *solution) == 0
+    else:
+        for eq in equations:
+            assert eq(*solution) == 0
+    print("The solution is correct")
+
+
+def check_attack_success(equations, solution, rainbow, verbose=True):
+    if len(solution) == 0:
+        print("No solution found")
+        return False
+    else:
+        print("Solution found:", solution)
+        check_solution(equations, solution, rainbow.reduced)
+        v = solution[n:]
+        Mv = linear_combination(v, rainbow.MM)
+        return Mv.nullspace().is_subspace(rainbow.O2)
+
+
 def count_monomials(equations):
     monomials = set()
     for eq in equations:
