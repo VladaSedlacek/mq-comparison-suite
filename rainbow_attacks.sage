@@ -84,7 +84,7 @@ class Rainbow():
         O1 = self.V.subspace(O1_basis)
         O2_basis = [self.T.inverse() * o for o in O2_prime_basis]
         O2 = self.V.subspace(O2_basis)
-        W_basis = [self.S.inverse() * o for o in W_prime_basis]
+        W_basis = [self.S * o for o in W_prime_basis]
         W = self.V2.subspace(W_basis)
         return O1, O2, W
 
