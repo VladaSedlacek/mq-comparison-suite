@@ -234,6 +234,13 @@ def main():
             print(eq)
         print("")
 
+    solution = vector([0] * n + list(rainbow.W.complement().basis()[0]))
+    success = check_attack_success(equations, solution, rainbow)
+    if success:
+        print("Attack successful!")
+    else:
+        print("Attack not successful :(")
+
 
 if __name__ == '__main__':
     main()
