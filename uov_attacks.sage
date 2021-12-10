@@ -49,7 +49,6 @@ class UOV():
                 break
         PP = [T.transpose() * Q * T for Q in self.FF]
         MM = [get_polar_form(P) for P in PP]
-        assert MM == [get_polar_form(P) for P in PP]
         return T, PP, MM
 
     def find_oil_subspace(self):

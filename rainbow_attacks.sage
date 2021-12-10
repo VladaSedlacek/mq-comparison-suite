@@ -67,7 +67,6 @@ class Rainbow():
         PP = [linear_combination(S_row, PP_untransformed)
               for S_row in S.rows()]
         MM = [get_polar_form(P) for P in PP]
-        assert MM == [get_polar_form(P) for P in PP]
         return T, S, PP, MM
 
     def find_subspaces(self):
