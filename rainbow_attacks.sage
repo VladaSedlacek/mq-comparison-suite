@@ -86,6 +86,19 @@ class Rainbow():
         O2 = self.V.subspace(O2_basis)
         W_basis = [self.S * o for o in W_prime_basis]
         W = self.V2.subspace(W_basis)
+
+        if self.debug:
+            for e in O1_basis:
+                assert vector([e * P * e for P in self.PP]
+                              ) in self.V2.subspace(W_basis)
+            for e in O2_basis:
+                assert [e * P * e for P in self.PP] == [0] * m
+                for f in self.V.basis():
+                    assert vector([f * M * e for M in self.MM]
+                                  ) in self.V2.subspace(W_basis)
+            for v in W.complement().basis():
+                Mv = linear_combination(v, self.MM)
+                assert Mv.kernel().is_subspace(O2)
         return O1, O2, W
 
     def intersection_attack(self, verbose=False):
