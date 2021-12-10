@@ -203,7 +203,7 @@ def check_attack_success(equations, solution, rainbow, verbose=True):
         check_solution(equations, solution, rainbow.reduced)
         v = solution[n:]
         Mv = linear_combination(v, rainbow.MM)
-        return Mv.nullspace().is_subspace(rainbow.O2)
+        return Mv.kernel().is_subspace(rainbow.O2)
 
 
 def count_monomials(equations):
