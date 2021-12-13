@@ -143,6 +143,31 @@ class Rainbow():
         matrices = [L.inverse() for L in LL]
         return equations, redundant, matrices
 
+    def rectangular_minrank_attack(self, debug=True, verbose=True):
+        m, n, o2 = self.m, self.n, self.o2
+        yy = self.yy
+
+        def Lx(self, x):
+            rows = []
+            for e in self.V.basis():
+                rows.append([e * M * x for M in self.MM])
+            return matrix(rows)
+
+        Les = [Lx(self, e) for e in self.V.basis()]
+
+        Ly = matrix(self.R, n, m)
+        for i in range(n):
+            summand_matrix_rows = []
+            for j, row in enumerate(Les[i].rows()):
+                summand_matrix_rows.append([yy[i] * el for el in row])
+            Ly += matrix(summand_matrix_rows)
+        print(Ly)
+
+        if debug:
+            for _ in range(10):
+                y = self.O2.random_element()
+                assert Ly(*self.xx, *y, *self.vv).rank() <= o2
+
 
 def first_nonzero_index(it):
     for i, _ in enumerate(it):
