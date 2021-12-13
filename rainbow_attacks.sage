@@ -161,12 +161,20 @@ class Rainbow():
             for j, row in enumerate(Les[i].rows()):
                 summand_matrix_rows.append([yy[i] * el for el in row])
             Ly += matrix(summand_matrix_rows)
-        print(Ly)
 
         if debug:
             for _ in range(10):
                 y = self.O2.random_element()
                 assert Ly(*self.xx, *y, *self.vv).rank() <= o2
+
+        print("Ly:\n", Ly)
+        print("Pivot rows:", Ly.pivot_rows())
+        C = matrix([Ly[pivot_row]
+                    for pivot_row in Ly.pivot_rows()]).echelon_form()
+        print(C)
+        Cjs = []
+        for j in range(n):
+            Cjs.append(matrix([Ly[j]] + C.rows()))
 
 
 def first_nonzero_index(it):
