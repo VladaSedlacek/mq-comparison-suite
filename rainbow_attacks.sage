@@ -22,11 +22,13 @@ class Rainbow():
         self.V = VectorSpace(F, n)
         self.V2 = VectorSpace(F, m)
         self.R = PolynomialRing(F, ['x%s' % p for p in range(
-            1, n + 1)] + ['v%s' % p for p in range(
-                1, m + 1)], order="neglex")
+            1, n + 1)] + ['y%s' % p for p in range(
+                1, n + 1)] + ['v%s' % p for p in range(
+                    1, m + 1)], order="lex")
         self.R.inject_variables()
         self.xx = vector(self.R.gens()[:n])
-        self.vv = vector(self.R.gens()[n:])
+        self.yy = vector(self.R.gens()[n:2 * n])
+        self.vv = vector(self.R.gens()[2 * n:])
         self.FF = self.construct_central_map()
         self.T, self.S, self.PP, self.MM = self.hide_central_map()
         self.O1, self.O2, self.W = self.find_subspaces()
