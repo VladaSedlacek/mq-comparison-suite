@@ -28,17 +28,15 @@ class Rainbow():
         self.support_minors_dict = dict(
             zip(self.support_minors_indices, self.support_minors_variables))
         self.R = PolynomialRing(F, ['x%s' % p for p in range(
-            1, n + 1)] + ['y%s' % p for p in range(
-                1, n + 1)] + ['v%s' % p for p in range(
-                    1, m + 1)] + self.support_minors_variables, order="lex")
+            1, n + 1)] + ['v%s' % p for p in range(1, m + 1)], order="lex")
         self.R.inject_variables()
-        # self.support_minors_ring = PolynomialRing(F, ['y%s' % p for p in range(
-        # 1, n + 1)] + self.support_minors_variables, order="lex")
-        # self.support_minors_ring.inject_variables()
+        self.support_ring = PolynomialRing(F, ['y%s' % p for p in range(
+            1, n + 1)] + self.support_minors_variables, order="lex")
+        self.support_ring.inject_variables()
         self.xx = vector(self.R.gens()[: n])
-        self.yy = vector(self.R.gens()[n: 2 * n])
-        self.vv = vector(self.R.gens()[2 * n: 3 * n])
-        self.cc = vector(self.R.gens()[3 * n:])
+        self.vv = vector(self.R.gens()[n:])
+        self.yy = vector(self.support_ring.gens()[: n])
+        self.cc = vector(self.support_ring.gens()[n:])
         self.FF = self.construct_central_map()
         self.T, self.S, self.PP, self.MM = self.hide_central_map()
         self.O1, self.O2, self.W = self.find_subspaces()
@@ -168,7 +166,7 @@ class Rainbow():
 
         Les = [Lx(self, e) for e in self.V.basis()[:max_nonzero_index]]
 
-        Ly = matrix(self.R, n, m)
+        Ly = matrix(self.support_ring, n, m)
         for i in range(max_nonzero_index):
             summand_matrix_rows = []
             for j, row in enumerate(Les[i].rows()):
@@ -178,7 +176,7 @@ class Rainbow():
         if debug:
             for _ in range(10):
                 y = self.O2.random_element()
-                assert Ly(*self.xx, *y, *self.vv, *self.cc).rank() <= o2
+                assert Ly(*y, *self.cc).rank() <= o2
 
             print("Ly:\n", Ly)
 
@@ -191,7 +189,8 @@ class Rainbow():
                 eq = 0
                 for main_index in columns:
                     support_indices = [c for c in columns if c != main_index]
-                    cs = self.R(self.support_minors_dict[str(support_indices)])
+                    cs = self.support_ring(
+                        self.support_minors_dict[str(support_indices)])
                     eq += (-1) ^ (main_index - 1) * rj[main_index - 1] * cs
                 equations.append(eq)
 
