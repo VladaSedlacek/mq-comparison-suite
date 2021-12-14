@@ -245,25 +245,35 @@ def find_max_k(m, n, verbose=False):
 
 
 def check_solution(equations, solution, reduced=False):
-    if reduced:
-        for eq in equations:
-            assert eq(0, *solution) == 0
-    else:
-        for eq in equations:
-            assert eq(*solution) == 0
-    print("The solution is correct")
-
-
-def check_attack_success(equations, solution, rainbow, verbose=True):
     if len(solution) == 0:
         print("No solution found")
         return False
-    else:
-        print("Solution found:", solution)
-        check_solution(equations, solution, rainbow.reduced)
-        v = solution[rainbow.n:]
-        Mv = linear_combination(v, rainbow.MM)
-        return rainbow.O2.is_subspace(Mv.kernel())
+    if reduced:
+        solution = vector([0] + list(solution))
+    for eq in equations:
+        assert eq(*solution) == 0
+    print("The solution is correct")
+    return True
+
+
+def check_intersection_attack_success(equations, solution, rainbow, verbose=True):
+    print("Solution found:", solution)
+    success = check_solution(equations, solution, rainbow.reduced)
+    v = solution[rainbow.n:]
+    Mv = linear_combination(v, rainbow.MM)
+    return success and rainbow.O2.is_subspace(Mv.kernel())
+
+
+def check_rectangular_minrank_attack_success(equations, solution, rainbow, reduce_dimension=False, verbose=True):
+    print("Solution found:", solution)
+    success = check_solution(equations, solution, rainbow.reduced)
+    n = rainbow.n
+    max_nonzero_index = n
+    if reduce_dimension:
+        max_nonzero_index -= self.o2 - 1
+    oil_vector = vector(list(solution[:max_nonzero_index]
+                             ) + [0] * (n - max_nonzero_index))
+    return success and oil_vector in rainbow.O2
 
 
 def count_monomials(equations):
