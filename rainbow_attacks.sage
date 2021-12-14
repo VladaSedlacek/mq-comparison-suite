@@ -178,6 +178,7 @@ class Rainbow():
                 y = self.O2.random_element()
                 assert Ly(*y, *self.cc).rank() <= o2
 
+        if verbose:
             print("Ly:\n", Ly)
 
         equations = []
@@ -289,23 +290,40 @@ def main():
     o2 = 2
     m = 4
     n = 8
-    verbose = True
+    verbose = False
+    minrank = True
+    reduce_dimension = False
     rainbow = Rainbow(q, m, n, o2)
-    print("O1:", rainbow.O1, "\n")
-    print("O2:", rainbow.O2, "\n")
-    print("W:", rainbow.W, "\n")
-    equations, _, matrics = rainbow.intersection_attack()
+    if verbose:
+        print("O1:", rainbow.O1, "\n")
+        print("O2:", rainbow.O2, "\n")
+        print("W:", rainbow.W, "\n")
+
+    if minrank:
+        print("Mouting the rectangular MinRank attack...")
+        equations = rainbow.rectangular_minrank_attack(
+            reduce_dimension=reduce_dimension, verbose=False)
+    else:
+        print("Mouting the intersection_attack...")
+        equations, _, matrices = rainbow.intersection_attack()
     print("Number of equations:", len(equations))
     print("Number of monomials:", len(count_monomials(equations)))
-    if verbose:
-        print("")
-        print("The system to be solved:")
-        for eq in equations:
-            print(eq)
-        print("")
+    print("")
+    print("The system to be solved:")
+    for eq in equations:
+        print(eq)
+    print("")
 
-    solution = vector([0] * n + list(rainbow.W.complement().basis()[0]))
-    success = check_attack_success(equations, solution, rainbow)
+    print("Constructing toy solution...")
+    if minrank:
+        solution = vector(list(rainbow.O2.random_element()) +
+                          [0] * len(rainbow.support_minors_indices))
+        success = check_rectangular_minrank_attack_success(
+            equations, solution, rainbow, reduce_dimension=reduce_dimension)
+    else:
+        solution = vector([0] * n + list(rainbow.W.complement().basis()[0]))
+        success = check_intersection_attack_success(
+            equations, solution, rainbow)
     if success:
         print("Attack successful!")
     else:
