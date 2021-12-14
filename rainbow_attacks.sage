@@ -177,14 +177,21 @@ class Rainbow():
                 y = self.O2.random_element()
                 assert Ly(*self.xx, *y, *self.vv, *self.cc).rank() <= o2
 
-        print("Ly:\n", Ly)
-        print("Pivot rows:", Ly.pivot_rows())
-        C = matrix([Ly[pivot_row]
-                    for pivot_row in Ly.pivot_rows()]).echelon_form()
-        print(C)
-        Cjs = []
+            print("Ly:\n", Ly)
+
+        equations = []
+
+        # Add equations for Support Minors Modeling.
         for j in range(n):
-            Cjs.append(matrix([Ly[j]] + C.rows()))
+            rj = Ly[j]
+            for columns in Combinations([1..self.m], self.o2 + 1):
+                eq = 0
+                for main_index in columns:
+                    support_indices = [c for c in columns if c != main_index]
+                    cs = self.R(self.support_minors_dict[str(support_indices)])
+                    eq += (-1) ^ (main_index - 1) * rj[main_index - 1] * cs
+                equations.append(eq)
+        return equations
 
 
 def first_nonzero_index(it):
