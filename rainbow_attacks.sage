@@ -21,14 +21,24 @@ class Rainbow():
         self.reduced = self.q % 2 == 0 and self.n % 2 == 1
         self.V = VectorSpace(F, n)
         self.V2 = VectorSpace(F, m)
+        self.support_minors_indices = [
+            str(c) for c in Combinations([1..self.m], self.o2)]
+        self.support_minors_variables = [
+            'c%s' % s for s in [1..len(list(self.support_minors_indices))]]
+        self.support_minors_dict = dict(
+            zip(self.support_minors_indices, self.support_minors_variables))
         self.R = PolynomialRing(F, ['x%s' % p for p in range(
             1, n + 1)] + ['y%s' % p for p in range(
                 1, n + 1)] + ['v%s' % p for p in range(
-                    1, m + 1)], order="lex")
+                    1, m + 1)] + self.support_minors_variables, order="lex")
         self.R.inject_variables()
-        self.xx = vector(self.R.gens()[:n])
-        self.yy = vector(self.R.gens()[n:2 * n])
-        self.vv = vector(self.R.gens()[2 * n:])
+        # self.support_minors_ring = PolynomialRing(F, ['y%s' % p for p in range(
+        # 1, n + 1)] + self.support_minors_variables, order="lex")
+        # self.support_minors_ring.inject_variables()
+        self.xx = vector(self.R.gens()[: n])
+        self.yy = vector(self.R.gens()[n: 2 * n])
+        self.vv = vector(self.R.gens()[2 * n: 3 * n])
+        self.cc = vector(self.R.gens()[3 * n:])
         self.FF = self.construct_central_map()
         self.T, self.S, self.PP, self.MM = self.hide_central_map()
         self.O1, self.O2, self.W = self.find_subspaces()
@@ -165,7 +175,7 @@ class Rainbow():
         if debug:
             for _ in range(10):
                 y = self.O2.random_element()
-                assert Ly(*self.xx, *y, *self.vv).rank() <= o2
+                assert Ly(*self.xx, *y, *self.vv, *self.cc).rank() <= o2
 
         print("Ly:\n", Ly)
         print("Pivot rows:", Ly.pivot_rows())
