@@ -153,9 +153,12 @@ class Rainbow():
         matrices = [L.inverse() for L in LL]
         return equations, redundant, matrices
 
-    def rectangular_minrank_attack(self, debug=True, verbose=True):
+    def rectangular_minrank_attack(self, reduce_dimension=False, debug=True, verbose=True):
         m, n, o2 = self.m, self.n, self.o2
         yy = self.yy
+        max_nonzero_index = n
+        if reduce_dimension:
+            max_nonzero_index -= o2 - 1
 
         def Lx(self, x):
             rows = []
@@ -163,10 +166,10 @@ class Rainbow():
                 rows.append([e * M * x for M in self.MM])
             return matrix(rows)
 
-        Les = [Lx(self, e) for e in self.V.basis()]
+        Les = [Lx(self, e) for e in self.V.basis()[:max_nonzero_index]]
 
         Ly = matrix(self.R, n, m)
-        for i in range(n):
+        for i in range(max_nonzero_index):
             summand_matrix_rows = []
             for j, row in enumerate(Les[i].rows()):
                 summand_matrix_rows.append([yy[i] * el for el in row])
@@ -194,7 +197,8 @@ class Rainbow():
 
         # Add quadratic equations for oil subspace membership.
         for P in self.PP:
-            equations.append(yy * P * yy)
+            equations.append(yy[:max_nonzero_index] * P[:max_nonzero_index,
+                                                        :max_nonzero_index] * yy[:max_nonzero_index])
 
         return equations
 
