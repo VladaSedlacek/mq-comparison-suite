@@ -191,6 +191,11 @@ class Rainbow():
                     cs = self.R(self.support_minors_dict[str(support_indices)])
                     eq += (-1) ^ (main_index - 1) * rj[main_index - 1] * cs
                 equations.append(eq)
+
+        # Add quadratic equations for oil subspace membership.
+        for P in self.PP:
+            equations.append(yy * P * yy)
+
         return equations
 
 
