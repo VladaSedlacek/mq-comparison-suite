@@ -285,6 +285,39 @@ def count_monomials(equations):
     return sorted(list(monomials))
 
 
+def compare_variants(n, m, o2):
+    print("m = {0}, n = {1}, o2 = {2}".format(m, n, o2))
+    smm_equations = n * binomial(m, o2 + 1) + m
+    smm_variables = binomial(m, o2) + n - o2 + 1
+    alt_equations = m * (n + 1)
+    alt_variables = m * (n + o2) + n - o2 + 1
+    print("\tSMM: {0} equations, {1} variables \n\tratio: {2}, difference: {3}".format(
+        smm_equations, smm_variables, (smm_variables / smm_equations).numerical_approx(digits=3), smm_variables - smm_equations))  # %
+    print("\tALT: {0} equations, {1} variables \n\tratio: {2}, difference: {3}".format(
+        alt_equations, alt_variables, (alt_variables / alt_equations).numerical_approx(digits=3), alt_variables - alt_equations))
+
+
+def print_nist_comparisons():
+    # Rainbow notation mapping:
+    # v1 + o2 + o1 -> n
+    #      o2 + o1 -> m
+    #           o1 -> o2
+    print("\n\nNIST parameters over F_16 (Ia, IVa, VIa):")
+    compare_variants(n=96, m=64, o2=32)
+    compare_variants(n=152, m=96, o2=48)
+    compare_variants(n=204, m=128, o2=64)
+    print("\n\nNIST parameters over F_31 (Ib, IIIb, VIb:")
+    compare_variants(n=92, m=56, o2=28)
+    compare_variants(n=144, m=80, o2=32)
+    compare_variants(n=196, m=112, o2=56)
+    print("\n\nNIST parameters over F_256 (Ic, IIIc, Vc):")
+    compare_variants(n=88, m=48, o2=24)
+    compare_variants(n=140, m=72, o2=36)
+    compare_variants(n=188, m=96, o2=48)
+    print("\n\nNew suggested parameters over F_16 (I):")
+    compare_variants(m=68, n=109, o2=36)
+
+
 def main():
     q = 2
     o2 = 2
@@ -328,6 +361,8 @@ def main():
         print("Attack successful!")
     else:
         print("Attack not successful :(")
+
+    print_nist_comparisons()
 
 
 if __name__ == '__main__':
