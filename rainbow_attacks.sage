@@ -269,9 +269,10 @@ def check_rectangular_minrank_attack_success(equations, solution, rainbow, reduc
     print("Solution found:", solution)
     success = check_solution(equations, solution, rainbow.reduced)
     n = rainbow.n
+    o2 = rainbow.o2
     max_nonzero_index = n
     if reduce_dimension:
-        max_nonzero_index -= self.o2 - 1
+        max_nonzero_index -= o2 - 1
     oil_vector = vector(list(solution[:max_nonzero_index]
                              ) + [0] * (n - max_nonzero_index))
     return success and oil_vector in rainbow.O2
