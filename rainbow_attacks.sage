@@ -333,11 +333,11 @@ def main():
         print("W:", rainbow.W, "\n")
 
     if minrank:
-        print("Mouting the rectangular MinRank attack...")
+        print("Mounting the rectangular MinRank attack...")
         equations = rainbow.rectangular_minrank_attack(
             reduce_dimension=reduce_dimension, verbose=False)
     else:
-        print("Mouting the intersection_attack...")
+        print("Mounting the intersection_attack...")
         equations, _, matrices = rainbow.intersection_attack()
     print("Number of equations:", len(equations))
     print("Number of monomials:", len(count_monomials(equations)))
