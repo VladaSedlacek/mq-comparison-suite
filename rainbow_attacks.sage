@@ -176,7 +176,8 @@ class Rainbow():
         if debug:
             for _ in range(10):
                 y = self.O2.random_element()
-                assert Ly(*y, *self.cc).rank() <= o2
+                if y[max_nonzero_index:] == vector([0]) * max_nonzero_index:
+                    assert Ly(*y, *self.cc).rank() <= o2
 
         if verbose:
             print("Ly:\n", Ly)
