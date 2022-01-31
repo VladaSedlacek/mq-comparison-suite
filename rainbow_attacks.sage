@@ -304,14 +304,14 @@ def delete_powers(eq):
     return sum([radical(mon) for mon in eq.monomials()])
 
 
-def save_system(equations, file_name):
+def save_system(equations, file_path):
     var_set = set()
     for eq in equations:
         for var in eq.variables():
             var_set.add(var)
     var_list = [str(var) for var in sorted(var_set)[::-1]]
     variables = ', '.join(var_list)
-    with open(Path('systems', file_name + ".in"), 'w') as file:
+    with open(file_path, 'w') as file:
         file.write("# Variables:\n")
         file.write(variables + "\n\n")
         file.write("# Equations:\n")
@@ -389,8 +389,10 @@ def main():
     else:
         print("Attack not successful :(")
 
-    save_system(
-        equations, "rainbow_q_{0}_o2_{1}_m_{2}_n_{3}".format(q, o2, m, n))
+    file_path = Path(
+        'systems', "rainbow_q_{0}_o2_{1}_m_{2}_n_{3}.in".format(q, o2, m, n))
+    save_system(equations, file_path)
+    print("Saving the equation system into", file_path)
 
 
 if __name__ == '__main__':
