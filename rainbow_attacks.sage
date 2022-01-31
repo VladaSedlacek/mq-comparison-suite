@@ -364,13 +364,13 @@ def try_toy_solution(rainbow, equations, attack_type, reduce_dimension):
 @click.option('--o2', default=2, help='the oil subspace dimension', type=int)
 @click.option('--m', default=4, help='the number of equations', type=int)
 @click.option('--n', default=8, help='the number of variables', type=int)
-@click.option('--solve', default=True, is_flag=True, help='try to solve the system or not')
+@click.option('-n', '--no_solve', default=False, is_flag=True, help='try to solve the system or not')
 @click.option('--mq_path', default=Path("..", "mq"), help='the path the MQ solver: https://gitlab.lip6.fr/almasty/mq', type=str)
 @click.option('-h', '--inner_hybridation', default="-1", help='the number of variable that are not guessed', type=int)
 @click.option('-v', '--verbose', default=False, is_flag=True, help='control the output verbosity')
 @click.option('-r', '--reduce_dimension', default=False, is_flag=True, help='reduce the dimension for even q and odd n')
 @click.option('-t', '--attack_type', default='minrank', type=click.Choice(['minrank', 'intersection'], case_sensitive=False), help='use either the rectangular MinRank attack or the intersection attack')
-def main(q, o2, m, n, solve, mq_path, inner_hybridation, verbose, reduce_dimension, attack_type):
+def main(q, o2, m, n, no_solve, mq_path, inner_hybridation, verbose, reduce_dimension, attack_type):
     if q % 2 == 0:
         boolean = True
     rainbow = Rainbow(q, m, n, o2)
@@ -405,14 +405,15 @@ def main(q, o2, m, n, solve, mq_path, inner_hybridation, verbose, reduce_dimensi
     save_system(equations, file_path)
     print("Saving the equation system into", file_path)
 
-    print("Starting the MQ solver")
-    if inner_hybridation == -1:
-        inner_hybridation_arg = ""
-    else:
-        inner_hybridation_arg = " --inner-hybridation " + \
-            str(inner_hybridation)
-    os.system(str(Path(mq_path, "monica_vector" +
-                       inner_hybridation_arg + " < ")) + str(file_path))
+    if not no_solve:
+        print("Starting the MQ solver")
+        if inner_hybridation == -1:
+            inner_hybridation_arg = ""
+        else:
+            inner_hybridation_arg = " --inner-hybridation " + \
+                str(inner_hybridation)
+        os.system(str(Path(mq_path, "monica_vector" +
+                           inner_hybridation_arg + " < ")) + str(file_path))
 
 
 if __name__ == '__main__':
