@@ -51,7 +51,7 @@ class Rainbow():
             Q = Matrix(self.F, n)
             for i in range(n):
                 for j in range(n):
-                    if i >= n - (m - o2) or j >= n - m:
+                    if i >= n - m or j >= n - o2:
                         continue
                     Q[i, j] = self.F.random_element()
             FF.append(Q)
@@ -59,7 +59,7 @@ class Rainbow():
             Q = Matrix(self.F, n)
             for i in range(n):
                 for j in range(n):
-                    if j >= n - (m - o2):
+                    if j >= n - o2:
                         continue
                     Q[i, j] = self.F.random_element()
             FF.append(Q)
