@@ -374,22 +374,25 @@ def main():
         print("W:", rainbow.W, "\n")
 
     if minrank:
-        print("Mounting the rectangular MinRank attack...")
+        if verbose:
+            print("Mounting the rectangular MinRank attack...")
         equations = rainbow.rectangular_minrank_attack(
             reduce_dimension=reduce_dimension, verbose=False)
     else:
-        print("Mounting the intersection_attack...")
+        if verbose:
+            print("Mounting the intersection_attack...")
         equations, _, matrices = rainbow.intersection_attack()
 
     if boolean:
         equations = [delete_powers(eq) for eq in equations]
-    print("Number of equations:", len(equations))
-    print("Number of monomials:", len(count_monomials(equations)))
-    print("")
-    print("The system to be solved:")
-    for eq in equations:
-        print(eq)
-    print("")
+    if verbose:
+        print("Number of equations:", len(equations))
+        print("Number of monomials:", len(count_monomials(equations)))
+        print("")
+        print("The system to be solved:")
+        for eq in equations:
+            print(eq)
+        print("")
 
     try_toy_solution(rainbow, equations, minrank, reduce_dimension)
 
