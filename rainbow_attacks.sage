@@ -390,8 +390,7 @@ def try_toy_solution(rainbow, equations, attack_type, reduce_dimension):
 @click.option('-r', '--reduce_dimension', default=True, is_flag=True, help='reduce the dimension when possible')
 @click.option('-t', '--attack_type', default='minrank', type=click.Choice(['minrank', 'intersection'], case_sensitive=False), help='use either the rectangular MinRank attack or the intersection attack')
 def main(q, o2, m, n, no_solve, mq_path, inner_hybridation, verbose, reduce_dimension, attack_type):
-    if q % 2 == 0:
-        boolean = True
+    boolean = q % 2 == 0
     rainbow = Rainbow(q, m, n, o2)
     if verbose:
         print("O1:", rainbow.O1, "\n")
