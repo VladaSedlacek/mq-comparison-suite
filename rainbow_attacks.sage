@@ -359,10 +359,10 @@ def try_toy_solution(rainbow, equations, attack_type, reduce_dimension):
 
 
 @click.command()
-@click.option('--q', default=2, help='the field order')
-@click.option('--o2', default=2, help='the oil subspace dimension')
-@click.option('--m', default=4, help='the number of equations')
-@click.option('--n', default=8, help='the number of variables')
+@click.option('--q', default=2, help='the field order', type=int)
+@click.option('--o2', default=2, help='the oil subspace dimension', type=int)
+@click.option('--m', default=4, help='the number of equations', type=int)
+@click.option('--n', default=8, help='the number of variables', type=int)
 @click.option('--verbose', default=False, is_flag=True, help='control the output verbosity')
 @click.option('--reduce_dimension', default=False, is_flag=True, help='reduce the dimension for even q and odd n')
 @click.option('--attack_type', default='minrank', type=click.Choice(['minrank', 'intersection'], case_sensitive=False), help='use either the rectangular MinRank attack or the intersection attack')
