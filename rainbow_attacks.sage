@@ -1,4 +1,5 @@
 from itertools import product
+from pathlib import Path
 
 
 def get_polar_form(Q):
@@ -299,6 +300,21 @@ def compare_variants(n, m, o2):
         alt_equations, alt_variables, (alt_variables / alt_equations).numerical_approx(digits=3), alt_variables - alt_equations))
 
 
+def save_system(equations, file_name):
+    var_set = set()
+    for eq in equations:
+        for var in eq.variables():
+            var_set.add(var)
+    var_list = [str(var) for var in sorted(var_set)[::-1]]
+    variables = ', '.join(var_list)
+    with open(Path('systems', file_name + ".in"), 'w') as file:
+        file.write("# Variables:\n")
+        file.write(variables + "\n\n")
+        file.write("# Equations:\n")
+        for eq in equations:
+            file.write(str(eq) + "\n")
+
+
 def print_nist_comparisons():
     # Rainbow notation mapping:
     # v1 + o2 + o1 -> n
@@ -364,7 +380,8 @@ def main():
     else:
         print("Attack not successful :(")
 
-    print_nist_comparisons()
+    save_system(
+        equations, "rainbow_q_{0}_o2_{1}_m_{2}_n_{3}".format(q, o2, m, n))
 
 
 if __name__ == '__main__':
