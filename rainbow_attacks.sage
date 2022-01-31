@@ -173,7 +173,7 @@ class Rainbow():
             rows = []
             for e in self.V.basis():
                 rows.append([e * M * x for M in self.MM])
-            return matrix(rows)
+            return matrix(self.support_ring, rows)
 
         Les = [Lx(self, e) for e in self.V.basis()[:max_nonzero_index]]
 
@@ -185,11 +185,14 @@ class Rainbow():
             Ly += matrix(summand_matrix_rows)
 
         if debug:
+            # Check that for random y from O2, the conditions hold (after dimension reduction)
+            assert linear_combination(yy[:max_nonzero_index], Les) == Ly
             for _ in range(10):
                 y = self.O2.random_element()
                 if y[max_nonzero_index:] == vector([0]) * max_nonzero_index:
                     assert Ly(*y, *self.cc).rank() <= o2
-
+                    for row in [row for row in Ly(*y, *self.cc).rows()]:
+                        assert vector(self.F(el) for el in row) in self.W
         if verbose:
             print("Ly:\n", Ly)
 
