@@ -376,7 +376,7 @@ def try_toy_solution(rainbow, equations, attack_type, reduce_dimension):
 @click.option('--mq_path', default=Path("..", "mq"), help='the path the MQ solver: https://gitlab.lip6.fr/almasty/mq', type=str)
 @click.option('-h', '--inner_hybridation', default="-1", help='the number of variable that are not guessed', type=int)
 @click.option('-v', '--verbose', default=False, is_flag=True, help='control the output verbosity')
-@click.option('-r', '--reduce_dimension', default=False, is_flag=True, help='reduce the dimension for even q and odd n')
+@click.option('-r', '--reduce_dimension', default=True, is_flag=True, help='reduce the dimension when possible')
 @click.option('-t', '--attack_type', default='minrank', type=click.Choice(['minrank', 'intersection'], case_sensitive=False), help='use either the rectangular MinRank attack or the intersection attack')
 def main(q, o2, m, n, no_solve, mq_path, inner_hybridation, verbose, reduce_dimension, attack_type):
     if q % 2 == 0:
@@ -391,7 +391,7 @@ def main(q, o2, m, n, no_solve, mq_path, inner_hybridation, verbose, reduce_dime
         if verbose:
             print("Mounting the rectangular MinRank attack...")
         equations = rainbow.rectangular_minrank_attack(
-            reduce_dimension=reduce_dimension, verbose=False)
+            reduce_dimension=reduce_dimension, verbose=verbose)
     elif attack_type == 'intersection':
         if verbose:
             print("Mounting the intersection_attack...")
