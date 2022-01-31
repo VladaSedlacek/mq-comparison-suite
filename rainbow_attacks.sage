@@ -31,10 +31,10 @@ class Rainbow():
             zip(self.support_minors_indices, self.support_minors_variables))
         self.R = PolynomialRing(F, ['x%s' % p for p in range(
             1, n + 1)] + ['v%s' % p for p in range(1, m + 1)], order="lex")
-        self.R.inject_variables()
+        self.R.inject_variables(verbose=False)
         self.support_ring = PolynomialRing(F, ['y%s' % p for p in range(
             1, n + 1)] + self.support_minors_variables, order="lex")
-        self.support_ring.inject_variables()
+        self.support_ring.inject_variables(verbose=False)
         self.xx = vector(self.R.gens()[: n])
         self.vv = vector(self.R.gens()[n:])
         self.yy = vector(self.support_ring.gens()[: n])
