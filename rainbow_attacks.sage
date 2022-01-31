@@ -324,12 +324,20 @@ def save_system(equations, file_path):
             var_set.add(var)
     var_list = [str(var) for var in sorted(var_set)[::-1]]
     variables = ', '.join(var_list)
+
     with open(file_path, 'w') as file:
         file.write("# Variables:\n")
         file.write(variables + "\n\n")
         file.write("# Equations:\n")
         for eq in equations:
             file.write(str(eq) + "\n")
+
+
+def save_setup(rainbow, setup_path):
+    with open(setup_path, 'w') as file:
+        file.write("# O1:" + str(rainbow.O1) + "\n\n")
+        file.write("# O2:" + str(rainbow.O2) + "\n\n")
+        file.write("# W:" + str(rainbow.W) + "\n\n")
 
 
 def print_nist_comparisons():
@@ -411,10 +419,13 @@ def main(q, o2, m, n, no_solve, mq_path, inner_hybridation, verbose, reduce_dime
             print(eq)
         print("")
 
-    file_path = Path(
-        'systems', "rainbow_q_{0}_o2_{1}_m_{2}_n_{3}.in".format(q, o2, m, n))
-    save_system(equations, file_path)
-    print("Saving the equation system into", file_path)
+    eq_path = Path(
+        'systems', "rainbow_q_{0}_o2_{1}_m_{2}_n_{3}.eq".format(q, o2, m, n))
+    setup_path = Path(
+        'systems', "rainbow_q_{0}_o2_{1}_m_{2}_n_{3}.stp".format(q, o2, m, n))
+    save_system(equations, eq_path)
+    save_setup(rainbow, setup_path)
+    print("Saving the equation system into", eq_path)
 
     if not no_solve:
         print("Starting the MQ solver")
@@ -424,7 +435,7 @@ def main(q, o2, m, n, no_solve, mq_path, inner_hybridation, verbose, reduce_dime
             inner_hybridation_arg = " --inner-hybridation " + \
                 str(inner_hybridation)
         os.system(str(Path(mq_path, "monica_vector" +
-                           inner_hybridation_arg + " < ")) + str(file_path))
+                           inner_hybridation_arg + " < ")) + str(eq_path))
 
 
 if __name__ == '__main__':
