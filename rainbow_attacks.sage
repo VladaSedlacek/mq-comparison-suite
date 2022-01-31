@@ -47,19 +47,19 @@ class Rainbow():
     def construct_central_map(self):
         m, n, o2 = self.m, self.n, self.o2
         FF = []
-        for _ in range(o2):
+        for _ in range(m - o2):
             Q = Matrix(self.F, n)
             for i in range(n):
                 for j in range(n):
-                    if i >= n - o2 or j >= n - m:
+                    if i >= n - (m - o2) or j >= n - m:
                         continue
                     Q[i, j] = self.F.random_element()
             FF.append(Q)
-        for _ in range(o2, m):
+        for _ in range(m - o2, m):
             Q = Matrix(self.F, n)
             for i in range(n):
                 for j in range(n):
-                    if j >= n - o2:
+                    if j >= n - (m - o2):
                         continue
                     Q[i, j] = self.F.random_element()
             FF.append(Q)
@@ -90,9 +90,9 @@ class Rainbow():
         O2_prime_basis = [self.V([0] * n) for _ in range(o2)]
         for i in range(o2):
             O2_prime_basis[i][i + n - o2] = 1
-        W_prime_basis = [self.V2([0] * m) for _ in range(m - o2)]
-        for i in range(m - o2):
-            W_prime_basis[i][i + o2] = 1
+        W_prime_basis = [self.V2([0] * m) for _ in range(o2)]
+        for i in range(o2):
+            W_prime_basis[i][i + m - o2] = 1
         O1_basis = [self.T.inverse() * o for o in O1_prime_basis]
         O1 = self.V.subspace(O1_basis)
         O2_basis = [self.T.inverse() * o for o in O2_prime_basis]
@@ -101,6 +101,11 @@ class Rainbow():
         W = self.V2.subspace(W_basis)
 
         if self.debug:
+            for e in O1_prime_basis:
+                assert vector([e * Q * e for Q in self.FF]
+                              ) in self.V2.subspace(W_prime_basis)
+            for e in O2_prime_basis:
+                assert [e * Q * e for Q in self.FF] == [0] * m
             for e in O1_basis:
                 assert vector([e * P * e for P in self.PP]
                               ) in self.V2.subspace(W_basis)
@@ -112,6 +117,9 @@ class Rainbow():
             for v in W.complement().basis():
                 Mv = linear_combination(v, self.MM)
                 assert O2.is_subspace(Mv.kernel())
+            assert O1.dimension() == m
+            assert O2.dimension() == o2
+            assert W.dimension() == o2
         return O1, O2, W
 
     def intersection_attack(self, verbose=False):
