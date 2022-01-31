@@ -1,5 +1,6 @@
 from itertools import product
 from pathlib import Path
+import click
 
 
 def get_polar_form(Q):
@@ -357,16 +358,17 @@ def try_toy_solution(rainbow, equations, minrank, reduce_dimension):
         print("Attack not successful :(")
 
 
-def main():
-    q = 2
-    o2 = 2
-    m = 4
-    n = 8
+@click.command()
+@click.option('--q', default=2, help='the field order')
+@click.option('--o2', default=2, help='the oil subspace dimension')
+@click.option('--m', default=4, help='the number of equations')
+@click.option('--n', default=8, help='the number of variables')
+@click.option('--minrank', default=True, is_flag=True, help='use the rectangular MinRank attack (otherwise use the intersection attack)')
+@click.option('--verbose', default=False, is_flag=True, help='control the output verbosity')
+@click.option('--reduce_dimension', default=False, is_flag=True, help='reduce the dimension for even q and odd n')
+def main(q, o2, m, n, minrank, verbose, reduce_dimension):
     if q % 2 == 0:
         boolean = True
-    verbose = False
-    minrank = True
-    reduce_dimension = False
     rainbow = Rainbow(q, m, n, o2)
     if verbose:
         print("O1:", rainbow.O1, "\n")
