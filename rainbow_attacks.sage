@@ -340,6 +340,23 @@ def print_nist_comparisons():
     compare_variants(m=68, n=109, o2=36)
 
 
+def try_toy_solution(rainbow, equations, minrank, reduce_dimension):
+    print("Constructing toy solution...")
+    if minrank:
+        solution = vector(list(rainbow.O2.random_element()) +
+                          [0] * len(rainbow.support_minors_indices))
+        success = check_rectangular_minrank_attack_success(
+            equations, solution, rainbow, reduce_dimension=reduce_dimension)
+    else:
+        solution = vector([0] * n + list(rainbow.W.complement().basis()[0]))
+        success = check_intersection_attack_success(
+            equations, solution, rainbow)
+    if success:
+        print("Attack successful!")
+    else:
+        print("Attack not successful :(")
+
+
 def main():
     q = 2
     o2 = 2
@@ -374,20 +391,7 @@ def main():
         print(eq)
     print("")
 
-    print("Constructing toy solution...")
-    if minrank:
-        solution = vector(list(rainbow.O2.random_element()) +
-                          [0] * len(rainbow.support_minors_indices))
-        success = check_rectangular_minrank_attack_success(
-            equations, solution, rainbow, reduce_dimension=reduce_dimension)
-    else:
-        solution = vector([0] * n + list(rainbow.W.complement().basis()[0]))
-        success = check_intersection_attack_success(
-            equations, solution, rainbow)
-    if success:
-        print("Attack successful!")
-    else:
-        print("Attack not successful :(")
+    try_toy_solution(rainbow, equations, minrank, reduce_dimension)
 
     file_path = Path(
         'systems', "rainbow_q_{0}_o2_{1}_m_{2}_n_{3}.in".format(q, o2, m, n))
