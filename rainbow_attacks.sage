@@ -341,14 +341,14 @@ def print_nist_comparisons():
     compare_variants(m=68, n=109, o2=36)
 
 
-def try_toy_solution(rainbow, equations, minrank, reduce_dimension):
+def try_toy_solution(rainbow, equations, attack_type, reduce_dimension):
     print("Constructing toy solution...")
-    if minrank:
+    if attack_type == 'minrank':
         solution = vector(list(rainbow.O2.random_element()) +
                           [0] * len(rainbow.support_minors_indices))
         success = check_rectangular_minrank_attack_success(
             equations, solution, rainbow, reduce_dimension=reduce_dimension)
-    else:
+    elif attack_type == 'intersection':
         solution = vector([0] * n + list(rainbow.W.complement().basis()[0]))
         success = check_intersection_attack_success(
             equations, solution, rainbow)
@@ -363,10 +363,10 @@ def try_toy_solution(rainbow, equations, minrank, reduce_dimension):
 @click.option('--o2', default=2, help='the oil subspace dimension')
 @click.option('--m', default=4, help='the number of equations')
 @click.option('--n', default=8, help='the number of variables')
-@click.option('--minrank', default=True, is_flag=True, help='use the rectangular MinRank attack (otherwise use the intersection attack)')
 @click.option('--verbose', default=False, is_flag=True, help='control the output verbosity')
 @click.option('--reduce_dimension', default=False, is_flag=True, help='reduce the dimension for even q and odd n')
-def main(q, o2, m, n, minrank, verbose, reduce_dimension):
+@click.option('--attack_type', default='minrank', type=click.Choice(['minrank', 'intersection'], case_sensitive=False), help='use either the rectangular MinRank attack or the intersection attack')
+def main(q, o2, m, n, verbose, reduce_dimension, attack_type):
     if q % 2 == 0:
         boolean = True
     rainbow = Rainbow(q, m, n, o2)
@@ -375,12 +375,12 @@ def main(q, o2, m, n, minrank, verbose, reduce_dimension):
         print("O2:", rainbow.O2, "\n")
         print("W:", rainbow.W, "\n")
 
-    if minrank:
+    if attack_type == 'minrank':
         if verbose:
             print("Mounting the rectangular MinRank attack...")
         equations = rainbow.rectangular_minrank_attack(
             reduce_dimension=reduce_dimension, verbose=False)
-    else:
+    elif attack_type == 'intersection':
         if verbose:
             print("Mounting the intersection_attack...")
         equations, _, matrices = rainbow.intersection_attack()
@@ -396,7 +396,7 @@ def main(q, o2, m, n, minrank, verbose, reduce_dimension):
             print(eq)
         print("")
 
-    try_toy_solution(rainbow, equations, minrank, reduce_dimension)
+    try_toy_solution(rainbow, equations, attack_type, reduce_dimension)
 
     file_path = Path(
         'systems', "rainbow_q_{0}_o2_{1}_m_{2}_n_{3}.in".format(q, o2, m, n))
