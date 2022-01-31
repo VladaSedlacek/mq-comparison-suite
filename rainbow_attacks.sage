@@ -300,6 +300,10 @@ def compare_variants(n, m, o2):
         alt_equations, alt_variables, (alt_variables / alt_equations).numerical_approx(digits=3), alt_variables - alt_equations))
 
 
+def delete_powers(eq):
+    return sum([radical(mon) for mon in eq.monomials()])
+
+
 def save_system(equations, file_name):
     var_set = set()
     for eq in equations:
@@ -341,6 +345,8 @@ def main():
     o2 = 2
     m = 4
     n = 8
+    if q % 2 == 0:
+        boolean = True
     verbose = False
     minrank = True
     reduce_dimension = False
@@ -357,6 +363,9 @@ def main():
     else:
         print("Mounting the intersection_attack...")
         equations, _, matrices = rainbow.intersection_attack()
+
+    if boolean:
+        equations = [delete_powers(eq) for eq in equations]
     print("Number of equations:", len(equations))
     print("Number of monomials:", len(count_monomials(equations)))
     print("")
