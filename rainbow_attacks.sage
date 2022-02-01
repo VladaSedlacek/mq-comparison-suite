@@ -179,9 +179,10 @@ class Rainbow():
             return matrix(self.support_ring, rows)
 
         Les = [Lx(self, e) for e in self.V.basis()]
-
         Ly = linear_combination(all_vars, Les)
 
+        if verbose:
+            print("Ly:\n", Ly)
         if debug:
             # Check that for random y from O2, the conditions hold (after dimension reduction)
             for _ in range(2 ^ min(len(guessed_vars), 10)):
@@ -190,8 +191,6 @@ class Rainbow():
                     assert Ly(*y, *self.cc).rank() <= o2
                     for row in [row for row in Ly(*y, *self.cc).rows()]:
                         assert vector(self.F(el) for el in row) in self.W
-        if verbose:
-            print("Ly:\n", Ly)
 
         equations = []
 
@@ -208,7 +207,6 @@ class Rainbow():
                 equations.append(eq)
 
         # Add quadratic equations for oil subspace membership.
-
         for P in self.PP:
             equations.append(all_vars * P * all_vars)
 
