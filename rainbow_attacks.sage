@@ -168,9 +168,9 @@ class Rainbow():
         max_var_index = n
         if reduce_dimension:
             max_var_index -= o2 - 1
-            guessed_vars = [self.F.random_element() for _ in range(o2 - 1)]
-        else:
-            guessed_vars = []
+        guessed_vars = [self.F.random_element()
+                        for _ in range(n - max_var_index)]
+        all_vars = vector(list(yy[:max_var_index]) + guessed_vars)
 
         def Lx(self, x):
             rows = []
@@ -180,24 +180,13 @@ class Rainbow():
 
         Les = [Lx(self, e) for e in self.V.basis()]
 
-        Ly = matrix(self.support_ring, n, m)
-        for i in range(max_var_index):
-            summand_matrix_rows = []
-            for j, row in enumerate(Les[i].rows()):
-                summand_matrix_rows.append([yy[i] * el for el in row])
-            Ly += matrix(summand_matrix_rows)
-
-        for i, guess in enumerate(guessed_vars):
-            Ly += guess * Les[max_var_index + i]
+        Ly = linear_combination(all_vars, Les)
 
         if debug:
             # Check that for random y from O2, the conditions hold (after dimension reduction)
-            print(yy[:max_var_index], guessed_vars)
-            assert linear_combination(
-                list(yy[:max_var_index]) + guessed_vars, Les) == Ly
             for _ in range(10):
                 y = self.O2.random_element()
-                if list(y[max_var_index:]) == guessed_vars:
+                if y[max_var_index:] == all_vars[max_var_index:]:
                     assert Ly(*y, *self.cc).rank() <= o2
                     for row in [row for row in Ly(*y, *self.cc).rows()]:
                         assert vector(self.F(el) for el in row) in self.W
@@ -219,7 +208,7 @@ class Rainbow():
                 equations.append(eq)
 
         # Add quadratic equations for oil subspace membership.
-        all_vars = vector(list(yy[:max_var_index]) + guessed_vars)
+
         for P in self.PP:
             equations.append(all_vars * P * all_vars)
 
@@ -386,17 +375,17 @@ def try_toy_solution(rainbow, equations, attack_type, reduce_dimension):
         print("Attack not successful :(")
 
 
-@click.command()
-@click.option('--q', default=2, help='the field order', type=int)
-@click.option('--o2', default=2, help='the oil subspace dimension', type=int)
-@click.option('--m', default=4, help='the number of equations', type=int)
-@click.option('--n', default=8, help='the number of variables', type=int)
-@click.option('-n', '--no_solve', default=False, is_flag=True, help='try to solve the system or not')
-@click.option('--mq_path', default=Path("..", "mq"), help='the path the MQ solver: https://gitlab.lip6.fr/almasty/mq', type=str)
-@click.option('-h', '--inner_hybridation', default="-1", help='the number of variable that are not guessed', type=int)
-@click.option('-v', '--verbose', default=False, is_flag=True, help='control the output verbosity')
-@click.option('-r', '--reduce_dimension', default=True, is_flag=True, help='reduce the dimension when possible')
-@click.option('-t', '--attack_type', default='minrank', type=click.Choice(['minrank', 'intersection'], case_sensitive=False), help='use either the rectangular MinRank attack or the intersection attack')
+@ click.command()
+@ click.option('--q', default=2, help='the field order', type=int)
+@ click.option('--o2', default=2, help='the oil subspace dimension', type=int)
+@ click.option('--m', default=4, help='the number of equations', type=int)
+@ click.option('--n', default=8, help='the number of variables', type=int)
+@ click.option('-n', '--no_solve', default=False, is_flag=True, help='try to solve the system or not')
+@ click.option('--mq_path', default=Path("..", "mq"), help='the path the MQ solver: https://gitlab.lip6.fr/almasty/mq', type=str)
+@ click.option('-h', '--inner_hybridation', default="-1", help='the number of variable that are not guessed', type=int)
+@ click.option('-v', '--verbose', default=False, is_flag=True, help='control the output verbosity')
+@ click.option('-r', '--reduce_dimension', default=True, is_flag=True, help='reduce the dimension when possible')
+@ click.option('-t', '--attack_type', default='minrank', type=click.Choice(['minrank', 'intersection'], case_sensitive=False), help='use either the rectangular MinRank attack or the intersection attack')
 def main(q, o2, m, n, no_solve, mq_path, inner_hybridation, verbose, reduce_dimension, attack_type):
     boolean = q % 2 == 0
     rainbow = Rainbow(q, m, n, o2)
