@@ -315,6 +315,8 @@ def delete_powers(eq):
 def save_system(equations, file_path):
     var_set = set()
     for eq in equations:
+        if eq == 0:
+            continue
         for var in eq.variables():
             var_set.add(var)
     var_list = [str(var) for var in sorted(var_set)[::-1]]
