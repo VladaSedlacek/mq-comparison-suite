@@ -184,7 +184,7 @@ class Rainbow():
 
         if debug:
             # Check that for random y from O2, the conditions hold (after dimension reduction)
-            for _ in range(10):
+            for _ in range(2 ^ min(len(guessed_vars), 10)):
                 y = self.O2.random_element()
                 if y[max_var_index:] == all_vars[max_var_index:]:
                     assert Ly(*y, *self.cc).rank() <= o2
