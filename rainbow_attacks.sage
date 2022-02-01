@@ -165,9 +165,12 @@ class Rainbow():
     def rectangular_minrank_attack(self, reduce_dimension=False, debug=True, verbose=True):
         m, n, o2 = self.m, self.n, self.o2
         yy = self.yy
-        max_nonzero_index = n
+        max_var_index = n
         if reduce_dimension:
-            max_nonzero_index -= o2 - 1
+            max_var_index -= o2 - 1
+            guessed_vars = [self.F.random_element() for _ in range(o2 - 1)]
+        else:
+            guessed_vars = []
 
         def Lx(self, x):
             rows = []
@@ -175,21 +178,26 @@ class Rainbow():
                 rows.append([e * M * x for M in self.MM])
             return matrix(self.support_ring, rows)
 
-        Les = [Lx(self, e) for e in self.V.basis()[:max_nonzero_index]]
+        Les = [Lx(self, e) for e in self.V.basis()]
 
         Ly = matrix(self.support_ring, n, m)
-        for i in range(max_nonzero_index):
+        for i in range(max_var_index):
             summand_matrix_rows = []
             for j, row in enumerate(Les[i].rows()):
                 summand_matrix_rows.append([yy[i] * el for el in row])
             Ly += matrix(summand_matrix_rows)
 
+        for i, guess in enumerate(guessed_vars):
+            Ly += guess * Les[max_var_index + i]
+
         if debug:
             # Check that for random y from O2, the conditions hold (after dimension reduction)
-            assert linear_combination(yy[:max_nonzero_index], Les) == Ly
+            print(yy[:max_var_index], guessed_vars)
+            assert linear_combination(
+                list(yy[:max_var_index]) + guessed_vars, Les) == Ly
             for _ in range(10):
                 y = self.O2.random_element()
-                if y[max_nonzero_index:] == vector([0]) * max_nonzero_index:
+                if list(y[max_var_index:]) == guessed_vars:
                     assert Ly(*y, *self.cc).rank() <= o2
                     for row in [row for row in Ly(*y, *self.cc).rows()]:
                         assert vector(self.F(el) for el in row) in self.W
@@ -211,9 +219,9 @@ class Rainbow():
                 equations.append(eq)
 
         # Add quadratic equations for oil subspace membership.
+        all_vars = vector(list(yy[:max_var_index]) + guessed_vars)
         for P in self.PP:
-            equations.append(yy[:max_nonzero_index] * P[:max_nonzero_index,
-                                                        :max_nonzero_index] * yy[:max_nonzero_index])
+            equations.append(all_vars * P * all_vars)
 
         return equations
 
