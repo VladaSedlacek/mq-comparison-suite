@@ -210,7 +210,7 @@ class Rainbow():
         for P in self.PP:
             equations.append(all_vars * P * all_vars)
 
-        return equations
+        return equations, guessed_vars
 
 
 def first_nonzero_index(it):
@@ -312,7 +312,7 @@ def delete_powers(eq):
     return sum([radical(mon) for mon in eq.monomials()])
 
 
-def save_system(equations, file_path):
+def save_system(rainbow, equations, guessed_vars, reduce_dimension, file_path):
     var_set = set()
     for eq in equations:
         if eq == 0:
@@ -321,10 +321,17 @@ def save_system(equations, file_path):
             var_set.add(var)
     var_list = [str(var) for var in sorted(var_set)[::-1]]
     variables = ', '.join(var_list)
+    max_var_index = rainbow.n
+    if reduce_dimension:
+        max_var_index -= rainbow.o2 - 1
+    guessed = ', '.join(["{0}={1}".format(var, value) for var, value in zip(
+        rainbow.yy[max_var_index:], guessed_vars)])
 
     with open(file_path, 'w') as file:
         file.write("# Variables:\n")
         file.write(variables + "\n\n")
+        file.write("# Guessed variables:\n")
+        file.write("# " + guessed + "\n\n")
         file.write("# Equations:\n")
         for eq in equations:
             file.write(str(eq) + "\n")
@@ -397,12 +404,13 @@ def main(q, o2, m, n, no_solve, mq_path, inner_hybridation, verbose, reduce_dime
     if attack_type == 'minrank':
         if verbose:
             print("Mounting the rectangular MinRank attack...")
-        equations = rainbow.rectangular_minrank_attack(
+        equations, guessed_vars = rainbow.rectangular_minrank_attack(
             reduce_dimension=reduce_dimension, verbose=verbose)
     elif attack_type == 'intersection':
         if verbose:
             print("Mounting the intersection_attack...")
         equations, _, matrices = rainbow.intersection_attack()
+        guessed_vars = []
 
     if boolean:
         equations = [delete_powers(eq) for eq in equations]
@@ -419,7 +427,7 @@ def main(q, o2, m, n, no_solve, mq_path, inner_hybridation, verbose, reduce_dime
         'systems', "rainbow_q_{0}_o2_{1}_m_{2}_n_{3}.eq".format(q, o2, m, n))
     setup_path = Path(
         'systems', "rainbow_q_{0}_o2_{1}_m_{2}_n_{3}.stp".format(q, o2, m, n))
-    save_system(equations, eq_path)
+    save_system(rainbow, equations, guessed_vars, reduce_dimension, eq_path)
     save_setup(rainbow, setup_path)
     print("Saving the equation system into", eq_path)
 
