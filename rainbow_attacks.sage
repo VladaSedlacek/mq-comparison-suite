@@ -235,6 +235,20 @@ def linear_combination(coefficients, objects):
     return sum(c * o for c, o in zip(coefficients, objects))
 
 
+def weil_decomposition(poly):
+    # Constant coefficients come first
+    extension_coeffs = [c.polynomial().list() for c in poly.coefficients()]
+    max_len = max(len(ec) for ec in extension_coeffs)
+    # Pad the coefficient lists
+    for ec in extension_coeffs:
+        for _ in range(max_len - len(ec)):
+            ec.append(0)
+    base_coeff_list = zip(*extension_coeffs)
+    base_polys = [linear_combination(coeffs, poly.monomials())
+                  for coeffs in base_coeff_list]
+    return base_polys
+
+
 def find_max_k(m, n, verbose=False):
     if n == 3 * m:
         return 2
