@@ -297,7 +297,7 @@ def check_rectangular_minrank_attack_success(equations, solution, rainbow, reduc
     max_nonzero_index = n
     if reduce_dimension:
         max_nonzero_index -= o2 - 1
-    oil_vector = vector(list(solution[:max_nonzero_index]
+    oil_vector = vector(list(solution[: max_nonzero_index]
                              ) + [0] * (n - max_nonzero_index))
     return success and oil_vector in rainbow.O2
 
@@ -333,7 +333,7 @@ def save_system(rainbow, equations, guessed_vars, reduce_dimension, file_path):
             continue
         for var in eq.variables():
             var_set.add(var)
-    var_list = [str(var) for var in sorted(var_set)[::-1]]
+    var_list = [str(var) for var in sorted(var_set)[:: -1]]
     variables = ', '.join(var_list)
     max_var_index = rainbow.n
     if reduce_dimension:
