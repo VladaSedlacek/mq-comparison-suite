@@ -406,8 +406,9 @@ def try_toy_solution(rainbow, equations, attack_type, reduce_dimension):
 @ click.option('-h', '--inner_hybridation', default="-1", help='the number of variable that are not guessed', type=int)
 @ click.option('-v', '--verbose', default=False, is_flag=True, help='control the output verbosity')
 @ click.option('-r', '--reduce_dimension', default=True, is_flag=True, help='reduce the dimension when possible')
+@ click.option('-w', '--weil_descent', default=True, is_flag=True, help='use Weil descent when possible')
 @ click.option('-t', '--attack_type', default='minrank', type=click.Choice(['minrank', 'intersection'], case_sensitive=False), help='use either the rectangular MinRank attack or the intersection attack')
-def main(q, o2, m, n, no_solve, mq_path, inner_hybridation, verbose, reduce_dimension, attack_type):
+def main(q, o2, m, n, no_solve, mq_path, inner_hybridation, verbose, reduce_dimension, weil_descent, attack_type):
     boolean = q % 2 == 0
     rainbow = Rainbow(q, m, n, o2)
     if verbose:
@@ -426,7 +427,13 @@ def main(q, o2, m, n, no_solve, mq_path, inner_hybridation, verbose, reduce_dime
         equations, _, matrices = rainbow.intersection_attack()
         guessed_vars = []
 
+    if weil_descent:
+        if verbose:
+            print("\nPerforming Weil descent...")
+        equations = [eq_desc for equations_desc in [weil_decomposition(
+            eq) for eq in equations] for eq_desc in equations_desc]
     if boolean:
+        assert weil_descent or is_prime(q)
         equations = [delete_powers(eq) for eq in equations]
     if verbose:
         print("Number of equations:", len(equations))
