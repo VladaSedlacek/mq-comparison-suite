@@ -236,6 +236,8 @@ def linear_combination(coefficients, objects):
 
 
 def weil_decomposition(poly):
+    if poly == 0:
+        return []
     # Constant coefficients come first
     extension_coeffs = [c.polynomial().list() for c in poly.coefficients()]
     max_len = max(len(ec) for ec in extension_coeffs)
