@@ -228,6 +228,15 @@ def Differential(F,x,y):
     return vector([ (x*M*y) + (y*M*x)  for M in F ])
 
 
+# makes a matrix upper diagonal
+def Make_UD(M):
+    n = M.ncols()
+    for i in range(n):
+        for j in range(i+1,n):
+            M[i,j] += M[j,i]
+            M[j,i] = K(0) 
+
+            
 def elt_to_str(a):
     if q == 16:
         return str(hex(sum([2**i * a.polynomial()[i].lift() for i in range(4)])))[2:]
