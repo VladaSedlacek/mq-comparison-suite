@@ -218,151 +218,149 @@ class Rainbow():
 
         return equations, guessed_vars
 
+    def differential_attack(self, xl_path):
+        '''Adapted from https://github.com/WardBeullens/BreakingRainbow'''
+        q, m, n, o2 = self.q, self.m, self.n, self.o2
+        global attempts
+        attempts = 0
+
+        # pick a random vector x
+        x = vector([self.F.random_element() for i in range(n)])
+        while Eval(self.PP, x)[0] == 0:
+            x = vector([self.F.random_element() for i in range(n)])
+
+        # compute linear map D_x = P'(x,.)
+        D_x = Matrix(self.F, [Differential(self.PP, x, b)
+                              for b in (self.F ^ n).basis()])
+        D_x_ker = Matrix(D_x.kernel().basis())
+
+        if q % 2 == 0:
+            D_x_ker[0] = x
+
+        if D_x_ker.rank() != n - m:
+            return differential_attack(self)
+
+        attempts += 1
+
+        Sol = None
+        if not self.O2 is None:
+            V = self.F ^ n
+            I = V.span(D_x_ker).intersection(self.O2)
+            if I.dimension() == 0:
+                print("Attack would fail. resample x")
+                return self.differential_attack(xl_path)
+
+            print("Intersection has dimension:", I.dimension())
+            Sol = I.basis()[0]
+
+            Sol = D_x_ker.transpose().solve_right(Sol)
+
+            if Sol[-1] == 0:
+                print("last entry is zero, resample x")
+                return self.differential_attack(xl_path)
+
+            # scale to solution to have last coordinate zero, reducing dim
+            Sol = Sol / Sol[-1]
+
+            print("Good D_x found after %d attempts." % attempts)
+
+            print("The expected solution is:", Sol)
+            print("Exp sol in hex format:", [elt_to_str(q, s) for s in Sol])
+
+        # Compose smaller system D_x(o)= 0 and P(o) = 0
+        SS = [D_x_ker * M * D_x_ker.transpose() for M in self.PP]
+
+        for s in SS:
+            Make_UD(self.F, s)
+
+        if not Sol is None:
+            assert Eval(SS, Sol) == vector(m * [0])
+
+        if q % 2 == 0:
+            Px = Eval(self.PP, x)
+            # define Y by setting first coord to 0?
+            SSS = [(SS[i] * Px[0] + SS[0] * Px[i])[1:, 1:]
+                   for i in range(1, len(SS))]
+
+            if Sol is not None:
+                assert Eval(SSS, Sol[1:]) == vector((m - 1) * [0])
+
+            SS_orig = SS
+            SS = SSS
+
+            # In the real attack, YSol is found externally via a solver
+            YSol = vector([0] + list(Sol[1:]))
+            alpha = Eval([SS_orig[0] / Px[0]], YSol)[0]
+
+            xt = D_x_ker.transpose().solve_right(x)
+            assert xt == vector([1] + (n - m - 1) * [0])
+            assert Eval(SS_orig, xt) == Px
+            assert Eval(SS_orig, YSol) == alpha * Px
+
+            if alpha == 0:
+                NewSol = xt
+            else:
+                NewSol = xt + 1 / alpha.sqrt() * YSol
+            if NewSol[-1] != 0:
+                NewSol = NewSol / NewSol[-1]
+            # assert NewSol == Sol
+            # assert Eval(SS_orig, NewSol) == vector(m * [0])
+            print("New sol in hex format:", [elt_to_str(q, s) for s in NewSol])
+
+        xl_system_filename = 'system_' + \
+            str(len(SS)) + '-' + str(SS[0].ncols() - 1) + '.xl'
+        mq_system_filename = 'system_' + \
+            str(len(SS)) + '-' + str(SS[0].ncols() - 1) + '.mq'
+        save_system(xl_format=True, file_path=Path("systems", xl_system_filename), rainbow=self,
+                    equations=None, guessed_vars=[], reduce_dimension=False, SS=SS)
+
+        # Perform the Weil descent
+        z = self.F.gens()[0]
+        zs = [z ^ i for i in range(self.ext_deg)]
+        yy_weil = vector([linear_combination(w, zs) for w in self.ww_parts])
+        yy_weil_affine = vector(list(yy_weil[1:-1]) + [1])
+        equations = [yy_weil_affine * s * yy_weil_affine for s in SS]
+        assert len(equations) == m - 1
+        equations_weil = [weil_decomposition(eq) for eq in equations]
+        equations_final = [delete_powers(w_eq)
+                           for eqs in equations_weil for w_eq in eqs]
+        save_system(xl_format=False, file_path=Path("systems", mq_system_filename), rainbow=self,
+                    equations=equations_final, guessed_vars=[], reduce_dimension=False, SS=SS)
+
 
 # evaluate Multivariate map and Differential
-def Eval(F,x):
-    return vector([ x*M*x for M in F])
+def Eval(F, x):
+    return vector([x * M * x for M in F])
 
 
-def Differential(F,x,y):
-    return vector([ (x*M*y) + (y*M*x)  for M in F ])
+def Differential(F, x, y):
+    return vector([(x * M * y) + (y * M * x) for M in F])
 
 
 # makes a matrix upper diagonal
-def Make_UD(M):
+def Make_UD(F, M):
     n = M.ncols()
     for i in range(n):
-        for j in range(i+1,n):
-            M[i,j] += M[j,i]
-            M[j,i] = K(0) 
+        for j in range(i + 1, n):
+            M[i, j] += M[j, i]
+            M[j, i] = F(0)
 
-            
-def elt_to_str(a):
+
+def elt_to_str(q, a):
     if q == 16:
         return str(hex(sum([2**i * a.polynomial()[i].lift() for i in range(4)])))[2:]
-    if q.is_prime() and q < 16:
+    if ZZ(q).is_prime() and q < 16:
         return str(hex(a))[2:]
     return str(a)
 
 
-def UD_to_string(M):
+def UD_to_string(q, M):
     S = ""
     for i in range(M.ncols()):
         for j in range(i + 1):
-            S += elt_to_str(M[j, i]) + ' '
+            S += elt_to_str(q, M[j, i]) + ' '
     S += ';\n'
     return S
-
-
-def differential_attack(self):
-    '''Adapted from https://github.com/WardBeullens/BreakingRainbow'''
-    q, m, n, o2 = self.q, self.m, self.n, self.o2
-    global attempts
-    attempts = 0
-
-    # pick a random vector x
-    x = vector([F.random_element() for i in range(n)])
-    while Eval(self.PP, x)[0] == 0:
-        x = vector([F.random_element() for i in range(n)])
-
-    # compute linear map D_x = P'(x,.)
-    D_x = Matrix(F, [Differential(self.PP, x, b) for b in (F ^ n).basis])
-    D_x_ker = Matrix(D_x.kernel().basis())
-
-    if q % 2 == 0:
-        D_x_ker[0] = x
-
-    if D_x_ker.rank() != n - m:
-        return Attack(self)
-
-    attempts += 1
-
-    Sol = None
-    if not self.O2 is None:
-        V = F ^ n
-        I = V.span(D_x_ker).intersection(V.span(self.O2.transpose()))
-        if I.dimension() == 0:
-            print("Attack would fail. resample x")
-            return Attack(self)
-
-        print("Intersection has dimension:", I.dimension())
-        Sol = I.basis()[0]
-
-        Sol = D_x_ker.transpose().solve_right(Sol)
-
-        if Sol[-1] == 0:
-            print("last entry is zero, resample x")
-            return Attack(self)
-
-        # scale to solution to have last coordinate zero, reducing dim
-        Sol = Sol / Sol[-1]
-
-        print("Good D_x found after %d attempts." % attempts)
-
-        print("The expected solution is:", Sol)
-        print("Exp sol in hex format:", [elt_to_str(s) for s in Sol])
-
-    # Compose smaller system D_x(o)= 0 and P(o) = 0
-    SS = [D_x_ker * M * D_x_ker.transpose() for M in self.PP]
-
-    for s in SS:
-        Make_UD(s)
-
-    if not Sol is None:
-        assert Eval(SS, Sol) == vector(m * [0])
-
-    if q % 2 == 0:
-        Px = Eval(self.PP, x)
-        # define Y by setting first coord to 0?
-        SSS = [(SS[i] * Px[0] + SS[0] * Px[i])[1:, 1:]
-               for i in range(1, len(SS))]
-
-        if Sol is not None:
-            assert Eval(SSS, Sol[1:]) == vector((m - 1) * [0])
-
-        SS_orig = SS
-        SS = SSS
-
-        # In the real attack, YSol is found externally via a solver
-        YSol = vector([0] + list(Sol[1:]))
-        alpha = Eval([SS_orig[0] / Px[0]], YSol)[0]
-
-        xt = D_x_ker.transpose().solve_right(x)
-        assert xt == vector([1] + (n - m - 1) * [0])
-        assert Eval(SS_orig, xt) == Px
-        assert Eval(SS_orig, YSol) == alpha * Px
-
-        NewSol = xt + 1 / alpha.sqrt() * YSol
-        NewSol = NewSol / NewSol[-1]
-        assert NewSol == Sol
-        assert Eval(SS_orig, NewSol) == vector(m * [0])
-        print("New sol in hex format:", [elt_to_str(s) for s in NewSol])
-
-    fname = 'system_' + str(len(SS)) + '-' + str(SS[0].ncols() - 1) + '.xl'
-    f = open(fname, 'w')
-    for s in SS:
-        f.write(UD_to_string(s))
-    f.close()
-    print("System written to: " + fname)
-    print("Use block Wiedemann XL algorithm of Niederhagen to find a solution:")
-    print("http://polycephaly.org/projects/xl")
-    xl_path = Path("..", "xl")
-    make_command = "make -C {} Q={} M={} N={}".format(
-        str(xl_path), str(q), str(len(SS)), str(SS[0].ncols() - 1))
-    os.system(make_command)
-
-    z = F.gens()[0]
-    zs = [z ^ i for i in range(e)]
-    yy_weil = vector([linear_combination(w, zs) for w in self.ww_parts])
-    yy_weil_affine = vector(list(yy_weil[1:-1]) + [1])
-    equations = [yy_weil_affine * s * yy_weil_affine for s in SS]
-    assert len(equations) == m - 1
-    equations_weil = [weil_decomposition(eq) for eq in equations]
-    equations_final = [delete_powers(w_eq)
-                       for eqs in equations_weil for w_eq in eqs]
-
-    save_system(equations_final,
-                "system_{}-{}.mq".format(m - 1, n - m - 2))
 
 
 def first_nonzero_index(it):
@@ -480,29 +478,39 @@ def delete_powers(eq):
     return sum([radical(mon) for mon in eq.monomials()])
 
 
-def save_system(rainbow, equations, guessed_vars, reduce_dimension, file_path):
-    var_set = set()
-    for eq in equations:
-        if eq == 0:
-            continue
-        for var in eq.variables():
-            var_set.add(var)
-    var_list = [str(var) for var in sorted(var_set)[:: -1]]
-    variables = ', '.join(var_list)
-    max_var_index = rainbow.n
-    if reduce_dimension:
-        max_var_index -= rainbow.o2 - 1
-    guessed = ', '.join(["{0}={1}".format(var, value) for var, value in zip(
-        rainbow.yy[max_var_index:], guessed_vars)])
-
-    with open(file_path, 'w') as file:
-        file.write("# Variables:\n")
-        file.write(variables + "\n\n")
-        file.write("# Guessed variables:\n")
-        file.write("# " + guessed + "\n\n")
-        file.write("# Equations:\n")
+def save_system(xl_format, file_path, rainbow, equations, guessed_vars=[], reduce_dimension=False, SS=[]):
+    if xl_format:
+        '''The format for the block Wiedemann XL solver of Niederhagen: http://polycephaly.org/projects/xl'''
+        with open(file_path, 'w') as file:
+            for s in SS:
+                file.write(UD_to_string(rainbow.q, s))
+    else:
+        var_set = set()
         for eq in equations:
-            file.write(str(eq) + "\n")
+            if eq == 0:
+                continue
+            for var in eq.variables():
+                var_set.add(var)
+        var_list = [str(var) for var in sorted(var_set)[:: -1]]
+        variables = ', '.join(var_list)
+        max_var_index = rainbow.n
+        if reduce_dimension:
+            max_var_index -= rainbow.o2 - 1
+        if guessed_vars == []:
+            guessed = ""
+        else:
+            guessed = ', '.join(["{0}={1}".format(var, value) for var, value in zip(
+                rainbow.yy[max_var_index:], guessed_vars)])
+
+        with open(file_path, 'w') as file:
+            file.write("# Variables:\n")
+            file.write(variables + "\n\n")
+            file.write("# Guessed variables:\n")
+            file.write("# " + guessed + "\n\n")
+            file.write("# Equations:\n")
+            for eq in equations:
+                file.write(str(eq) + "\n")
+    print("System written to: " + str(file_path))
 
 
 def save_setup(rainbow, setup_path):
@@ -551,34 +559,40 @@ def try_toy_solution(rainbow, equations, attack_type, reduce_dimension):
 
 
 @ click.command()
-@ click.option('--q', default=2, help='the field order', type=int)
-@ click.option('--o2', default=2, help='the oil subspace dimension', type=int)
-@ click.option('--m', default=4, help='the number of equations', type=int)
-@ click.option('--n', default=8, help='the number of variables', type=int)
+@ click.option('--q', default=16, help='the field order', type=int)
+@ click.option('--n', default=48, help='the number of variables', type=int)
+@ click.option('--m', default=32, help='the number of equations', type=int)
+@ click.option('--o2', default=16, help='the oil subspace dimension', type=int)
 @ click.option('-n', '--no_solve', default=False, is_flag=True, help='try to solve the system or not')
 @ click.option('--mq_path', default=Path("..", "mq"), help='the path the MQ solver: https://gitlab.lip6.fr/almasty/mq', type=str)
+@ click.option('--xl_path', default=Path("..", "xl"), help='the path the XL solver: http://polycephaly.org/projects/xl', type=str)
 @ click.option('-h', '--inner_hybridation', default="-1", help='the number of variable that are not guessed', type=int)
 @ click.option('-v', '--verbose', default=False, is_flag=True, help='control the output verbosity')
 @ click.option('-r', '--reduce_dimension', default=True, is_flag=True, help='reduce the dimension when possible')
 @ click.option('-w', '--weil_descent', default=False, is_flag=True, help='use Weil descent when possible')
-@ click.option('-t', '--attack_type', default='differential', type=click.Choice(['minrank', 'intersection'], case_sensitive=False), help='use either the rectangular MinRank attack or the intersection attack')
-def main(q, o2, m, n, no_solve, mq_path, inner_hybridation, verbose, reduce_dimension, weil_descent, attack_type):
+@ click.option('-t', '--attack_type', default='differential', type=click.Choice(['differential', 'minrank', 'intersection'], case_sensitive=False), help='use either the rectangular MinRank attack or the intersection attack')
+def main(q, n, m, o2, no_solve, mq_path, xl_path, inner_hybridation, verbose, reduce_dimension, weil_descent, attack_type):
     boolean = q % 2 == 0
     set_random_seed(0)
-    rainbow = Rainbow(q, m, n, o2)
+    rainbow = Rainbow(q, m, n, o2, support=False)
     if verbose:
         print("O1:", rainbow.O1, "\n")
         print("O2:", rainbow.O2, "\n")
         print("W:", rainbow.W, "\n")
 
-    if attack_type == 'minrank':
+    elif attack_type == 'differential':
+        if verbose:
+            print("Mounting the differential attack...")
+        equations = rainbow.differential_attack(xl_path)
+        guessed_vars = []
+    elif attack_type == 'minrank':
         if verbose:
             print("Mounting the rectangular MinRank attack...")
         equations, guessed_vars = rainbow.rectangular_minrank_attack(
             reduce_dimension=reduce_dimension, verbose=verbose)
     elif attack_type == 'intersection':
         if verbose:
-            print("Mounting the intersection_attack...")
+            print("Mounting the intersection attack...")
         equations, _, matrices = rainbow.intersection_attack()
         guessed_vars = []
 
