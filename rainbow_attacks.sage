@@ -461,8 +461,9 @@ def main(q, o2, m, n, no_solve, mq_path, inner_hybridation, verbose, reduce_dime
         else:
             inner_hybridation_arg = " --inner-hybridation " + \
                 str(inner_hybridation)
-        os.system(str(Path(mq_path, "monica_vector" +
-                           inner_hybridation_arg + " < ")) + str(eq_path))
+        mq_solve_command = "{}{} < {}".format(
+            str(Path(mq_path, "monica_vector")), inner_hybridation_arg, str(eq_path))
+        os.system(mq_solve_command)
 
 
 if __name__ == '__main__':
