@@ -11,7 +11,7 @@ def get_polar_form(Q):
 class Rainbow():
     """A class for the Rainbow scheme."""
 
-    def __init__(self, q, m, n, o2, debug=True):
+    def __init__(self, q, m, n, o2, debug=True, support=False):
         assert o2 < m and m < n
         self.debug = debug
         self.q = q
@@ -25,27 +25,28 @@ class Rainbow():
         self.reduced = self.q % 2 == 0 and self.n % 2 == 1
         self.V = VectorSpace(F, n)
         self.V2 = VectorSpace(F, m)
-        self.support_minors_indices = [
-            str(c) for c in Combinations([1..self.m], self.o2)]
-        self.support_minors_variables = [
-            'c%s' % s for s in [1..len(list(self.support_minors_indices))]]
-        self.support_minors_dict = dict(
-            zip(self.support_minors_indices, self.support_minors_variables))
         self.R = PolynomialRing(F, ['x%s' % p for p in range(
             1, n + 1)] + ['v%s' % p for p in range(1, m + 1)], order="lex")
         self.R.inject_variables(verbose=False)
-        self.support_ring = PolynomialRing(F, ['y%s' % p for p in range(
-            1, n + 1)] + self.support_minors_variables, order="lex")
-        self.support_ring.inject_variables(verbose=False)
         self.weil_ring = PolynomialRing(
-            F, ['w%s_%s' % (p1, p2) for p1, p2 in product(range(1, n - m - 1), range(self.ext_deg))], order="lex")
+            F, ['w%s_%s' % (p1, p2) for p1, p2 in product(range(1, n - m + 1), range(self.ext_deg))], order="lex")
         self.weil_ring.inject_variables(verbose=False)
         self.ww = vector(self.weil_ring.gens())
         self.ww_parts = [self.ww[i:i + 4] for i in range(0, 4 * (n - m), 4)]
         self.xx = vector(self.R.gens()[: n])
         self.vv = vector(self.R.gens()[n:])
-        self.yy = vector(self.support_ring.gens()[: n])
-        self.cc = vector(self.support_ring.gens()[n:])
+        if support:
+            self.support_minors_indices = [
+                str(c) for c in Combinations([1..self.m], self.o2)]
+            self.support_minors_variables = [
+                'c%s' % s for s in [1..len(list(self.support_minors_indices))]]
+            self.support_minors_dict = dict(
+                zip(self.support_minors_indices, self.support_minors_variables))
+            self.support_ring = PolynomialRing(F, ['y%s' % p for p in range(
+                1, n + 1)] + self.support_minors_variables, order="lex")
+            self.support_ring.inject_variables(verbose=False)
+            self.yy = vector(self.support_ring.gens()[: n])
+            self.cc = vector(self.support_ring.gens()[n:])
         self.FF = self.construct_central_map()
         self.T, self.S, self.PP, self.MM = self.hide_central_map()
         self.O1, self.O2, self.W = self.find_subspaces()
