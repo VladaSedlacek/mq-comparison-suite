@@ -304,15 +304,17 @@ class Rainbow():
                 NewSol = xt + 1 / alpha.sqrt() * YSol
             if NewSol[-1] != 0:
                 NewSol = NewSol / NewSol[-1]
-            # assert NewSol == Sol
-            # assert Eval(SS_orig, NewSol) == vector(m * [0])
+            assert NewSol == Sol
+            assert Eval(SS_orig, NewSol) == vector(m * [0])
             print("New sol in hex format:", [elt_to_str(q, s) for s in NewSol])
 
-        xl_system_filename = 'system_' + \
-            str(len(SS)) + '-' + str(SS[0].ncols() - 1) + '.xl'
-        mq_system_filename = 'system_' + \
-            str(len(SS)) + '-' + str(SS[0].ncols() - 1) + '.mq'
-        save_system(xl_format=True, file_path=Path("systems", xl_system_filename), rainbow=self,
+        M = len(SS)
+        N = SS[0].ncols() - 1
+        xl_system_filename = Path("systems", 'system_' +
+                                  str(M) + '-' + str(N) + '.xl')
+        mq_system_filename = Path("systems", 'system_' +
+                                  str(M) + '-' + str(N) + '.mq')
+        save_system(xl_format=True, file_path=xl_system_filename, rainbow=self,
                     equations=None, guessed_vars=[], reduce_dimension=False, SS=SS)
 
         # Perform the Weil descent
@@ -325,8 +327,9 @@ class Rainbow():
         equations_weil = [weil_decomposition(eq) for eq in equations]
         equations_final = [delete_powers(w_eq)
                            for eqs in equations_weil for w_eq in eqs]
-        save_system(xl_format=False, file_path=Path("systems", mq_system_filename), rainbow=self,
+        save_system(xl_format=False, file_path=mq_system_filename, rainbow=self,
                     equations=equations_final, guessed_vars=[], reduce_dimension=False, SS=SS)
+        return equations_final, xl_system_filename, mq_system_filename, M, N
 
 
 # evaluate Multivariate map and Differential
@@ -564,15 +567,16 @@ def try_toy_solution(rainbow, equations, attack_type, reduce_dimension):
 @ click.option('--n', default=48, help='the number of variables', type=int)
 @ click.option('--m', default=32, help='the number of equations', type=int)
 @ click.option('--o2', default=16, help='the oil subspace dimension', type=int)
-@ click.option('-n', '--no_solve', default=False, is_flag=True, help='try to solve the system or not')
 @ click.option('--mq_path', default=Path("..", "mq"), help='the path the MQ solver: https://gitlab.lip6.fr/almasty/mq', type=str)
 @ click.option('--xl_path', default=Path("..", "xl"), help='the path the XL solver: http://polycephaly.org/projects/xl', type=str)
+@ click.option('--solve_xl', default=False, is_flag=True, help='try to solve the system using XL')
+@ click.option('--solve_mq', default=False, is_flag=True, help='try to solve the system using MQ')
 @ click.option('-h', '--inner_hybridation', default="-1", help='the number of variable that are not guessed', type=int)
 @ click.option('-v', '--verbose', default=False, is_flag=True, help='control the output verbosity')
 @ click.option('-r', '--reduce_dimension', default=True, is_flag=True, help='reduce the dimension when possible')
 @ click.option('-w', '--weil_descent', default=False, is_flag=True, help='use Weil descent when possible')
 @ click.option('-t', '--attack_type', default='differential', type=click.Choice(['differential', 'minrank', 'intersection'], case_sensitive=False), help='use either the rectangular MinRank attack or the intersection attack')
-def main(q, n, m, o2, no_solve, mq_path, xl_path, inner_hybridation, verbose, reduce_dimension, weil_descent, attack_type):
+def main(q, n, m, o2, xl_path, mq_path, solve_xl, solve_mq, inner_hybridation, verbose, reduce_dimension, weil_descent, attack_type):
     boolean = q % 2 == 0
     set_random_seed(0)
     rainbow = Rainbow(q, m, n, o2, support=False)
@@ -584,7 +588,8 @@ def main(q, n, m, o2, no_solve, mq_path, xl_path, inner_hybridation, verbose, re
     elif attack_type == 'differential':
         if verbose:
             print("Mounting the differential attack...")
-        equations = rainbow.differential_attack(xl_path)
+        equations, xl_system_filename, mq_system_filename, M, N = rainbow.differential_attack(
+            xl_path)
         guessed_vars = []
     elif attack_type == 'minrank':
         if verbose:
@@ -606,6 +611,7 @@ def main(q, n, m, o2, no_solve, mq_path, xl_path, inner_hybridation, verbose, re
     # if boolean:
     #     assert weil_descent or is_prime(q)
     #     equations = [delete_powers(eq) for eq in equations]
+
     if verbose:
         print("Number of equations:", len(equations))
         print("Number of monomials:", len(count_monomials(equations)))
@@ -615,23 +621,38 @@ def main(q, n, m, o2, no_solve, mq_path, xl_path, inner_hybridation, verbose, re
             print(eq)
         print("")
 
-    eq_path = Path(
-        'systems', "rainbow_q_{0}_o2_{1}_m_{2}_n_{3}.eq".format(q, o2, m, n))
-    setup_path = Path(
-        'systems', "rainbow_q_{0}_o2_{1}_m_{2}_n_{3}.stp".format(q, o2, m, n))
-    save_system(rainbow, equations, guessed_vars, reduce_dimension, eq_path)
-    save_setup(rainbow, setup_path)
-    print("Saving the equation system into", eq_path)
+    if attack_type != 'differential':
+        mq_path = Path(
+            'systems', "rainbow_q_{0}_o2_{1}_m_{2}_n_{3}.eq".format(q, o2, m, n))
+        setup_path = Path(
+            'systems', "rainbow_q_{0}_o2_{1}_m_{2}_n_{3}.stp".format(q, o2, m, n))
+        save_system(xl_format=False, file_path=mq_path, rainbow=rainbow, equations=equations,
+                    guessed_vars=guessed_vars, reduce_dimension=reduce_dimension)
+        save_setup(rainbow, setup_path)
+        print("Saving the equation system into", mq_path)
 
-    if not no_solve:
+    if solve_xl:
+        assert attack_type == 'differential'
+        print("Compiling the XL solver")
+        make_command = "make -C {} Q={} M={} N={}".format(
+            str(xl_path), str(q), str(M), str(N))
+        os.system(make_command)
+        print("Starting the XL solver")
+        print("xl path:", xl_path)
+        xl_solve_command = "{} --challenge {} --all".format(
+            str(Path(xl_path, "xl")), xl_system_filename)
+        os.system(xl_solve_command)
+
+    if solve_mq:
         print("Starting the MQ solver")
+        print("mq path:", mq_path)
         if inner_hybridation == -1:
             inner_hybridation_arg = ""
         else:
             inner_hybridation_arg = " --inner-hybridation " + \
                 str(inner_hybridation)
         mq_solve_command = "{}{} < {}".format(
-            str(Path(mq_path, "monica_vector")), inner_hybridation_arg, str(eq_path))
+            str(Path(mq_path, "monica_vector")), inner_hybridation_arg, str(mq_system_filename))
         os.system(mq_solve_command)
 
 
