@@ -16,6 +16,7 @@ class Rainbow():
         self.debug = debug
         self.q = q
         F = GF(q)
+        self.ext_deg = F.modulus().degree()
         self.F = F
         self.m = m
         self.n = n
@@ -36,6 +37,11 @@ class Rainbow():
         self.support_ring = PolynomialRing(F, ['y%s' % p for p in range(
             1, n + 1)] + self.support_minors_variables, order="lex")
         self.support_ring.inject_variables(verbose=False)
+        self.weil_ring = PolynomialRing(
+            F, ['w%s_%s' % (p1, p2) for p1, p2 in product(range(1, n - m - 1), range(self.ext_deg))], order="lex")
+        self.weil_ring.inject_variables(verbose=False)
+        self.ww = vector(self.weil_ring.gens())
+        self.ww_parts = [self.ww[i:i + 4] for i in range(0, 4 * (n - m), 4)]
         self.xx = vector(self.R.gens()[: n])
         self.vv = vector(self.R.gens()[n:])
         self.yy = vector(self.support_ring.gens()[: n])
@@ -211,6 +217,143 @@ class Rainbow():
             equations.append(all_vars * P * all_vars)
 
         return equations, guessed_vars
+
+
+# evaluate Multivariate map and Differential
+def Eval(F,x):
+    return vector([ x*M*x for M in F])
+
+
+def Differential(F,x,y):
+    return vector([ (x*M*y) + (y*M*x)  for M in F ])
+
+
+def elt_to_str(a):
+    if q == 16:
+        return str(hex(sum([2**i * a.polynomial()[i].lift() for i in range(4)])))[2:]
+    if q.is_prime() and q < 16:
+        return str(hex(a))[2:]
+    return str(a)
+
+
+def UD_to_string(M):
+    S = ""
+    for i in range(M.ncols()):
+        for j in range(i + 1):
+            S += elt_to_str(M[j, i]) + ' '
+    S += ';\n'
+    return S
+
+
+def differential_attack(self):
+    '''Adapted from https://github.com/WardBeullens/BreakingRainbow'''
+    q, m, n, o2 = self.q, self.m, self.n, self.o2
+    global attempts
+    attempts = 0
+
+    # pick a random vector x
+    x = vector([F.random_element() for i in range(n)])
+    while Eval(self.PP, x)[0] == 0:
+        x = vector([F.random_element() for i in range(n)])
+
+    # compute linear map D_x = P'(x,.)
+    D_x = Matrix(F, [Differential(self.PP, x, b) for b in (F ^ n).basis])
+    D_x_ker = Matrix(D_x.kernel().basis())
+
+    if q % 2 == 0:
+        D_x_ker[0] = x
+
+    if D_x_ker.rank() != n - m:
+        return Attack(self)
+
+    attempts += 1
+
+    Sol = None
+    if not self.O2 is None:
+        V = F ^ n
+        I = V.span(D_x_ker).intersection(V.span(self.O2.transpose()))
+        if I.dimension() == 0:
+            print("Attack would fail. resample x")
+            return Attack(self)
+
+        print("Intersection has dimension:", I.dimension())
+        Sol = I.basis()[0]
+
+        Sol = D_x_ker.transpose().solve_right(Sol)
+
+        if Sol[-1] == 0:
+            print("last entry is zero, resample x")
+            return Attack(self)
+
+        # scale to solution to have last coordinate zero, reducing dim
+        Sol = Sol / Sol[-1]
+
+        print("Good D_x found after %d attempts." % attempts)
+
+        print("The expected solution is:", Sol)
+        print("Exp sol in hex format:", [elt_to_str(s) for s in Sol])
+
+    # Compose smaller system D_x(o)= 0 and P(o) = 0
+    SS = [D_x_ker * M * D_x_ker.transpose() for M in self.PP]
+
+    for s in SS:
+        Make_UD(s)
+
+    if not Sol is None:
+        assert Eval(SS, Sol) == vector(m * [0])
+
+    if q % 2 == 0:
+        Px = Eval(self.PP, x)
+        # define Y by setting first coord to 0?
+        SSS = [(SS[i] * Px[0] + SS[0] * Px[i])[1:, 1:]
+               for i in range(1, len(SS))]
+
+        if Sol is not None:
+            assert Eval(SSS, Sol[1:]) == vector((m - 1) * [0])
+
+        SS_orig = SS
+        SS = SSS
+
+        # In the real attack, YSol is found externally via a solver
+        YSol = vector([0] + list(Sol[1:]))
+        alpha = Eval([SS_orig[0] / Px[0]], YSol)[0]
+
+        xt = D_x_ker.transpose().solve_right(x)
+        assert xt == vector([1] + (n - m - 1) * [0])
+        assert Eval(SS_orig, xt) == Px
+        assert Eval(SS_orig, YSol) == alpha * Px
+
+        NewSol = xt + 1 / alpha.sqrt() * YSol
+        NewSol = NewSol / NewSol[-1]
+        assert NewSol == Sol
+        assert Eval(SS_orig, NewSol) == vector(m * [0])
+        print("New sol in hex format:", [elt_to_str(s) for s in NewSol])
+
+    fname = 'system_' + str(len(SS)) + '-' + str(SS[0].ncols() - 1) + '.xl'
+    f = open(fname, 'w')
+    for s in SS:
+        f.write(UD_to_string(s))
+    f.close()
+    print("System written to: " + fname)
+    print("Use block Wiedemann XL algorithm of Niederhagen to find a solution:")
+    print("http://polycephaly.org/projects/xl")
+    xl_path = Path("..", "xl")
+    make_command = "make -C {} Q={} M={} N={}".format(
+        str(xl_path), str(q), str(len(SS)), str(SS[0].ncols() - 1))
+    os.system(make_command)
+
+    z = F.gens()[0]
+    zs = [z ^ i for i in range(e)]
+    yy_weil = vector([linear_combination(w, zs) for w in self.ww_parts])
+    yy_weil_affine = vector(list(yy_weil[1:-1]) + [1])
+    equations = [yy_weil_affine * s * yy_weil_affine for s in SS]
+    assert len(equations) == m - 1
+    equations_weil = [weil_decomposition(eq) for eq in equations]
+    equations_final = [delete_powers(w_eq)
+                       for eqs in equations_weil for w_eq in eqs]
+
+    save_system(equations_final,
+                "system_{}-{}.mq".format(m - 1, n - m - 2))
 
 
 def first_nonzero_index(it):
