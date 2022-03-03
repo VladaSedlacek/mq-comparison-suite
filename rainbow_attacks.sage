@@ -555,6 +555,7 @@ def try_toy_solution(rainbow, equations, attack_type, reduce_dimension):
 @ click.option('-t', '--attack_type', default='minrank', type=click.Choice(['minrank', 'intersection'], case_sensitive=False), help='use either the rectangular MinRank attack or the intersection attack')
 def main(q, o2, m, n, no_solve, mq_path, inner_hybridation, verbose, reduce_dimension, weil_descent, attack_type):
     boolean = q % 2 == 0
+    set_random_seed(0)
     rainbow = Rainbow(q, m, n, o2)
     if verbose:
         print("O1:", rainbow.O1, "\n")
