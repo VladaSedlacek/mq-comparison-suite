@@ -248,25 +248,25 @@ class Rainbow():
             V = self.F ^ n
             I = V.span(D_x_ker).intersection(self.O2)
             if I.dimension() == 0:
-                print("Attack would fail. resample x")
+                print("\tAttack would fail. Resampling x...")
                 return self.differential_attack()
 
-            print("Intersection has dimension:", I.dimension())
+            print("\tIntersection has dimension:", I.dimension())
             Sol = I.basis()[0]
 
             Sol = D_x_ker.transpose().solve_right(Sol)
 
             if Sol[-1] == 0:
-                print("last entry is zero, resample x")
+                print("\tLast entry is zero, resampling x...")
                 return self.differential_attack()
 
             # scale to solution to have last coordinate zero, reducing dim
             Sol = Sol / Sol[-1]
 
-            print("Good D_x found after %d attempts." % attempts)
+            print("\tGood D_x found after %d attempts." % attempts)
 
-            print("The expected solution is:", Sol)
-            print("Exp sol in hex format:", [elt_to_str(q, s) for s in Sol])
+            print("\tThe expected solution is:", Sol)
+            print("\tIn hex format:", [elt_to_str(q, s) for s in Sol])
 
         # Compose smaller system D_x(o)= 0 and P(o) = 0
         SS = [D_x_ker * M * D_x_ker.transpose() for M in self.PP]
@@ -306,7 +306,6 @@ class Rainbow():
                 NewSol = NewSol / NewSol[-1]
             assert NewSol == Sol
             assert Eval(SS_orig, NewSol) == vector(m * [0])
-            print("New sol in hex format:", [elt_to_str(q, s) for s in NewSol])
 
         # Perform the Weil descent
         z = self.F.gens()[0]
@@ -574,6 +573,35 @@ def compute_system_size(q, m, n, o2, attack_type):
     return None, None
 
 
+def mount_attack(rainbow, attack_type, M, N, reduce_dimension=False, verbose=False):
+    SS = []
+    guessed_vars = []
+    if attack_type == 'differential':
+        print("Mounting the differential attack...")
+        SS, equations = rainbow.differential_attack()
+        assert M == len(SS)
+        assert N == SS[0].ncols() - 1
+    elif attack_type == 'minrank':
+        print("Mounting the rectangular MinRank attack...")
+        equations, guessed_vars = rainbow.rectangular_minrank_attack(
+            reduce_dimension=reduce_dimension, verbose=verbose)
+    elif attack_type == 'intersection':
+        print("Mounting the intersection attack...")
+        equations, _, _ = rainbow.intersection_attack()
+
+    # Unused for now
+    # if weil_descent:
+    #     if verbose:
+    #         print("\nPerforming Weil descent...")
+    #     equations = [eq_desc for equations_desc in [weil_decomposition(
+    #         eq) for eq in equations] for eq_desc in equations_desc]
+    # if boolean:
+    #     assert weil_descent or is_prime(q)
+    #     equations = [delete_powers(eq) for eq in equations]
+
+    return SS, equations, guessed_vars
+
+
 @ click.command()
 @ click.option('--q', default=16, help='the field order', type=int)
 @ click.option('--n', default=48, help='the number of variables', type=int)
@@ -602,41 +630,19 @@ def main(q, n, m, o2, xl_path, mq_path, solve_xl, solve_mq, solve_only, inner_hy
     setup_path = Path(system_folder_path, base_system_name + '.stp')
 
     if not solve_only:
+        print("Generating Rainbow instance for seed={}, q={}, m={}, n={}, o2={}".format(
+            seed, q, m, n, o2))
         rainbow = Rainbow(q, m, n, o2, support=False)
         save_setup(rainbow, setup_path, seed)
-
+        SS, equations, guessed_vars = mount_attack(
+            rainbow, attack_type, M, N, reduce_dimension=False, verbose=False)
         if attack_type == 'differential':
-            if verbose:
-                print("Mounting the differential attack...")
-            SS, equations = rainbow.differential_attack()
-            assert M == len(SS)
-            assert N == SS[0].ncols() - 1
             save_system(xl_format=True, file_path=xl_system_path,
                         rainbow=rainbow, SS=SS, verbose=verbose)
-            guessed_vars = []
-        elif attack_type == 'minrank':
-            if verbose:
-                print("Mounting the rectangular MinRank attack...")
-            equations, guessed_vars = rainbow.rectangular_minrank_attack(
-                reduce_dimension=reduce_dimension, verbose=verbose)
-        elif attack_type == 'intersection':
-            if verbose:
-                print("Mounting the intersection attack...")
-            equations, _, matrices = rainbow.intersection_attack()
-            guessed_vars = []
-
-    # Unused for now
-    # if weil_descent:
-    #     if verbose:
-    #         print("\nPerforming Weil descent...")
-    #     equations = [eq_desc for equations_desc in [weil_decomposition(
-    #         eq) for eq in equations] for eq_desc in equations_desc]
-    # if boolean:
-    #     assert weil_descent or is_prime(q)
-    #     equations = [delete_powers(eq) for eq in equations]
-
         save_system(xl_format=False, file_path=mq_system_path, rainbow=rainbow, equations=equations,
                     guessed_vars=guessed_vars, reduce_dimension=reduce_dimension, verbose=verbose)
+    else:
+        print("Skipping the rainbow and equation generation...")
 
     if solve_xl:
         assert attack_type == 'differential'
