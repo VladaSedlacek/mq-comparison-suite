@@ -513,8 +513,9 @@ def save_system(xl_format, file_path, rainbow, equations=[], guessed_vars=[], re
     print("Equation system written to: " + str(file_path))
 
 
-def save_setup(rainbow, setup_path):
+def save_setup(rainbow, setup_path, seed):
     with open(setup_path, 'w') as file:
+        file.write("# seed:" + str(seed) + "\n")
         file.write("# O1:" + str(rainbow.O1) + "\n\n")
         file.write("# O2:" + str(rainbow.O2) + "\n\n")
         file.write("# W:" + str(rainbow.W) + "\n\n")
@@ -582,30 +583,27 @@ def compute_system_size(q, m, n, o2, attack_type):
 @ click.option('--xl_path', default=Path("..", "xl"), help='the path the XL solver: http://polycephaly.org/projects/xl', type=str)
 @ click.option('--solve_xl', default=False, is_flag=True, help='try to solve the system using XL')
 @ click.option('--solve_mq', default=False, is_flag=True, help='try to solve the system using MQ')
+@ click.option('--solve_only', default=False, is_flag=True, help='skip equation generation and only use a solver')
 @ click.option('-h', '--inner_hybridation', default="-1", help='the number of variable that are not guessed', type=int)
 @ click.option('-v', '--verbose', default=False, is_flag=True, help='control the output verbosity')
 @ click.option('-r', '--reduce_dimension', default=True, is_flag=True, help='reduce the dimension when possible')
 @ click.option('-w', '--weil_descent', default=False, is_flag=True, help='use Weil descent when possible')
 @ click.option('-t', '--attack_type', default='differential', type=click.Choice(['differential', 'minrank', 'intersection'], case_sensitive=False), help='use either the rectangular MinRank attack or the intersection attack')
-@ click.option('-s', '--solve_only', default=False, is_flag=True, help='skip equation generation and only use a solver')
-def main(q, n, m, o2, xl_path, mq_path, solve_xl, solve_mq, inner_hybridation, verbose, reduce_dimension, weil_descent, attack_type, solve_only):
+@ click.option('-s', '--seed', default=0, help='the seed for randomness replication', type=int)
+def main(q, n, m, o2, xl_path, mq_path, solve_xl, solve_mq, solve_only, inner_hybridation, verbose, reduce_dimension, weil_descent, attack_type, seed):
     boolean = q % 2 == 0
-    set_random_seed(0)
+    set_random_seed(seed)
     M, N = compute_system_size(q, m, n, o2, attack_type)
     system_folder_path = 'systems'
-    base_system_name = "rainbow_{}_q_{}_o2_{}_m_{}_n_{}_M_{}_N_{}".format(
-        attack_type, q, o2, m, n, M, N)
+    base_system_name = "rainbow_{}_seed_{}_q_{}_o2_{}_m_{}_n_{}_M_{}_N_{}".format(
+        attack_type, seed, q, o2, m, n, M, N)
     mq_system_path = Path(system_folder_path, base_system_name + '.mq')
     xl_system_path = Path(system_folder_path, base_system_name + '.xl')
     setup_path = Path(system_folder_path, base_system_name + '.stp')
 
     if not solve_only:
         rainbow = Rainbow(q, m, n, o2, support=False)
-        save_setup(rainbow, setup_path)
-        if verbose:
-            print("O1:", rainbow.O1, "\n")
-            print("O2:", rainbow.O2, "\n")
-            print("W:", rainbow.W, "\n")
+        save_setup(rainbow, setup_path, seed)
 
         if attack_type == 'differential':
             if verbose:
@@ -666,6 +664,7 @@ def main(q, n, m, o2, xl_path, mq_path, solve_xl, solve_mq, inner_hybridation, v
 
     if not (solve_xl or solve_mq):
         print("Please specify a solver.")
+
 
 if __name__ == '__main__':
     main()
