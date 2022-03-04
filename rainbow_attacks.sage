@@ -587,7 +587,8 @@ def compute_system_size(q, m, n, o2, attack_type):
 @ click.option('-r', '--reduce_dimension', default=True, is_flag=True, help='reduce the dimension when possible')
 @ click.option('-w', '--weil_descent', default=False, is_flag=True, help='use Weil descent when possible')
 @ click.option('-t', '--attack_type', default='differential', type=click.Choice(['differential', 'minrank', 'intersection'], case_sensitive=False), help='use either the rectangular MinRank attack or the intersection attack')
-def main(q, n, m, o2, xl_path, mq_path, solve_xl, solve_mq, inner_hybridation, verbose, reduce_dimension, weil_descent, attack_type):
+@ click.option('-s', '--solve_only', default=False, is_flag=True, help='skip equation generation and only use a solver')
+def main(q, n, m, o2, xl_path, mq_path, solve_xl, solve_mq, inner_hybridation, verbose, reduce_dimension, weil_descent, attack_type, solve_only):
     boolean = q % 2 == 0
     set_random_seed(0)
     M, N = compute_system_size(q, m, n, o2, attack_type)
@@ -598,35 +599,34 @@ def main(q, n, m, o2, xl_path, mq_path, solve_xl, solve_mq, inner_hybridation, v
     xl_system_path = Path(system_folder_path, base_system_name + '.xl')
     setup_path = Path(system_folder_path, base_system_name + '.stp')
 
-    rainbow = Rainbow(q, m, n, o2, support=False)
-    save_setup(rainbow, setup_path)
-    if verbose:
-        print("O1:", rainbow.O1, "\n")
-        print("O2:", rainbow.O2, "\n")
-        print("W:", rainbow.W, "\n")
+    if not solve_only:
+        rainbow = Rainbow(q, m, n, o2, support=False)
+        save_setup(rainbow, setup_path)
+        if verbose:
+            print("O1:", rainbow.O1, "\n")
+            print("O2:", rainbow.O2, "\n")
+            print("W:", rainbow.W, "\n")
 
-    if attack_type == 'differential':
-        if verbose:
-            print("Mounting the differential attack...")
-        SS, equations = rainbow.differential_attack()
-        assert M == len(SS)
-        assert N == SS[0].ncols() - 1
-        save_system(xl_format=True, file_path=xl_system_path,
-                    rainbow=rainbow, SS=SS, verbose=verbose)
-        guessed_vars = []
-    elif attack_type == 'minrank':
-        if verbose:
-            print("Mounting the rectangular MinRank attack...")
-        equations, guessed_vars = rainbow.rectangular_minrank_attack(
-            reduce_dimension=reduce_dimension, verbose=verbose)
-    elif attack_type == 'intersection':
-        if verbose:
-            print("Mounting the intersection attack...")
-        equations, _, matrices = rainbow.intersection_attack()
-        guessed_vars = []
+        if attack_type == 'differential':
+            if verbose:
+                print("Mounting the differential attack...")
+            SS, equations = rainbow.differential_attack()
+            assert M == len(SS)
+            assert N == SS[0].ncols() - 1
+            save_system(xl_format=True, file_path=xl_system_path,
+                        rainbow=rainbow, SS=SS, verbose=verbose)
+            guessed_vars = []
+        elif attack_type == 'minrank':
+            if verbose:
+                print("Mounting the rectangular MinRank attack...")
+            equations, guessed_vars = rainbow.rectangular_minrank_attack(
+                reduce_dimension=reduce_dimension, verbose=verbose)
+        elif attack_type == 'intersection':
+            if verbose:
+                print("Mounting the intersection attack...")
+            equations, _, matrices = rainbow.intersection_attack()
+            guessed_vars = []
 
-    save_system(xl_format=False, file_path=mq_system_path, rainbow=rainbow, equations=equations,
-                guessed_vars=guessed_vars, reduce_dimension=reduce_dimension, verbose=verbose)
     # Unused for now
     # if weil_descent:
     #     if verbose:
@@ -636,6 +636,9 @@ def main(q, n, m, o2, xl_path, mq_path, solve_xl, solve_mq, inner_hybridation, v
     # if boolean:
     #     assert weil_descent or is_prime(q)
     #     equations = [delete_powers(eq) for eq in equations]
+
+        save_system(xl_format=False, file_path=mq_system_path, rainbow=rainbow, equations=equations,
+                    guessed_vars=guessed_vars, reduce_dimension=reduce_dimension, verbose=verbose)
 
     if solve_xl:
         assert attack_type == 'differential'
@@ -661,6 +664,8 @@ def main(q, n, m, o2, xl_path, mq_path, solve_xl, solve_mq, inner_hybridation, v
             str(Path(mq_path, "monica_vector")), inner_hybridation_arg, str(mq_system_path))
         os.system(mq_solve_command)
 
+    if not (solve_xl or solve_mq):
+        print("Please specify a solver.")
 
 if __name__ == '__main__':
     main()
