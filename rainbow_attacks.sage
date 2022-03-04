@@ -585,7 +585,7 @@ def main(q, n, m, o2, xl_path, mq_path, solve_xl, solve_mq, inner_hybridation, v
         print("O2:", rainbow.O2, "\n")
         print("W:", rainbow.W, "\n")
 
-    elif attack_type == 'differential':
+    if attack_type == 'differential':
         if verbose:
             print("Mounting the differential attack...")
         equations, xl_system_filename, mq_system_filename, M, N = rainbow.differential_attack(
