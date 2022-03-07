@@ -277,6 +277,7 @@ class Rainbow():
         if not Sol is None:
             assert Eval(SS, Sol) == vector(m * [0])
 
+        weil_coeff_list = []
         if q % 2 == 0:
             Px = Eval(self.PP, x)
             # define Y by setting first coord to 0?
@@ -307,37 +308,37 @@ class Rainbow():
             assert NewSol == Sol
             assert Eval(SS_orig, NewSol) == vector(m * [0])
 
-        # Perform the Weil descent
-        z = self.F.gens()[0]
-        zs = [z ^ i for i in range(self.ext_deg)]
-        yy_weil = vector([linear_combination(w, zs) for w in self.ww_parts])
-        yy_weil_affine = vector(list(yy_weil[1:-1]) + [1])
-        equations = [yy_weil_affine * s * yy_weil_affine for s in SS]
-        assert len(equations) == m - 1
-        equations_weil = [
-            w_eq for eq in equations for w_eq in weil_decomposition(eq)]
-        equations_final = [delete_powers(w_eq) for w_eq in equations_weil]
+            # Perform the Weil descent
+            z = self.F.gens()[0]
+            zs = [z ^ i for i in range(self.ext_deg)]
+            yy_weil = vector([linear_combination(w, zs)
+                              for w in self.ww_parts])
+            yy_weil_affine = vector(list(yy_weil[1:-1]) + [1])
+            equations = [yy_weil_affine * s * yy_weil_affine for s in SS]
+            assert len(equations) == m - 1
+            equations_weil = [
+                w_eq for eq in equations for w_eq in weil_decomposition(eq)]
+            equations_final = [delete_powers(w_eq) for w_eq in equations_weil]
 
-        # Get Weil coefficients from the equations
-        weil_vars = [var for part in self.ww_parts for var in part][4:-4]
-        weil_coeff_list = []
-        for eq in equations_final:
-            monoms = eq.monomials()
-            weil_coeffs = []
-            check = eq.constant_coefficient()
-            for i in range(len(weil_vars)):
-                wi = weil_vars[i]
-                for j in range(i, len(weil_vars)):
-                    wj = weil_vars[j]
-                    # Quadratic terms become linear in characteristic 2
-                    if wi == wj:
-                        weil_coeffs.append(int(wi in monoms))
-                        check += eq.coefficient(wi) * wi
-                    else:
-                        weil_coeffs.append(int(wi * wj in monoms))
-                        check += eq.coefficient(wi * wj) * wi * wj
-            assert check == delete_powers(eq)
-            weil_coeffs.append(eq.constant_coefficient())
+            # Get Weil coefficients from the equations
+            weil_vars = [var for part in self.ww_parts for var in part][4:-4]
+            for eq in equations_final:
+                monoms = eq.monomials()
+                weil_coeffs = []
+                check = eq.constant_coefficient()
+                for i in range(len(weil_vars)):
+                    wi = weil_vars[i]
+                    for j in range(i, len(weil_vars)):
+                        wj = weil_vars[j]
+                        # Quadratic terms become linear in characteristic 2
+                        if wi == wj:
+                            weil_coeffs.append(int(wi in monoms))
+                            check += eq.coefficient(wi) * wi
+                        else:
+                            weil_coeffs.append(int(wi * wj in monoms))
+                            check += eq.coefficient(wi * wj) * wi * wj
+                assert check == delete_powers(eq)
+                weil_coeffs.append(eq.constant_coefficient())
         return SS, equations_final, weil_coeff_list
 
 
