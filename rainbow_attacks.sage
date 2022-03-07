@@ -239,7 +239,7 @@ class Rainbow():
             D_x_ker[0] = x
 
         if D_x_ker.rank() != n - m:
-            return differential_attack(self)
+            return self.differential_attack()
 
         attempts += 1
 
