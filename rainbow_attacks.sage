@@ -369,12 +369,28 @@ def elt_to_str(q, a):
     return str(a)
 
 
+def four_bits_to_str(bit_list):
+    return str(hex(int(''.join(map(str, bit_list)).encode(), 2)))[2:]
+
+
 def UD_to_string(q, M):
     S = ""
     for i in range(M.ncols()):
         for j in range(i + 1):
             S += elt_to_str(q, M[j, i]) + ' '
     S += ';\n'
+    return S
+
+
+def weil_coeff_list_to_string(weil_coeff_list):
+    S = ""
+    for weil_coeffs in weil_coeff_list:
+        weil_coeffs += ((-len(weil_coeffs)) % 4) * [0]
+        assert len(weil_coeffs) % 4 == 0
+        for i in range(len(weil_coeffs) / 4):
+            bit_list = weil_coeffs[4 * i:4 * i + 4]
+            S += four_bits_to_str(bit_list) + ' '
+        S += ';\n'
     return S
 
 
@@ -493,8 +509,8 @@ def delete_powers(eq):
     return sum([radical(mon) for mon in eq.monomials()])
 
 
-def save_system(xl_format, file_path, rainbow, equations=[], guessed_vars=[], reduce_dimension=False, SS=[], verbose=False):
-    if xl_format:
+def save_system(file_format, file_path, rainbow, equations=[], guessed_vars=[], reduce_dimension=False, SS=[], weil_coeff_list=[], verbose=False):
+    if file_format == 'xl':
         '''The format for the block Wiedemann XL solver of Niederhagen: http://polycephaly.org/projects/xl'''
         with open(file_path, 'w') as file:
             for s in SS:
@@ -502,7 +518,10 @@ def save_system(xl_format, file_path, rainbow, equations=[], guessed_vars=[], re
         if verbose:
             print("Number of equations:", len(SS))
             print("Number of monomials:", len(count_monomials(SS)))
-    else:
+    elif file_format == 'mq_compact':
+        with open(file_path, 'w') as file:
+            file.write(weil_coeff_list_to_string(weil_coeff_list))
+    elif file_format == 'mq':
         var_set = set()
         for eq in equations:
             if eq == 0:
@@ -532,6 +551,7 @@ def save_system(xl_format, file_path, rainbow, equations=[], guessed_vars=[], re
             print("Number of equations:", len(equations))
             print("Number of monomials:", len(
                 count_monomials(equations)))
+    assert file_format in ['xl', 'mq', 'mq_compact']
     print("Equation system written to: " + str(file_path))
 
 
@@ -638,8 +658,10 @@ def main(q, n, m, o2, xl_path, mq_path, solve_xl, solve_mq, solve_only, inner_hy
     system_folder_path = 'systems'
     base_system_name = "rainbow_{}_seed_{}_q_{}_o2_{}_m_{}_n_{}_M_{}_N_{}".format(
         attack_type, seed, q, o2, m, n, M, N)
-    mq_system_path = Path(system_folder_path, base_system_name + '.mq')
     xl_system_path = Path(system_folder_path, base_system_name + '.xl')
+    mq_system_path = Path(system_folder_path, base_system_name + '.mq')
+    mq_compact_system_path = Path(
+        system_folder_path, base_system_name + '.mqc')
     setup_path = Path(system_folder_path, base_system_name + '.stp')
 
     if not solve_only:
@@ -650,10 +672,12 @@ def main(q, n, m, o2, xl_path, mq_path, solve_xl, solve_mq, solve_only, inner_hy
         SS, equations, weil_coeff_list, guessed_vars = mount_attack(
             rainbow, attack_type, M, N, reduce_dimension=False, verbose=False)
         if attack_type == 'differential':
-            save_system(xl_format=True, file_path=xl_system_path,
+            save_system(file_format='xl', file_path=xl_system_path,
                         rainbow=rainbow, SS=SS, verbose=verbose)
-        save_system(xl_format=False, file_path=mq_system_path, rainbow=rainbow, equations=equations,
+        save_system(file_format='mq', file_path=mq_system_path, rainbow=rainbow, equations=equations,
                     guessed_vars=guessed_vars, reduce_dimension=reduce_dimension, verbose=verbose)
+        save_system(file_format='mq_compact', file_path=mq_compact_system_path, rainbow=rainbow, equations=equations,
+                    weil_coeff_list=weil_coeff_list, guessed_vars=guessed_vars, reduce_dimension=reduce_dimension, verbose=verbose)
     else:
         print("Skipping the rainbow and equation generation...")
 
