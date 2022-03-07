@@ -219,7 +219,7 @@ class Rainbow():
 
         return equations, guessed_vars
 
-    def differential_attack(self):
+    def differential_attack(self, debug=False):
         '''Adapted from https://github.com/WardBeullens/BreakingRainbow'''
         q, m, n, o2 = self.q, self.m, self.n, self.o2
         global attempts
@@ -325,7 +325,8 @@ class Rainbow():
             for eq in equations_final:
                 monoms = eq.monomials()
                 weil_coeffs = []
-                check = eq.constant_coefficient()
+                if debug:
+                    check = eq.constant_coefficient()
                 for i in range(len(weil_vars)):
                     wi = weil_vars[i]
                     for j in range(i, len(weil_vars)):
@@ -333,11 +334,14 @@ class Rainbow():
                         # Quadratic terms become linear in characteristic 2
                         if wi == wj:
                             weil_coeffs.append(int(wi in monoms))
-                            check += eq.coefficient(wi) * wi
+                            if debug:
+                                check += eq.coefficient(wi) * wi
                         else:
                             weil_coeffs.append(int(wi * wj in monoms))
-                            check += eq.coefficient(wi * wj) * wi * wj
-                assert check == delete_powers(eq)
+                            if debug:
+                                check += eq.coefficient(wi * wj) * wi * wj
+                if debug:
+                    assert check == delete_powers(eq)
                 weil_coeffs.append(eq.constant_coefficient())
                 weil_coeff_list.append(weil_coeffs)
         return SS, equations_final, weil_coeff_list
@@ -622,7 +626,8 @@ def mount_attack(rainbow, attack_type, M, N, reduce_dimension=False, verbose=Fal
     weil_coeff_list = []
     if attack_type == 'differential':
         print("Mounting the differential attack...")
-        SS, equations, weil_coeff_list = rainbow.differential_attack()
+        SS, equations, weil_coeff_list = rainbow.differential_attack(
+            debug=False)
         assert M == len(SS)
         assert N == SS[0].ncols() - 1
     elif attack_type == 'minrank':
