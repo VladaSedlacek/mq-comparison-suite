@@ -665,7 +665,7 @@ def main(q, n, m, o2, xl_path, mq_path, solve_xl, solve_mq, solve_only, inner_hy
     setup_path = Path(system_folder_path, base_system_name + '.stp')
 
     if not solve_only:
-        print("Generating Rainbow instance for seed={}, q={}, m={}, n={}, o2={}".format(
+        print("Generating Rainbow instance for seed={}, q={}, m={}, n={}, o2={}...".format(
             seed, q, m, n, o2))
         rainbow = Rainbow(q, m, n, o2, support=False)
         save_setup(rainbow, setup_path, seed)
