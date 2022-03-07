@@ -339,6 +339,7 @@ class Rainbow():
                             check += eq.coefficient(wi * wj) * wi * wj
                 assert check == delete_powers(eq)
                 weil_coeffs.append(eq.constant_coefficient())
+                weil_coeff_list.append(weil_coeffs)
         return SS, equations_final, weil_coeff_list
 
 
@@ -601,7 +602,7 @@ def mount_attack(rainbow, attack_type, M, N, reduce_dimension=False, verbose=Fal
     weil_coeff_list = []
     if attack_type == 'differential':
         print("Mounting the differential attack...")
-        SS, equations, weil_coeffs = rainbow.differential_attack()
+        SS, equations, weil_coeff_list = rainbow.differential_attack()
         assert M == len(SS)
         assert N == SS[0].ncols() - 1
     elif attack_type == 'minrank':
