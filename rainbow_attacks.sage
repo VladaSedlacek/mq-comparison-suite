@@ -515,9 +515,6 @@ def save_system(file_format, file_path, rainbow, equations=[], guessed_vars=[], 
         with open(file_path, 'w') as file:
             for s in SS:
                 file.write(UD_to_string(rainbow.q, s))
-        if verbose:
-            print("Number of equations:", len(SS))
-            print("Number of monomials:", len(count_monomials(SS)))
     elif file_format == 'mq_compact':
         with open(file_path, 'w') as file:
             file.write(weil_coeff_list_to_string(weil_coeff_list))
