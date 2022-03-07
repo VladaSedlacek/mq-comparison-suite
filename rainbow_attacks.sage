@@ -510,6 +510,9 @@ def delete_powers(eq):
 
 
 def save_system(file_format, file_path, rainbow, equations=[], guessed_vars=[], reduce_dimension=False, SS=[], weil_coeff_list=[], verbose=False):
+    if file_path.is_file():
+        print("The file {} already exists!".format(str(file_path)))
+        return
     if file_format == 'xl':
         '''The format for the block Wiedemann XL solver of Niederhagen: http://polycephaly.org/projects/xl'''
         with open(file_path, 'w') as file:
