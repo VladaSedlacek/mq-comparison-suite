@@ -314,10 +314,31 @@ class Rainbow():
         yy_weil_affine = vector(list(yy_weil[1:-1]) + [1])
         equations = [yy_weil_affine * s * yy_weil_affine for s in SS]
         assert len(equations) == m - 1
-        equations_weil = [weil_decomposition(eq) for eq in equations]
-        equations_final = [delete_powers(w_eq)
-                           for eqs in equations_weil for w_eq in eqs]
-        return SS, equations_final
+        equations_weil = [
+            w_eq for eq in equations for w_eq in weil_decomposition(eq)]
+        equations_final = [delete_powers(w_eq) for w_eq in equations_weil]
+
+        # Get Weil coefficients from the equations
+        weil_vars = [var for part in self.ww_parts for var in part][4:-4]
+        weil_coeff_list = []
+        for eq in equations_final:
+            monoms = eq.monomials()
+            weil_coeffs = []
+            check = eq.constant_coefficient()
+            for i in range(len(weil_vars)):
+                wi = weil_vars[i]
+                for j in range(i, len(weil_vars)):
+                    wj = weil_vars[j]
+                    # Quadratic terms become linear in characteristic 2
+                    if wi == wj:
+                        weil_coeffs.append(int(wi in monoms))
+                        check += eq.coefficient(wi) * wi
+                    else:
+                        weil_coeffs.append(int(wi * wj in monoms))
+                        check += eq.coefficient(wi * wj) * wi * wj
+            assert check == delete_powers(eq)
+            weil_coeffs.append(eq.constant_coefficient())
+        return SS, equations_final, weil_coeff_list
 
 
 # evaluate Multivariate map and Differential
@@ -576,9 +597,10 @@ def compute_system_size(q, m, n, o2, attack_type):
 def mount_attack(rainbow, attack_type, M, N, reduce_dimension=False, verbose=False):
     SS = []
     guessed_vars = []
+    weil_coeff_list = []
     if attack_type == 'differential':
         print("Mounting the differential attack...")
-        SS, equations = rainbow.differential_attack()
+        SS, equations, weil_coeffs = rainbow.differential_attack()
         assert M == len(SS)
         assert N == SS[0].ncols() - 1
     elif attack_type == 'minrank':
@@ -599,7 +621,7 @@ def mount_attack(rainbow, attack_type, M, N, reduce_dimension=False, verbose=Fal
     #     assert weil_descent or is_prime(q)
     #     equations = [delete_powers(eq) for eq in equations]
 
-    return SS, equations, guessed_vars
+    return SS, equations, weil_coeff_list, guessed_vars
 
 
 @ click.command()
@@ -634,7 +656,7 @@ def main(q, n, m, o2, xl_path, mq_path, solve_xl, solve_mq, solve_only, inner_hy
             seed, q, m, n, o2))
         rainbow = Rainbow(q, m, n, o2, support=False)
         save_setup(rainbow, setup_path, seed)
-        SS, equations, guessed_vars = mount_attack(
+        SS, equations, weil_coeff_list, guessed_vars = mount_attack(
             rainbow, attack_type, M, N, reduce_dimension=False, verbose=False)
         if attack_type == 'differential':
             save_system(xl_format=True, file_path=xl_system_path,
