@@ -610,17 +610,6 @@ def mount_attack(rainbow, attack_type, M, N, reduce_dimension=False, verbose=Fal
     elif attack_type == 'intersection':
         print("Mounting the intersection attack...")
         equations, _, _ = rainbow.intersection_attack()
-
-    # Unused for now
-    # if weil_descent:
-    #     if verbose:
-    #         print("\nPerforming Weil descent...")
-    #     equations = [eq_desc for equations_desc in [weil_decomposition(
-    #         eq) for eq in equations] for eq_desc in equations_desc]
-    # if boolean:
-    #     assert weil_descent or is_prime(q)
-    #     equations = [delete_powers(eq) for eq in equations]
-
     return SS, equations, weil_coeff_list, guessed_vars
 
 
