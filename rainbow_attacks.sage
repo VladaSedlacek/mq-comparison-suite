@@ -661,6 +661,7 @@ def main(q, n, m, o2, xl_path, mq_path, solve_xl, solve_mq, solve_only, inner_hy
     set_random_seed(seed)
     M, N = compute_system_size(q, m, n, o2, attack_type)
     system_folder_path = 'systems'
+    log_path = Path(system_folder_path, "log.txt")
     base_system_name = "rainbow_{}_seed_{}_q_{}_o2_{}_m_{}_n_{}_M_{}_N_{}".format(
         attack_type, seed, q, o2, m, n, M, N)
     xl_system_path = Path(system_folder_path, base_system_name + '.xl')
@@ -690,11 +691,11 @@ def main(q, n, m, o2, xl_path, mq_path, solve_xl, solve_mq, solve_only, inner_hy
         assert attack_type == 'differential'
         print("\nCompiling the XL solver...")
         make_command = "make -C {} Q={} M={} N={}".format(
-            str(xl_path), str(q), str(M), str(N))
+            str(xl_path), str(q), str(M), str(N)) + " > " + str(log_path)
         os.system(make_command)
         print("\nStarting the XL solver...")
         xl_solve_command = "{} --challenge {} --all".format(
-            str(Path(xl_path, "xl")), str(xl_system_path))
+            str(Path(xl_path, "xl")), str(xl_system_path)) + " | tee -a " + str(log_path)
         os.system(xl_solve_command)
 
     if solve_mq:
@@ -705,7 +706,7 @@ def main(q, n, m, o2, xl_path, mq_path, solve_xl, solve_mq, solve_only, inner_hy
             inner_hybridation_arg = " --inner-hybridation " + \
                 str(inner_hybridation)
         mq_solve_command = "{}{} < {}".format(
-            str(Path(mq_path, "monica_vector")), inner_hybridation_arg, str(mq_system_path))
+            str(Path(mq_path, "monica_vector")), inner_hybridation_arg, str(mq_system_path)) + " | tee " + str(log_path)
         os.system(mq_solve_command)
 
     if not (solve_xl or solve_mq):
