@@ -688,19 +688,17 @@ def main(q, n, m, o2, xl_path, mq_path, solve_xl, solve_mq, solve_only, inner_hy
 
     if solve_xl:
         assert attack_type == 'differential'
-        print("\nCompiling the XL solver")
+        print("\nCompiling the XL solver...")
         make_command = "make -C {} Q={} M={} N={}".format(
             str(xl_path), str(q), str(M), str(N))
         os.system(make_command)
-        print("\nStarting the XL solver")
-        print("xl path:", xl_path)
+        print("\nStarting the XL solver...")
         xl_solve_command = "{} --challenge {} --all".format(
             str(Path(xl_path, "xl")), str(xl_system_path))
         os.system(xl_solve_command)
 
     if solve_mq:
         print("\nStarting the MQ solver")
-        print("mq path:", mq_path)
         if inner_hybridation == -1:
             inner_hybridation_arg = ""
         else:
