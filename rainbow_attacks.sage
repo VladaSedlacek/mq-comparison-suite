@@ -616,7 +616,7 @@ def compute_system_size(q, m, n, o2, attack_type):
         return n * binomial(m, o2 + 1) + m, n - o2 + 1 + binomial(m, o2)
     if attack_type == 'intersection':
         k = find_max_k(o2, n)
-        return binom(k + 1, 2) * m - k * (k - 1), n + m
+        return binomial(k + 1, 2) * m - k * (k - 1), n + m
     return None, None
 
 
