@@ -640,6 +640,24 @@ def mount_attack(rainbow, attack_type, M, N, reduce_dimension=False, verbose=Fal
     return SS, equations, weil_coeff_list, guessed_vars
 
 
+def get_solution_from_log(log_path, format='xl', rainbow=None):
+    with open(log_path, 'r') as file:
+        for line in file.readlines():
+            if format == 'xl':
+                if "  is sol" in line:
+                    sol = line.split("  is sol")[0].split(" ")
+                    return ['{:x}'.format(int(c, 16)) for c in sol]
+            if format == 'mq':
+                z = rainbow.F.gens()[0]
+                zs = [z ^ i for i in range(rainbow.ext_deg)]
+                if "solution found : " in line:
+                    sol = [int(b) for b in line.split(
+                        "solution found : ")[1][1:-2].split(", ")]
+                    parts = [sol[4 * i:4 * i + 4] for i in range(len(sol) / 4)]
+                    return vector([linear_combination(bits, zs) for bits in parts])
+    return None
+
+
 @ click.command()
 @ click.option('--q', default=16, help='the field order', type=int)
 @ click.option('--n', default=48, help='the number of variables', type=int)
@@ -697,6 +715,8 @@ def main(q, n, m, o2, xl_path, mq_path, solve_xl, solve_mq, solve_only, inner_hy
         xl_solve_command = "{} --challenge {} --all".format(
             str(Path(xl_path, "xl")), str(xl_system_path)) + " | tee -a " + str(log_path)
         os.system(xl_solve_command)
+        print("\nSolution found: {}".format(
+            get_solution_from_log(log_path, format='xl')))
 
     if solve_mq:
         print("\nStarting the MQ solver")
@@ -708,6 +728,8 @@ def main(q, n, m, o2, xl_path, mq_path, solve_xl, solve_mq, solve_only, inner_hy
         mq_solve_command = "{}{} < {}".format(
             str(Path(mq_path, "monica_vector")), inner_hybridation_arg, str(mq_system_path)) + " | tee " + str(log_path)
         os.system(mq_solve_command)
+        print("\nSolution found: {}".format(
+            get_solution_from_log(log_path, format='mq', rainbow=rainbow)))
 
     if not (solve_xl or solve_mq):
         print("Please specify a solver.")
