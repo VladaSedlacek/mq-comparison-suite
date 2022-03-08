@@ -637,9 +637,13 @@ def mount_attack(rainbow, attack_type, M, N, reduce_dimension=False, verbose=Fal
         print("Mounting the rectangular MinRank attack...")
         equations, guessed_vars = rainbow.rectangular_minrank_attack(
             reduce_dimension=reduce_dimension, verbose=verbose)
+        if rainbow.q % 2 == 0:
+            equations = [delete_powers(eq) for eq in equations]
     elif attack_type == 'intersection':
         print("Mounting the intersection attack...")
         equations, _, _ = rainbow.intersection_attack()
+        if rainbow.q % 2 == 0:
+            equations = [delete_powers(eq) for eq in equations]
     return SS, equations, weil_coeff_list, guessed_vars
 
 
@@ -650,7 +654,7 @@ def get_solution_from_log(log_path, format='xl', rainbow=None):
                 if "  is sol" in line:
                     sol = line.split("  is sol")[0].split(" ")
                     return ['{:x}'.format(int(c, 16)) for c in sol]
-            if format == 'mq':
+            if format == 'mq_weil':
                 z = rainbow.F.gens()[0]
                 deg = rainbow.ext_deg
                 zs = [z ^ i for i in range(deg)]
@@ -692,11 +696,12 @@ def main(q, n, m, o2, xl_path, mq_path, solve_xl, solve_mq, solve_only, inner_hy
     mq_compact_system_path = Path(
         system_folder_path, base_system_name + '.mqc')
     setup_path = Path(system_folder_path, base_system_name + '.stp')
+    support = True if attack_type == 'minrank' else False
 
     if not solve_only:
         print("Generating Rainbow instance for seed={}, q={}, m={}, n={}, o2={}...".format(
             seed, q, m, n, o2))
-        rainbow = Rainbow(q, m, n, o2, support=False)
+        rainbow = Rainbow(q, m, n, o2, support=support)
         save_setup(rainbow, setup_path, seed)
         SS, equations, weil_coeff_list, guessed_vars = mount_attack(
             rainbow, attack_type, M, N, reduce_dimension=False, verbose=False)
@@ -733,8 +738,11 @@ def main(q, n, m, o2, xl_path, mq_path, solve_xl, solve_mq, solve_only, inner_hy
         mq_solve_command = "{}{} < {}".format(
             str(Path(mq_path, "monica_vector")), inner_hybridation_arg, str(mq_system_path)) + " | tee " + str(log_path)
         os.system(mq_solve_command)
-        print("\nSolution found: {}".format(
-            get_solution_from_log(log_path, format='mq', rainbow=rainbow)))
+        if attack_type != 'differential':
+            print("Solution parsing and interpretation not implemented yet")
+        else:
+            print("\nSolution found: {}".format(
+                get_solution_from_log(log_path, format='mq_weil', rainbow=rainbow)))
 
     if not (solve_xl or solve_mq):
         print("Please specify a solver.")
