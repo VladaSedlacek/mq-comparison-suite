@@ -32,7 +32,8 @@ class Rainbow():
             F, ['w%s_%s' % (p1, p2) for p1, p2 in product(range(1, n - m + 1), range(self.ext_deg))], order="lex")
         self.weil_ring.inject_variables(verbose=False)
         self.ww = vector(self.weil_ring.gens())
-        self.ww_parts = [self.ww[i:i + 4] for i in range(0, 4 * (n - m), 4)]
+        self.ww_parts = [self.ww[i:i + self.ext_deg]
+                         for i in range(0, self.ext_deg * (n - m), self.ext_deg)]
         self.xx = vector(self.R.gens()[: n])
         self.vv = vector(self.R.gens()[n:])
         if support:
@@ -321,7 +322,8 @@ class Rainbow():
             equations_final = [delete_powers(w_eq) for w_eq in equations_weil]
 
             # Get Weil coefficients from the equations
-            weil_vars = [var for part in self.ww_parts for var in part][4:-4]
+            weil_vars = [
+                var for part in self.ww_parts for var in part][self.ext_deg:-self.ext_deg]
             for eq in equations_final:
                 monoms = eq.monomials()
                 weil_coeffs = []
@@ -386,13 +388,13 @@ def UD_to_string(q, M):
     return S
 
 
-def weil_coeff_list_to_string(weil_coeff_list):
+def weil_coeff_list_to_string(weil_coeff_list, deg):
     S = ""
     for weil_coeffs in weil_coeff_list:
-        weil_coeffs += ((-len(weil_coeffs)) % 4) * [0]
-        assert len(weil_coeffs) % 4 == 0
-        for i in range(len(weil_coeffs) / 4):
-            bit_list = weil_coeffs[4 * i:4 * i + 4]
+        weil_coeffs += ((-len(weil_coeffs)) % deg) * [0]
+        assert len(weil_coeffs) % deg == 0
+        for i in range(len(weil_coeffs) / deg):
+            bit_list = weil_coeffs[deg * i:deg * i + deg]
             S += four_bits_to_str(bit_list) + ' '
         S += ';\n'
     return S
@@ -524,7 +526,8 @@ def save_system(file_format, file_path, rainbow, equations=[], guessed_vars=[], 
                 file.write(UD_to_string(rainbow.q, s))
     elif file_format == 'mq_compact':
         with open(file_path, 'w') as file:
-            file.write(weil_coeff_list_to_string(weil_coeff_list))
+            file.write(weil_coeff_list_to_string(
+                weil_coeff_list, rainbow.ext_deg))
     elif file_format == 'mq':
         var_set = set()
         for eq in equations:
@@ -649,11 +652,13 @@ def get_solution_from_log(log_path, format='xl', rainbow=None):
                     return ['{:x}'.format(int(c, 16)) for c in sol]
             if format == 'mq':
                 z = rainbow.F.gens()[0]
-                zs = [z ^ i for i in range(rainbow.ext_deg)]
+                deg = rainbow.ext_deg
+                zs = [z ^ i for i in range(deg)]
                 if "solution found : " in line:
                     sol = [int(b) for b in line.split(
                         "solution found : ")[1][1:-2].split(", ")]
-                    parts = [sol[4 * i:4 * i + 4] for i in range(len(sol) / 4)]
+                    parts = [sol[deg * i:deg * i + deg]
+                             for i in range(len(sol) / deg)]
                     return vector([linear_combination(bits, zs) for bits in parts])
     return None
 
