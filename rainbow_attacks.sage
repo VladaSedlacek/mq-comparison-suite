@@ -669,9 +669,10 @@ def mount_attack(rainbow, attack_type, M, N, reduce_dimension=False, verbose=Fal
 
 def get_solution_from_log(log_path, format='xl', rainbow=None):
     with open(log_path, 'r') as file:
-        z = rainbow.F.gens()[0]
-        deg = rainbow.ext_deg
-        zs = [z ^ i for i in range(deg)]
+        if rainbow != None:
+            z = rainbow.F.gens()[0]
+            deg = rainbow.ext_deg
+            zs = [z ^ i for i in range(deg)]
         for line in file.readlines():
             line = line.strip()
             if format == 'xl':
