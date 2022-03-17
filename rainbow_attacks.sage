@@ -2,6 +2,7 @@ from itertools import product
 from pathlib import Path
 import click
 import os
+import re
 
 
 def get_polar_form(Q):
@@ -684,6 +685,15 @@ def get_solution_from_log(log_path, format='xl', rainbow=None):
                     parts = [sol[deg * i:deg * i + deg]
                              for i in range(len(sol) / deg)]
                     return vector([linear_combination(bits, zs) for bits in parts])
+            if format == 'wdsat':
+                if line == "":
+                    continue
+                if re.match('^[0-1]*$', line):
+                    sol = [ZZ(b) for b in list(line)]
+                    print(sol)
+                    parts = [sol[deg * i:deg * i + deg]
+                             for i in range(len(sol) / deg)]
+                    return vector([linear_combination(bits, zs) for bits in parts])
     return None
 
 
@@ -803,6 +813,11 @@ def main(q, n, m, o2, xl_path, mq_path, wdsat_path, solve_xl, solve_mq, solve_wd
             str(Path(wdsat_path, "wdsat_solver")), str(wdsat_system_path) +
             " | tee -a " + str(log_path))
         os.system(wdsat_solve_command)
+        if attack_type != 'differential':
+            print("Solution parsing and interpretation not implemented yet")
+        else:
+            print("\nFirst solution found: {}".format(
+                get_solution_from_log(log_path, format='wdsat', rainbow=rainbow)))
 
     if not (solve_xl or solve_mq or solve_wdsat):
         print("Please specify a solver.")
