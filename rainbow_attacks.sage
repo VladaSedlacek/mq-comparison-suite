@@ -668,15 +668,16 @@ def mount_attack(rainbow, attack_type, M, N, reduce_dimension=False, verbose=Fal
 
 def get_solution_from_log(log_path, format='xl', rainbow=None):
     with open(log_path, 'r') as file:
+        z = rainbow.F.gens()[0]
+        deg = rainbow.ext_deg
+        zs = [z ^ i for i in range(deg)]
         for line in file.readlines():
+            line = line.strip()
             if format == 'xl':
                 if "  is sol" in line:
                     sol = line.split("  is sol")[0].split(" ")
                     return ['{:x}'.format(int(c, 16)) for c in sol]
             if format == 'mq_weil':
-                z = rainbow.F.gens()[0]
-                deg = rainbow.ext_deg
-                zs = [z ^ i for i in range(deg)]
                 if "solution found : " in line:
                     sol = [int(b) for b in line.split(
                         "solution found : ")[1][1:-2].split(", ")]
