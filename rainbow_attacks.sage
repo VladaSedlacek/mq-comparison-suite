@@ -519,15 +519,18 @@ def save_system(file_format, file_path, rainbow, equations=[], guessed_vars=[], 
     if file_path.is_file():
         print("The file {} already exists!".format(str(file_path)))
         return
+
     if file_format == 'xl':
         '''The format for the block Wiedemann XL solver of Niederhagen: http://polycephaly.org/projects/xl'''
         with open(file_path, 'w') as file:
             for s in SS:
                 file.write(UD_to_string(rainbow.q, s))
+
     elif file_format == 'mq_compact':
         with open(file_path, 'w') as file:
             file.write(weil_coeff_list_to_string(
                 weil_coeff_list, rainbow.ext_deg))
+
     elif file_format == 'mq':
         var_set = set().union(*[eq.variables() for eq in equations if eq != 0])
         var_list = [str(var) for var in sorted(var_set)[:: -1]]
@@ -553,7 +556,31 @@ def save_system(file_format, file_path, rainbow, equations=[], guessed_vars=[], 
             print("Number of equations:", len(equations))
             print("Number of monomials:", len(
                 count_monomials(equations)))
-    assert file_format in ['xl', 'mq', 'mq_compact']
+
+    elif file_format == 'wdsat':
+        var_set = set().union(*[eq.variables() for eq in equations if eq != 0])
+        var_list = sorted(var_set)[:: -1]
+        var_prod_dict = {v1 * v2: sorted([i1 + 1, i2 + 1]) for (i1, v1) in enumerate(
+            var_list) for (i2, v2) in enumerate(var_list) if v1 != v2}
+        M = len(equations)
+        N = len(var_set)
+        equations = [delete_powers(eq) for eq in equations]
+        with open(file_path, 'w') as file:
+            file.write("p anf {} {}\n".format(N, M))
+            for eq in equations:
+                anf_line = "x "
+                for mon in eq.monomials():
+                    if mon in var_list:
+                        anf_line += "{} ".format(var_list.index(mon) + 1)
+                    elif mon in var_prod_dict.keys():
+                        anf_line += ".2 {} {} ".format(
+                            var_prod_dict[mon][0], var_prod_dict[mon][1])
+                    else:
+                        assert mon == 1
+                        anf_line += "T "
+                anf_line += "0\n"
+                file.write(anf_line)
+    assert file_format in ['xl', 'mq', 'mq_compact', 'wdsat']
     print("Equation system written to: " + str(file_path))
 
 
@@ -671,6 +698,7 @@ def get_solution_from_log(log_path, format='xl', rainbow=None):
 @ click.option('--xl_path', default=Path("..", "xl"), help='the path the XL solver: http://polycephaly.org/projects/xl', type=str)
 @ click.option('--solve_xl', default=False, is_flag=True, help='try to solve the system using XL')
 @ click.option('--solve_mq', default=False, is_flag=True, help='try to solve the system using MQ')
+@ click.option('--solve_wdsat', default=False, is_flag=True, help='try to solve the system using WDSat')
 @ click.option('--solve_only', default=False, is_flag=True, help='skip equation generation and only use a solver')
 @ click.option('-h', '--inner_hybridation', default="-1", help='the number of variable that are not guessed', type=int)
 @ click.option('-v', '--verbose', default=False, is_flag=True, help='control the output verbosity')
@@ -678,7 +706,7 @@ def get_solution_from_log(log_path, format='xl', rainbow=None):
 @ click.option('-w', '--weil_descent', default=False, is_flag=True, help='use Weil descent when possible')
 @ click.option('-t', '--attack_type', default='differential', type=click.Choice(['differential', 'minrank', 'intersection'], case_sensitive=False), help='use either the rectangular MinRank attack or the intersection attack')
 @ click.option('-s', '--seed', default=0, help='the seed for randomness replication', type=int)
-def main(q, n, m, o2, xl_path, mq_path, solve_xl, solve_mq, solve_only, inner_hybridation, verbose, reduce_dimension, weil_descent, attack_type, seed):
+def main(q, n, m, o2, xl_path, mq_path, solve_xl, solve_mq, solve_wdsat, solve_only, inner_hybridation, verbose, reduce_dimension, weil_descent, attack_type, seed):
     boolean = q % 2 == 0
     set_random_seed(seed)
     M, N = compute_system_size(q, m, n, o2, attack_type)
@@ -707,6 +735,8 @@ def main(q, n, m, o2, xl_path, mq_path, solve_xl, solve_mq, solve_only, inner_hy
         save_system(file_format='mq', file_path=mq_system_path, rainbow=rainbow, equations=equations,
                     guessed_vars=guessed_vars, reduce_dimension=reduce_dimension, verbose=verbose)
         save_system(file_format='mq_compact', file_path=mq_compact_system_path, rainbow=rainbow, equations=equations,
+                    weil_coeff_list=weil_coeff_list, guessed_vars=guessed_vars, reduce_dimension=reduce_dimension, verbose=verbose)
+        save_system(file_format='wdsat', file_path=wdsat_system_path, rainbow=rainbow, equations=equations,
                     weil_coeff_list=weil_coeff_list, guessed_vars=guessed_vars, reduce_dimension=reduce_dimension, verbose=verbose)
     else:
         print("Skipping the attack equations generation...")
