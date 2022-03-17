@@ -564,7 +564,6 @@ def save_system(file_format, file_path, rainbow, equations=[], guessed_vars=[], 
             var_list) for (i2, v2) in enumerate(var_list) if v1 != v2}
         M = len(equations)
         N = len(var_set)
-        equations = [delete_powers(eq) for eq in equations]
         with open(file_path, 'w') as file:
             file.write("p anf {} {}\n".format(N, M))
             for eq in equations:
@@ -659,13 +658,11 @@ def mount_attack(rainbow, attack_type, M, N, reduce_dimension=False, verbose=Fal
         print("Mounting the rectangular MinRank attack...")
         equations, guessed_vars = rainbow.rectangular_minrank_attack(
             reduce_dimension=reduce_dimension, verbose=verbose)
-        if rainbow.q % 2 == 0:
-            equations = [delete_powers(eq) for eq in equations]
     elif attack_type == 'intersection':
         print("Mounting the intersection attack...")
         equations, _, _ = rainbow.intersection_attack()
-        if rainbow.q % 2 == 0:
-            equations = [delete_powers(eq) for eq in equations]
+    if rainbow.q % 2 == 0:
+        equations = [delete_powers(eq) for eq in equations]
     return SS, equations, weil_coeff_list, guessed_vars
 
 
