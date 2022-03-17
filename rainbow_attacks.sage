@@ -529,12 +529,7 @@ def save_system(file_format, file_path, rainbow, equations=[], guessed_vars=[], 
             file.write(weil_coeff_list_to_string(
                 weil_coeff_list, rainbow.ext_deg))
     elif file_format == 'mq':
-        var_set = set()
-        for eq in equations:
-            if eq == 0:
-                continue
-            for var in eq.variables():
-                var_set.add(var)
+        var_set = set().union(*[eq.variables() for eq in equations if eq != 0])
         var_list = [str(var) for var in sorted(var_set)[:: -1]]
         variables = ', '.join(var_list)
         max_var_index = rainbow.n
