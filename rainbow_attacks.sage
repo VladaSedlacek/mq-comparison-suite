@@ -686,6 +686,29 @@ def get_solution_from_log(log_path, format='xl', rainbow=None):
     return None
 
 
+def create_wdsat_config(wdsat_path, M, N):
+    with open(Path(wdsat_path, "src", "config.h"), 'w') as file:
+        file.write("""
+//enable the XG-ext module (must use anf as input)
+#define __XG_ENHANCED__
+
+//find all solutions instead of only one
+#define __FIND_ALL_SOLUTIONS__
+
+/** Rainbow : N={0} M={1} **/
+#ifdef __XG_ENHANCED__
+#define __MAX_ANF_ID__ {2} // make it +1
+#define __MAX_DEGREE__ 3 // make it +1
+#endif
+#define __MAX_ID__ {3}
+#define __MAX_BUFFER_SIZE__ 100000
+#define __MAX_EQ__ 0
+#define __MAX_EQ_SIZE__ 4 //make it +1
+#define __MAX_XEQ__ {1}
+#define __MAX_XEQ_SIZE__ {2}"
+                """.format(N, M, N + 1, binomial(N, 2)))
+
+
 @ click.command()
 @ click.option('--q', default=16, help='the field order', type=int)
 @ click.option('--n', default=48, help='the number of variables', type=int)
@@ -693,6 +716,7 @@ def get_solution_from_log(log_path, format='xl', rainbow=None):
 @ click.option('--o2', default=16, help='the oil subspace dimension', type=int)
 @ click.option('--mq_path', default=Path("..", "mq"), help='the path the MQ solver: https://gitlab.lip6.fr/almasty/mq', type=str)
 @ click.option('--xl_path', default=Path("..", "xl"), help='the path the XL solver: http://polycephaly.org/projects/xl', type=str)
+@ click.option('--wdsat_path', default=Path("..", "WDSat"), help='the path the WDSat solver: https://github.com/mtrimoska/WDSat', type=str)
 @ click.option('--solve_xl', default=False, is_flag=True, help='try to solve the system using XL')
 @ click.option('--solve_mq', default=False, is_flag=True, help='try to solve the system using MQ')
 @ click.option('--solve_wdsat', default=False, is_flag=True, help='try to solve the system using WDSat')
@@ -703,7 +727,7 @@ def get_solution_from_log(log_path, format='xl', rainbow=None):
 @ click.option('-w', '--weil_descent', default=False, is_flag=True, help='use Weil descent when possible')
 @ click.option('-t', '--attack_type', default='differential', type=click.Choice(['differential', 'minrank', 'intersection'], case_sensitive=False), help='use either the rectangular MinRank attack or the intersection attack')
 @ click.option('-s', '--seed', default=0, help='the seed for randomness replication', type=int)
-def main(q, n, m, o2, xl_path, mq_path, solve_xl, solve_mq, solve_wdsat, solve_only, inner_hybridation, verbose, reduce_dimension, weil_descent, attack_type, seed):
+def main(q, n, m, o2, xl_path, mq_path, wdsat_path, solve_xl, solve_mq, solve_wdsat, solve_only, inner_hybridation, verbose, reduce_dimension, weil_descent, attack_type, seed):
     boolean = q % 2 == 0
     set_random_seed(seed)
     M, N = compute_system_size(q, m, n, o2, attack_type)
@@ -767,7 +791,19 @@ def main(q, n, m, o2, xl_path, mq_path, solve_xl, solve_mq, solve_wdsat, solve_o
             print("\nSolution found: {}".format(
                 get_solution_from_log(log_path, format='mq_weil', rainbow=rainbow)))
 
-    if not (solve_xl or solve_mq):
+    if solve_wdsat:
+        print("\nCompiling the WDSat solver...")
+        create_wdsat_config(wdsat_path, 4 * M, 4 * N)
+        make_command = "make -C {} -w -n".format(
+            str(Path(wdsat_path, "src"))) + " > " + str(log_path)
+        os.system(make_command)
+        print("\nStarting the WDSat solver...")
+        wdsat_solve_command = "{} -x -i {}".format(
+            str(Path(wdsat_path, "wdsat_solver")), str(wdsat_system_path) +
+            " | tee -a " + str(log_path))
+        os.system(wdsat_solve_command)
+
+    if not (solve_xl or solve_mq or solve_wdsat):
         print("Please specify a solver.")
 
 
