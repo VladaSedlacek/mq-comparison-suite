@@ -669,11 +669,11 @@ def mount_attack(rainbow, attack_type, M, N, reduce_dimension=False, verbose=Fal
 
 def get_solution_from_log(log_path, format='xl', rainbow=None):
     with open(log_path, 'r') as file:
-        z = rainbow.F.gens()[0]
-        deg = rainbow.ext_deg
-        zs = [z ^ i for i in range(deg)]
+        if rainbow != None:
+            z = rainbow.F.gens()[0]
+            deg = rainbow.ext_deg
+            zs = [z ^ i for i in range(deg)]
         for line in file.readlines():
-            line = line.strip()
             if format == 'xl':
                 if "  is sol" in line:
                     sol = line.split("  is sol")[0].split(" ")
@@ -686,6 +686,7 @@ def get_solution_from_log(log_path, format='xl', rainbow=None):
                              for i in range(len(sol) / deg)]
                     return vector([linear_combination(bits, zs) for bits in parts])
             if format == 'wdsat':
+                line = line.strip()
                 if line == "":
                     continue
                 if re.match('^[0-1]*$', line):
