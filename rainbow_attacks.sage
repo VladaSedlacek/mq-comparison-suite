@@ -765,7 +765,7 @@ def main(q, n, m, o2, xl_path, mq_path, wdsat_path, solve_xl, solve_mq, solve_wd
     if solve_xl:
         assert attack_type == 'differential'
         print("\nCompiling the XL solver...")
-        make_command = "make -C {} Q={} M={} N={}".format(
+        make_command = "make -C {} Q={} M={} N={} -Wno-unused-result -Wno-class-memaccess".format(
             str(xl_path), str(q), str(M), str(N)) + " > " + str(log_path)
         os.system(make_command)
         print("\nStarting the XL solver...")
