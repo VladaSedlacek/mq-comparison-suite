@@ -688,15 +688,16 @@ def main(q, n, m, o2, xl_path, mq_path, solve_xl, solve_mq, solve_only, inner_hy
         attack_type, seed, q, o2, m, n, M, N)
     xl_system_path = Path(system_folder_path, base_system_name + '.xl')
     mq_system_path = Path(system_folder_path, base_system_name + '.mq')
+    wdsat_system_path = Path(system_folder_path, base_system_name + '.anf')
     mq_compact_system_path = Path(
         system_folder_path, base_system_name + '.mqc')
     setup_path = Path(system_folder_path, base_system_name + '.stp')
     support = True if attack_type == 'minrank' else False
 
+    print("Generating Rainbow instance for seed={}, q={}, m={}, n={}, o2={}...".format(
+        seed, q, m, n, o2))
+    rainbow = Rainbow(q, m, n, o2, support=support)
     if not solve_only:
-        print("Generating Rainbow instance for seed={}, q={}, m={}, n={}, o2={}...".format(
-            seed, q, m, n, o2))
-        rainbow = Rainbow(q, m, n, o2, support=support)
         save_setup(rainbow, setup_path, seed)
         SS, equations, weil_coeff_list, guessed_vars = mount_attack(
             rainbow, attack_type, M, N, reduce_dimension=False, verbose=False)
@@ -708,7 +709,7 @@ def main(q, n, m, o2, xl_path, mq_path, solve_xl, solve_mq, solve_only, inner_hy
         save_system(file_format='mq_compact', file_path=mq_compact_system_path, rainbow=rainbow, equations=equations,
                     weil_coeff_list=weil_coeff_list, guessed_vars=guessed_vars, reduce_dimension=reduce_dimension, verbose=verbose)
     else:
-        print("Skipping the rainbow and equation generation...")
+        print("Skipping the attack equations generation...")
 
     if solve_xl:
         assert attack_type == 'differential'
