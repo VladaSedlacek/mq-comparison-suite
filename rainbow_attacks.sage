@@ -568,6 +568,7 @@ def save_system(file_format, file_path, rainbow, equations=[], guessed_vars=[], 
         with open(file_path, 'w') as file:
             file.write("p anf {} {}\n".format(N, M))
             for eq in equations:
+                const_present = False
                 anf_line = "x "
                 for mon in eq.monomials():
                     if mon in var_list:
@@ -577,7 +578,10 @@ def save_system(file_format, file_path, rainbow, equations=[], guessed_vars=[], 
                             var_prod_dict[mon][0], var_prod_dict[mon][1])
                     else:
                         assert mon == 1
-                        anf_line += "T "
+                        const_present = True
+                if not const_present:
+                    # the right hand side of the equation must correspond to 1
+                    anf_line += "T "
                 anf_line += "0\n"
                 file.write(anf_line)
     assert file_format in ['xl', 'mq', 'mq_compact', 'wdsat']
