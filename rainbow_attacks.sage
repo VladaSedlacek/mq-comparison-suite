@@ -701,23 +701,23 @@ def create_wdsat_config(wdsat_path, M, N):
     with open(Path(wdsat_path, "src", "config.h"), 'w') as file:
         file.write("""
 //enable the XG-ext module (must use anf as input)
-#define __XG_ENHANCED__
+# define __XG_ENHANCED__
 
 //find all solutions instead of only one
-#define __FIND_ALL_SOLUTIONS__
+# define __FIND_ALL_SOLUTIONS__
 
 /** Rainbow : N={0} M={1} **/
-#ifdef __XG_ENHANCED__
-#define __MAX_ANF_ID__ {2} // make it +1
-#define __MAX_DEGREE__ 3 // make it +1
-#endif
-#define __MAX_ID__ {3}
-#define __MAX_BUFFER_SIZE__ 100000
-#define __MAX_EQ__ 0
-#define __MAX_EQ_SIZE__ 4 //make it +1
-#define __MAX_XEQ__ {1}
-#define __MAX_XEQ_SIZE__ {2}"
-                """.format(N, M, N + 1, binomial(N, 2)))
+# ifdef __XG_ENHANCED__
+# define __MAX_ANF_ID__ {2} // make it +1
+# define __MAX_DEGREE__ 3 // make it +1
+# endif
+# define __MAX_ID__ {3}
+# define __MAX_BUFFER_SIZE__ 100000
+# define __MAX_EQ__ {5}
+# define __MAX_EQ_SIZE__ 4 //make it +1
+# define __MAX_XEQ__ {1}
+# define __MAX_XEQ_SIZE__ {4}
+                """.format(N, M, N + 1, binomial(N, 2), binomial(N + 1, 2), 3 * M))
 
 
 @ click.command()
