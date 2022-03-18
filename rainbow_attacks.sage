@@ -691,7 +691,6 @@ def get_solution_from_log(log_path, format='xl', rainbow=None):
                     continue
                 if re.match('^[0-1]*$', line):
                     sol = [ZZ(b) for b in list(line)]
-                    print(sol)
                     parts = [sol[deg * i:deg * i + deg]
                              for i in range(len(sol) / deg)]
                     return vector([linear_combination(bits, zs) for bits in parts])
