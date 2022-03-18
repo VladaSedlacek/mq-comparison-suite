@@ -792,11 +792,8 @@ def main(q, n, m, o2, xl_path, mq_path, wdsat_path, solve_xl, solve_mq, solve_wd
 
     if solve_mq:
         print("\nStarting the MQ solver")
-        if inner_hybridation == -1:
-            inner_hybridation_arg = ""
-        else:
-            inner_hybridation_arg = " --inner-hybridation " + \
-                str(inner_hybridation)
+        inner_hybridation_arg = " --inner-hybridation " + \
+            str(inner_hybridation) if inner_hybridation != -1 else ""
         mq_solve_command = "{}{} < {}".format(
             str(Path(mq_path, "monica_vector")), inner_hybridation_arg, str(mq_system_path)) + " | tee " + str(log_path)
         os.system(mq_solve_command)
@@ -808,12 +805,14 @@ def main(q, n, m, o2, xl_path, mq_path, wdsat_path, solve_xl, solve_mq, solve_wd
 
     if solve_wdsat:
         print("\nCompiling the WDSat solver...")
-        create_wdsat_config(wdsat_path, 4 * M, 4 * N)
-        make_command = "make -C {} -w -n".format(
-            str(Path(wdsat_path, "src"))) + " > " + str(log_path)
+        create_wdsat_config(wdsat_path, rainbow.ext_deg *
+                            M, rainbow.ext_deg * N)
+        suppressor_flag = "" if not solve_only else "-n"
+        make_command = "make -C {0} {1} > {2}".format(
+            str(Path(wdsat_path, "src")), suppressor_flag, str(log_path))
         os.system(make_command)
         print("\nStarting the WDSat solver...")
-        wdsat_solve_command = "{} -x -i {}".format(
+        wdsat_solve_command = "{} -i {}".format(
             str(Path(wdsat_path, "wdsat_solver")), str(wdsat_system_path) +
             " | tee -a " + str(log_path))
         os.system(wdsat_solve_command)
