@@ -716,12 +716,11 @@ def create_wdsat_config(wdsat_path, M, N):
 # define __MAX_DEGREE__ 3 // make it +1
 # endif
 # define __MAX_ID__ {3}
-# define __MAX_BUFFER_SIZE__ 100000
+# define __MAX_BUFFER_SIZE__ 200000
 # define __MAX_EQ__ {5}
 # define __MAX_EQ_SIZE__ 4 //make it +1
 # define __MAX_XEQ__ {1}
-# define __MAX_XEQ_SIZE__ {4}
-                """.format(N, M, N + 1, binomial(N, 2), binomial(N + 1, 2), 3 * M))
+# define __MAX_XEQ_SIZE__ {4}""".format(N, M, N + 1, binomial(N, 2), N * (N + 1), binomial(M, 2)))
 
 
 @ click.command()
