@@ -589,6 +589,9 @@ def save_system(file_format, file_path, rainbow, equations=[], guessed_vars=[], 
 
 
 def save_setup(rainbow, setup_path, seed):
+    if setup_path.is_file():
+        print("The file {} already exists!".format(str(setup_path)))
+        return
     with open(setup_path, 'w') as file:
         file.write("# seed:" + str(seed) + "\n")
         file.write("# O1:" + str(rainbow.O1) + "\n\n")
