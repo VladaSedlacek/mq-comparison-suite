@@ -584,7 +584,46 @@ def save_system(file_format, file_path, rainbow, equations=[], guessed_vars=[], 
                     anf_line += "T "
                 anf_line += "0\n"
                 file.write(anf_line)
-    assert file_format in ['xl', 'mq', 'mq_compact', 'wdsat']
+
+    elif file_format == 'cnf':
+        var_set = set().union(*[eq.variables() for eq in equations if eq != 0])
+        var_list = sorted(var_set)[:: -1]
+        var_prod_list = []
+        M = len(equations)
+        N = len(var_set)
+        with open(file_path, 'w') as file:
+            file.write("p cnf {} {}\n".format(
+                N + binomial(N, 2) + 1, M + binomial(N, 2) + 1))
+            # introduce the constant variable
+            file.write("-{} 0\n".format(N + binomial(N, 2) + 1))
+            # convert ANDs to ORs by introducing new variables
+            prod_index = 0
+            for i, _ in enumerate(var_list):
+                for j in range(i + 1, len(var_list)):
+                    prod_index += 1
+                    var_prod_list.append(var_list[i] * var_list[j])
+                    file.write(
+                        "-{} -{} {} 0\n".format(i + 1, j + 1, N + prod_index))
+            for eq in equations:
+                print(eq)
+                const_present = False
+                cnf_line = "x "
+                for mon in eq.monomials():
+                    if mon in var_list:
+                        cnf_line += "{} ".format(var_list.index(mon) + 1)
+                    elif mon in var_prod_list:
+                        cnf_line += "{} ".format(
+                            var_prod_list.index(mon) + 1)
+                    else:
+                        assert mon == 1
+                        const_present = True
+                if not const_present:
+                    # the right hand side of the equation must correspond to True
+                    cnf_line += "{} ".format(str(N + binomial(N, 2) + 1))
+                cnf_line += "0\n"
+                file.write(cnf_line)
+
+    assert file_format in ['xl', 'mq', 'mq_compact', 'wdsat', 'cnf']
     print("Equation system written to: " + str(file_path))
 
 
@@ -755,6 +794,7 @@ def main(q, n, m, o2, xl_path, mq_path, wdsat_path, solve_xl, solve_mq, solve_wd
     xl_system_path = Path(system_folder_path, base_system_name + '.xl')
     mq_system_path = Path(system_folder_path, base_system_name + '.mq')
     wdsat_system_path = Path(system_folder_path, base_system_name + '.anf')
+    cnf_system_path = Path(system_folder_path, base_system_name + '.cnf')
     mq_compact_system_path = Path(
         system_folder_path, base_system_name + '.mqc')
     setup_path = Path(system_folder_path, base_system_name + '.stp')
@@ -775,6 +815,8 @@ def main(q, n, m, o2, xl_path, mq_path, wdsat_path, solve_xl, solve_mq, solve_wd
         save_system(file_format='mq_compact', file_path=mq_compact_system_path, rainbow=rainbow, equations=equations,
                     weil_coeff_list=weil_coeff_list, guessed_vars=guessed_vars, reduce_dimension=reduce_dimension, verbose=verbose)
         save_system(file_format='wdsat', file_path=wdsat_system_path, rainbow=rainbow, equations=equations,
+                    weil_coeff_list=weil_coeff_list, guessed_vars=guessed_vars, reduce_dimension=reduce_dimension, verbose=verbose)
+        save_system(file_format='cnf', file_path=cnf_system_path, rainbow=rainbow, equations=equations,
                     weil_coeff_list=weil_coeff_list, guessed_vars=guessed_vars, reduce_dimension=reduce_dimension, verbose=verbose)
     else:
         print("Skipping the attack equations generation...")
