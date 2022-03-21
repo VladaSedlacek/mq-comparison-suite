@@ -580,7 +580,7 @@ def save_system(file_format, file_path, rainbow, equations=[], guessed_vars=[], 
                         assert mon == 1
                         const_present = True
                 if not const_present:
-                    # the right hand side of the equation must correspond to 1
+                    # the right hand side of the equation must correspond to True
                     anf_line += "T "
                 anf_line += "0\n"
                 file.write(anf_line)
