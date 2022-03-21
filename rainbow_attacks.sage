@@ -561,8 +561,8 @@ def save_system(file_format, file_path, rainbow, equations=[], guessed_vars=[], 
     elif file_format == 'wdsat':
         var_set = set().union(*[eq.variables() for eq in equations if eq != 0])
         var_list = sorted(var_set)[:: -1]
-        var_prod_dict = {v1 * v2: sorted([i1 + 1, i2 + 1]) for (i1, v1) in enumerate(
-            var_list) for (i2, v2) in enumerate(var_list) if v1 != v2}
+        var_prod_dict = {v1 * v2: sorted([i + 1, j + 1]) for i, v1 in enumerate(
+            var_list) for j, v2 in enumerate(var_list) if v1 != v2}
         M = len(equations)
         N = len(var_set)
         with open(file_path, 'w') as file:
