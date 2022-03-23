@@ -521,6 +521,8 @@ def save_system(file_format, file_path, rainbow, equations=[], guessed_vars=[], 
         print("The file {} already exists!".format(str(file_path)))
         return
 
+    equations = [eq for eq in equations if eq != 0]
+
     if file_format == 'xl':
         '''The format for the block Wiedemann XL solver of Niederhagen: http://polycephaly.org/projects/xl'''
         with open(file_path, 'w') as file:
@@ -533,7 +535,7 @@ def save_system(file_format, file_path, rainbow, equations=[], guessed_vars=[], 
                 weil_coeff_list, rainbow.ext_deg))
 
     elif file_format == 'mq':
-        var_set = set().union(*[eq.variables() for eq in equations if eq != 0])
+        var_set = set().union(*[eq.variables() for eq in equations])
         var_list = [str(var) for var in sorted(var_set)[:: -1]]
         variables = ', '.join(var_list)
         max_var_index = rainbow.n
