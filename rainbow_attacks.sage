@@ -605,7 +605,6 @@ def save_system(file_format, file_path, rainbow, equations=[], guessed_vars=[], 
                     file.write(
                         "-{} -{} {} 0\n".format(i + 1, j + 1, N + prod_index))
             for eq in equations:
-                print(eq)
                 const_present = False
                 cnf_line = "x "
                 for mon in eq.monomials():
