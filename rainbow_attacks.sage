@@ -597,7 +597,7 @@ def save_system(file_format, file_path, rainbow, equations=[], guessed_vars=[], 
             file.write("p cnf {} {}\n".format(
                 N + binomial(N, 2) + 1, M + binomial(N, 2) + 1))
             # introduce the constant variable
-            file.write("-{} 0\n".format(N + binomial(N, 2) + 1))
+            file.write("{} 0\n".format(N + binomial(N, 2) + 1))
             # convert ANDs to ORs by introducing new variables
             prod_index = 0
             for i, _ in enumerate(var_list):
