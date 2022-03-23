@@ -714,12 +714,13 @@ def mount_attack(rainbow, attack_type, M, N, reduce_dimension=False, verbose=Fal
     return SS, equations, weil_coeff_list, guessed_vars
 
 
-def get_solution_from_log(log_path, format='xl', rainbow=None):
+def get_solution_from_log(log_path, format, N, rainbow=None):
     with open(log_path, 'r') as file:
         if rainbow != None:
             z = rainbow.F.gens()[0]
             deg = rainbow.ext_deg
             zs = [z ^ i for i in range(deg)]
+        variables = []
         for line in file.readlines():
             if format == 'xl':
                 if "  is sol" in line:
@@ -738,6 +739,16 @@ def get_solution_from_log(log_path, format='xl', rainbow=None):
                     continue
                 if re.match('^[0-1]*$', line):
                     sol = [ZZ(b) for b in list(line)]
+                    parts = [sol[deg * i:deg * i + deg]
+                             for i in range(len(sol) / deg)]
+                    return vector([linear_combination(bits, zs) for bits in parts])
+            if format == 'cms':
+                Nw = N * deg
+                if line[0] == 'v':
+                    variables += line.strip().split(" ")[1:]
+                    if len(variables) < Nw:
+                        continue
+                    sol = [int((sgn(int(b)) + 1) / 2) for b in variables[:Nw]]
                     parts = [sol[deg * i:deg * i + deg]
                              for i in range(len(sol) / deg)]
                     return vector([linear_combination(bits, zs) for bits in parts])
@@ -774,9 +785,11 @@ def create_wdsat_config(wdsat_path, M, N):
 @ click.option('--mq_path', default=Path("..", "mq"), help='the path the MQ solver: https://gitlab.lip6.fr/almasty/mq', type=str)
 @ click.option('--xl_path', default=Path("..", "xl"), help='the path the XL solver: http://polycephaly.org/projects/xl', type=str)
 @ click.option('--wdsat_path', default=Path("..", "WDSat"), help='the path the WDSat solver: https://github.com/mtrimoska/WDSat', type=str)
+@ click.option('--cms_path', default=Path("..", "cryptominisat", "build"), help='the path the WDSat solver: https://github.com/mtrimoska/WDSat', type=str)
 @ click.option('--solve_xl', default=False, is_flag=True, help='try to solve the system using XL')
 @ click.option('--solve_mq', default=False, is_flag=True, help='try to solve the system using MQ')
 @ click.option('--solve_wdsat', default=False, is_flag=True, help='try to solve the system using WDSat')
+@ click.option('--solve_cms', default=False, is_flag=True, help='try to solve the system using CryptoMiniSat')
 @ click.option('--solve_only', default=False, is_flag=True, help='skip equation generation and only use a solver')
 @ click.option('-h', '--inner_hybridation', default="-1", help='the number of variable that are not guessed', type=int)
 @ click.option('-v', '--verbose', default=False, is_flag=True, help='control the output verbosity')
@@ -784,7 +797,7 @@ def create_wdsat_config(wdsat_path, M, N):
 @ click.option('-w', '--weil_descent', default=False, is_flag=True, help='use Weil descent when possible')
 @ click.option('-t', '--attack_type', default='differential', type=click.Choice(['differential', 'minrank', 'intersection'], case_sensitive=False), help='use either the rectangular MinRank attack or the intersection attack')
 @ click.option('-s', '--seed', default=0, help='the seed for randomness replication', type=int)
-def main(q, n, m, o2, xl_path, mq_path, wdsat_path, solve_xl, solve_mq, solve_wdsat, solve_only, inner_hybridation, verbose, reduce_dimension, weil_descent, attack_type, seed):
+def main(q, n, m, o2, xl_path, mq_path, wdsat_path, cms_path, solve_xl, solve_mq, solve_wdsat, solve_cms, solve_only, inner_hybridation, verbose, reduce_dimension, weil_descent, attack_type, seed):
     boolean = q % 2 == 0
     set_random_seed(seed)
     M, N = compute_system_size(q, m, n, o2, attack_type)
@@ -833,7 +846,7 @@ def main(q, n, m, o2, xl_path, mq_path, wdsat_path, solve_xl, solve_mq, solve_wd
             str(Path(xl_path, "xl")), str(xl_system_path)) + " | tee -a " + str(log_path)
         os.system(xl_solve_command)
         print("\nSolution found: {}".format(
-            get_solution_from_log(log_path, format='xl')))
+            get_solution_from_log(log_path, format='xl', N=N)))
 
     if solve_mq:
         print("\nStarting the MQ solver")
@@ -846,7 +859,7 @@ def main(q, n, m, o2, xl_path, mq_path, wdsat_path, solve_xl, solve_mq, solve_wd
             print("Solution parsing and interpretation not implemented yet")
         else:
             print("\nSolution found: {}".format(
-                get_solution_from_log(log_path, format='mq_weil', rainbow=rainbow)))
+                get_solution_from_log(log_path, format='mq_weil', N=N, rainbow=rainbow)))
 
     if solve_wdsat:
         print("\nCompiling the WDSat solver...")
@@ -865,9 +878,22 @@ def main(q, n, m, o2, xl_path, mq_path, wdsat_path, solve_xl, solve_mq, solve_wd
             print("Solution parsing and interpretation not implemented yet")
         else:
             print("\nFirst solution found: {}".format(
-                get_solution_from_log(log_path, format='wdsat', rainbow=rainbow)))
+                get_solution_from_log(log_path, format='wdsat', N=N, rainbow=rainbow)))
 
-    if not (solve_xl or solve_mq or solve_wdsat):
+    if solve_cms:
+        os.system(" > {}".format(str(log_path)))
+        print("\nStarting the CryptoMiniSat solver...")
+        cms_solve_command = "{} --verb 0 {}".format(
+            str(Path(cms_path, "cryptominisat5")), str(cnf_system_path) +
+            " | tee -a " + str(log_path))
+        os.system(cms_solve_command)
+        if attack_type != 'differential':
+            print("Solution parsing and interpretation not implemented yet")
+        else:
+            print("\nFirst solution found: {}".format(
+                get_solution_from_log(log_path, format='cms', N=N, rainbow=rainbow)))
+
+    if not (solve_xl or solve_mq or solve_wdsat or solve_cms):
         print("Please specify a solver.")
 
 
