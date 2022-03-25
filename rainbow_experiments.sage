@@ -152,8 +152,8 @@ NumberOfMonomials = ps_monomials(M, N).coefficients()[:L]
 Expected_Coranks = ps_reg(M, N).coefficients()[:L]
 Expected_Ranks = [n - c for n, c in zip(NumberOfMonomials, Expected_Coranks)]
 NumberOfRows = [M * binomial(N + D - 3, N - 1) for D in range(L)]
-data = [NumberOfMonomials, Expected_Ranks, NumberOfRows]
-df = pd.DataFrame(data, columns=range(L))
+data = [NumberOfMonomials[2:], Expected_Ranks[2:], NumberOfRows[2:]]
+df = pd.DataFrame(data, columns=range(2, L))
 df.index = ["Number of cols/mons:", "Expected ranks:", "Number of rows:"]
 print(df.to_string())
 
