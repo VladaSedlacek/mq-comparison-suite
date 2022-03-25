@@ -1,6 +1,7 @@
 '''Adapted from https://github.com/WardBeullens/BreakingRainbow'''
 
 import itertools
+import pandas as pd
 
 load('rainbow.sage')
 
@@ -101,12 +102,8 @@ tP = Attack(PK, O2)
 
 N = tP[0].ncols()
 M = len(tP)
-
-
-print("M = %d, N = %d" % (M, N))
 PR = PolynomialRing(K, N, 'x')
 PR.inject_variables(verbose=False)
-
 x_vec = vector(PR, [PR.gens()])
 tP = [x_vec * M * x_vec for M in tP]
 
@@ -147,7 +144,7 @@ def multiplications(D, N):
     return 3 * binomial(N - 1 + D, D) ^ 2 * binomial(N + 1, 2)
 
 
-def complexity(D, N, M, q=16):
+def complexity(D, N, M, q):
     # the first guess is free
     guesses = find_number_of_guesses(D, N, M) - 1
     without_guesses = multiplications(D, N).nbits()
@@ -165,14 +162,16 @@ def find_number_of_guesses(D, N, M):
     return number_of_guesses
 
 
+print("M = {}, N = {}\nMacaulay matrices at degree D:".format(M, N))
 L = 10
 NumberOfMonomials = ps_monomials(M, N).coefficients()[:L]
 Expected_Coranks = ps_reg(M, N).coefficients()[:L]
 Expected_Ranks = [n - c for n, c in zip(NumberOfMonomials, Expected_Coranks)]
 NumberOfRows = [M * binomial(N + D - 3, N - 1) for D in range(L)]
-print("Number of cols/mons:", NumberOfMonomials)
-print("Expected ranks:     ", Expected_Ranks)
-print("Number of rows:     ", NumberOfRows)
+data = [NumberOfMonomials, Expected_Ranks, NumberOfRows]
+df = pd.DataFrame(data, columns=range(L))
+df.index = ["Number of cols/mons:", "Expected ranks:", "Number of rows:"]
+print(df.to_string())
 
 for D in range(2, min(5, N)):
     eqns = []
