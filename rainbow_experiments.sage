@@ -168,7 +168,7 @@ def complexity(D, N, M, q):
     guesses = find_number_of_guesses(D, N, M)
     without_guesses = multiplications(D, N).nbits()
     with_guesses = multiplications(
-        D, N - guesses).nbits() + guesses * log(q, 2)
+        D, N - guesses).nbits() + ceil(guesses * log(q, 2))
     return (without_guesses, with_guesses)
 
 
