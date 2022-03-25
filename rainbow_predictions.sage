@@ -24,7 +24,7 @@ def main(q, n, m, o2):
     def delete_powers(eq):
         return sum([radical(mon) for mon in eq.monomials()])
 
-    print("M = {}, N = {}\nMacaulay matrices at degree D:".format(M, N))
+    print("-" * 50)
     # find the first non-positive coefficient in the Hilbert series
     L = 2
     while True:
@@ -40,7 +40,9 @@ def main(q, n, m, o2):
     data = [NumberOfMonomials[2:], Expected_Ranks[2:], NumberOfRows[2:]]
     df = pd.DataFrame(data, columns=range(2, L))
     df.index = ["Number of cols/mons:", "Expected ranks:", "Number of rows:"]
-    print(df.to_string())
+    print("q = {}, M = {}, N = {}".format(q, M, N))
+    # print("Macaulay matrices at degree D:")
+    # print(df.to_string())
 
     def multiplications(D, N):
         return 3 * binomial(N - 1 + D, D) ^ 2 * binomial(N + 1, 2)
