@@ -163,7 +163,13 @@ def find_number_of_guesses(D, N, M):
 
 
 print("M = {}, N = {}\nMacaulay matrices at degree D:".format(M, N))
-L = 10
+# find the first non-positive coefficient in the Hilbert series
+L = 2
+while True:
+    L += 1
+    if ps_reg(M, N).coefficients()[L - 1] <= 0:
+        break
+
 NumberOfMonomials = ps_monomials(M, N).coefficients()[:L]
 Expected_Coranks = ps_reg(M, N).coefficients()[:L]
 Expected_Ranks = [n - c for n, c in zip(NumberOfMonomials, Expected_Coranks)]
@@ -173,7 +179,7 @@ df = pd.DataFrame(data, columns=range(L))
 df.index = ["Number of cols/mons:", "Expected ranks:", "Number of rows:"]
 print(df.to_string())
 
-for D in range(2, min(5, N)):
+for D in range(2, L):
     eqns = []
     for p in tP:
         for Mon in Monomials(PR.gens(), D - 2):
