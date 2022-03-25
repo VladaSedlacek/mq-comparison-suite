@@ -88,7 +88,11 @@ def main(q, n, m, o2):
 
 # NIST SL1
 q, n, m, o2 = 16, 96, 64, 32
-# q, n, m, o2 = 2, 96, 64, 32
 
-if __name__ == '__main__':
-    main(q, n, m, o2)
+for s in range(5, 65, 5):
+    main(2, 3 * s, 2 * s, s)
+    main(16, 3 * s, 2 * s, s)
+    main(256, 3 * s, 2 * s, s)
+
+# if __name__ == '__main__':
+#     main(q, n, m, o2)
