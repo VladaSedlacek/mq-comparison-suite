@@ -168,7 +168,7 @@ def complexity(D, N, M, q):
     guesses = find_number_of_guesses(D, N, M)
     without_guesses = multiplications(D, N).nbits()
     with_guesses = multiplications(
-        D, N - guesses).nbits(), guesses  # * log(q, 2)
+        D, N - guesses).nbits() + guesses * log(q, 2)
     return (without_guesses, with_guesses)
 
 
@@ -180,6 +180,13 @@ def find_number_of_guesses(D, N, M):
         number_of_guesses += 1
     return number_of_guesses
 
+
+print("\nCost of linearization at degree D (in bits):")
+complexities = [complexity(D, N, M, q) for D in range(2, L)]
+data = list(zip(*complexities))
+df = pd.DataFrame(data, columns=range(2, L))
+df.index = ["Without guessing:   ", "With guessing:"]
+print(df.to_string())
 
 for D in range(2, L):
     eqns = []
