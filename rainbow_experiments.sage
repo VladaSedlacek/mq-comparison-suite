@@ -57,7 +57,7 @@ def Attack(PK, O2=None):
     attempts += 1
 
     Sol = None
-    if not O2 is None:
+    if O2 is not None:
         V = K**n
         I = V.span(D_x_ker).intersection(V.span(O2.transpose()))
         if I.dimension() == 0:
@@ -84,15 +84,16 @@ def Attack(PK, O2=None):
     SS = [D_x_ker * M * D_x_ker.transpose() for M in PK]
     for s in SS:
         Make_UD(s)
-    assert Eval(SS, Sol) == vector([0] * m)
+    if not O2 is None:
+        assert Eval(SS, Sol) == vector([0] * m)
 
     if q % 2 == 0:
         Px = Eval(PK, x)
         SSS = [(SS[i] * Px[0] + SS[0] * Px[i])[1:, 1:]
                for i in range(1, len(SS))]
-        assert Eval(SSS, Sol[1:]) == vector([0] * (m - 1))
         SS = SSS
-
+        if not O2 is None:
+            assert Eval(SSS, Sol[1:]) == vector([0] * (m - 1))
     return SS
 
 
