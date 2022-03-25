@@ -145,18 +145,19 @@ def multiplications(D, N):
 
 
 def complexity(D, N, M, q):
-    # the first guess is free
-    guesses = find_number_of_guesses(D, N, M) - 1
+    # we assume that the system is homogenous, so the first guess is free,
+    # but we do not account for this in either variant
+    guesses = find_number_of_guesses(D, N, M)
     without_guesses = multiplications(D, N).nbits()
     with_guesses = multiplications(
-        D, N + 1 - guesses).nbits(), guesses  # * log(q, 2)
+        D, N - guesses).nbits(), guesses  # * log(q, 2)
     return (without_guesses, with_guesses)
 
 
 def find_number_of_guesses(D, N, M):
     assert D >= 2
     exp_rank = ps_ranks(M, N).coefficients()[D - 2]
-    number_of_guesses = 1
+    number_of_guesses = 0
     while exp_rank < binomial(N - number_of_guesses + D, D):
         number_of_guesses += 1
     return number_of_guesses
