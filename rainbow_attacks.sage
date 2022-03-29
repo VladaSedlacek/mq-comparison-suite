@@ -12,8 +12,9 @@ def get_polar_form(Q):
 class Rainbow():
     """A class for the Rainbow scheme."""
 
-    def __init__(self, q, m, n, o2, debug=True, support=False):
+    def __init__(self, q, m, n, o2, seed=0, debug=True, support=False):
         assert o2 < m and m < n
+        self.seed = seed
         self.debug = debug
         self.q = q
         F = GF(q)
@@ -628,12 +629,12 @@ def save_system(file_format, file_path, rainbow, equations=[], guessed_vars=[], 
     print("Equation system written to: " + str(file_path))
 
 
-def save_setup(rainbow, setup_path, seed):
+def save_setup(rainbow, setup_path):
     if setup_path.is_file():
         print("The file {} already exists!".format(str(setup_path)))
         return
     with open(setup_path, 'w') as file:
-        file.write("# seed:" + str(seed) + "\n")
+        file.write("# seed:" + str(rainbow.seed) + "\n")
         file.write("# O1:" + str(rainbow.O1) + "\n\n")
         file.write("# O2:" + str(rainbow.O2) + "\n\n")
         file.write("# W:" + str(rainbow.W) + "\n\n")
@@ -816,9 +817,9 @@ def main(q, n, m, o2, xl_path, mq_path, wdsat_path, cms_path, solve_xl, solve_mq
 
     print("Generating Rainbow instance for seed={}, q={}, m={}, n={}, o2={}...".format(
         seed, q, m, n, o2))
-    rainbow = Rainbow(q, m, n, o2, support=support)
+    rainbow = Rainbow(q, m, n, o2, support=support, seed=seed)
     if not solve_only:
-        save_setup(rainbow, setup_path, seed)
+        save_setup(rainbow, setup_path)
         SS, equations, weil_coeff_list, guessed_vars = mount_attack(
             rainbow, attack_type, M, N, reduce_dimension=False, verbose=False)
         if attack_type == 'differential':
