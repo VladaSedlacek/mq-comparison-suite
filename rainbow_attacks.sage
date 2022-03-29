@@ -31,7 +31,7 @@ class Rainbow():
             1, n + 1)] + ['v%s' % p for p in range(1, m + 1)], order="lex")
         self.R.inject_variables(verbose=False)
         self.weil_ring = PolynomialRing(
-            F, ['w%s_%s' % (p1, p2) for p1, p2 in product(range(1, n - m + 1), range(self.ext_deg))], order="lex")
+            F, ['w%s_%s' % (p1, p2) for p1, p2 in product(range(1, n - m + 1), range(self.ext_deg))], order='degrevlex')
         self.weil_ring.inject_variables(verbose=False)
         self.ww = vector(self.weil_ring.gens())
         self.ww_parts = [self.ww[i:i + self.ext_deg]
@@ -326,27 +326,21 @@ class Rainbow():
             # Get Weil coefficients from the equations
             weil_vars = [
                 var for part in self.ww_parts for var in part][self.ext_deg:-self.ext_deg]
+            # get all monomials that are at most quadratic, in grevdeglex order
+            weil_vars.append(1)
+            l = len(weil_vars)
+            rows = [i * [0] + (l - i) * [1] for i in range(l)]
+            upper_matrix = Matrix(self.F, rows)
+            max_quadratic = vector(weil_vars) * \
+                upper_matrix * vector(weil_vars)
             for eq in equations_final:
-                monoms = eq.monomials()
                 weil_coeffs = []
-                if debug:
-                    check = eq.constant_coefficient()
-                for i in range(len(weil_vars)):
-                    wi = weil_vars[i]
-                    for j in range(i, len(weil_vars)):
-                        wj = weil_vars[j]
-                        # Quadratic terms become linear in characteristic 2
-                        if wi == wj:
-                            weil_coeffs.append(int(wi in monoms))
-                            if debug:
-                                check += eq.coefficient(wi) * wi
-                        else:
-                            weil_coeffs.append(int(wi * wj in monoms))
-                            if debug:
-                                check += eq.coefficient(wi * wj) * wi * wj
-                if debug:
-                    assert check == delete_powers(eq)
-                weil_coeffs.append(eq.constant_coefficient())
+                for mon in max_quadratic.monomials():
+                    weil_coeffs.append(eq.monomial_coefficient(mon))
+                assert linear_combination(
+                    max_quadratic.monomials(), weil_coeffs) == eq
+                print(eq)
+                print(weil_coeffs)
                 weil_coeff_list.append(weil_coeffs)
         return SS, equations_final, weil_coeff_list
 
@@ -382,6 +376,7 @@ def four_bits_to_str(bit_list):
 
 
 def UD_to_string(q, M):
+    # this corresponds the the degrevlex order
     S = ""
     for i in range(M.ncols()):
         for j in range(i + 1):
