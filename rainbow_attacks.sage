@@ -322,7 +322,8 @@ class Rainbow():
             assert len(equations) == m - 1
             equations_weil = [
                 w_eq for eq in equations for w_eq in weil_decomposition(eq)]
-            equations_final = [delete_powers(w_eq) for w_eq in equations_weil]
+            # intentionally do not call delete_powers at this point to be consistent with XL representation
+            equations_final = equations_weil
 
             # Get Weil coefficients from the equations
             weil_vars = [
