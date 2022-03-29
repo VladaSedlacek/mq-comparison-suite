@@ -341,8 +341,6 @@ class Rainbow():
                     weil_coeffs.append(eq.monomial_coefficient(mon))
                 assert linear_combination(
                     max_quadratic.monomials(), weil_coeffs) == eq
-                print(eq)
-                print(weil_coeffs)
                 weil_coeff_list.append(weil_coeffs)
         return SS, equations_final, weil_coeff_list
 
