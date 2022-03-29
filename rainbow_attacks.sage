@@ -525,6 +525,23 @@ def save_system(file_format, file_path, rainbow, equations=[], guessed_vars=[], 
             for s in SS:
                 file.write(UD_to_string(rainbow.q, s))
 
+    elif file_format == 'crossbred':
+        '''The format for the GPU F2 crossbred solver of Niederhagen, Ning and Yang: https://github.com/kcning/mqsolver/'''
+        N = SS[0].ncols() - 1
+        Nw = N * rainbow.ext_deg
+        with open(file_path, 'w') as file:
+            file.write(
+                """Galois Field : GF({})
+Number of variables (n) : {}
+Number of polynomials (m) : {}
+Seed : {}
+Order : graded reverse lex order
+
+*********************\n""".format(radical(rainbow.q), Nw, len(weil_coeff_list), rainbow.seed))
+            # when q==2, this should yield the same representation as for XL
+            for weil_coeffs in weil_coeff_list:
+                file.write(" ".join([str(wc) for wc in weil_coeffs]) + " ; \n")
+
     elif file_format == 'mq_compact':
         with open(file_path, 'w') as file:
             file.write(weil_coeff_list_to_string(
@@ -620,7 +637,8 @@ def save_system(file_format, file_path, rainbow, equations=[], guessed_vars=[], 
                 cnf_line += "0\n"
                 file.write(cnf_line)
 
-    assert file_format in ['xl', 'mq', 'mq_compact', 'wdsat', 'cnf']
+    assert file_format in ['xl', 'crossbred',
+                           'mq', 'mq_compact', 'wdsat', 'cnf']
     print("Equation system written to: " + str(file_path))
 
 
@@ -717,11 +735,21 @@ def get_solution_from_log(log_path, format, N, rainbow=None):
             deg = rainbow.ext_deg
             zs = [z ^ i for i in range(deg)]
         variables = []
+        found = False
         for line in file.readlines():
             if format == 'xl':
                 if "  is sol" in line:
                     sol = line.split("  is sol")[0].split(" ")
                     return ['{:x}'.format(int(c, 16)) for c in sol]
+            if format == 'crossbred':
+                if "solution found: " in line:
+                    found = True
+                    continue
+                if found:
+                    sol = [ZZ(c) for c in line.strip().strip('][').split(', ')]
+                    parts = [sol[deg * i:deg * i + deg]
+                             for i in range(len(sol) / deg)]
+                    return vector([linear_combination(bits, zs) for bits in parts])
             if format == 'mq_weil':
                 if "solution found : " in line:
                     sol = [int(b) for b in line.split(
@@ -778,11 +806,13 @@ def create_wdsat_config(wdsat_path, M, N):
 @ click.option('--n', default=48, help='the number of variables', type=int)
 @ click.option('--m', default=32, help='the number of equations', type=int)
 @ click.option('--o2', default=16, help='the oil subspace dimension', type=int)
-@ click.option('--mq_path', default=Path("..", "mq"), help='the path the MQ solver: https://gitlab.lip6.fr/almasty/mq', type=str)
 @ click.option('--xl_path', default=Path("..", "xl"), help='the path the XL solver: http://polycephaly.org/projects/xl', type=str)
+@ click.option('--crossbred_path', default=Path("..", "mqsolver"), help='the path the crossbred solver: https://github.com/kcning/mqsolver/', type=str)
+@ click.option('--mq_path', default=Path("..", "mq"), help='the path the MQ solver: https://gitlab.lip6.fr/almasty/mq', type=str)
 @ click.option('--wdsat_path', default=Path("..", "WDSat"), help='the path the WDSat solver: https://github.com/mtrimoska/WDSat', type=str)
 @ click.option('--cms_path', default=Path("..", "cryptominisat", "build"), help='the path the WDSat solver: https://github.com/mtrimoska/WDSat', type=str)
 @ click.option('--solve_xl', default=False, is_flag=True, help='try to solve the system using XL')
+@ click.option('--solve_crossbred', default=False, is_flag=True, help='try to solve the system using crossbred')
 @ click.option('--solve_mq', default=False, is_flag=True, help='try to solve the system using MQ')
 @ click.option('--solve_wdsat', default=False, is_flag=True, help='try to solve the system using WDSat')
 @ click.option('--solve_cms', default=False, is_flag=True, help='try to solve the system using CryptoMiniSat')
@@ -793,15 +823,17 @@ def create_wdsat_config(wdsat_path, M, N):
 @ click.option('-w', '--weil_descent', default=False, is_flag=True, help='use Weil descent when possible')
 @ click.option('-t', '--attack_type', default='differential', type=click.Choice(['differential', 'minrank', 'intersection'], case_sensitive=False), help='use either the rectangular MinRank attack or the intersection attack')
 @ click.option('-s', '--seed', default=0, help='the seed for randomness replication', type=int)
-def main(q, n, m, o2, xl_path, mq_path, wdsat_path, cms_path, solve_xl, solve_mq, solve_wdsat, solve_cms, solve_only, inner_hybridation, verbose, reduce_dimension, weil_descent, attack_type, seed):
+def main(q, n, m, o2, xl_path, crossbred_path, mq_path, wdsat_path, cms_path, solve_xl, solve_crossbred, solve_mq, solve_wdsat, solve_cms, solve_only, inner_hybridation, verbose, reduce_dimension, weil_descent, attack_type, seed):
     boolean = q % 2 == 0
     set_random_seed(seed)
     M, N = compute_system_size(q, m, n, o2, attack_type)
+    current_path = Path("../algebraic-cryptanalysis")
     system_folder_path = 'systems'
     log_path = Path(system_folder_path, "log.txt")
     base_system_name = "rainbow_{}_seed_{}_q_{}_o2_{}_m_{}_n_{}_M_{}_N_{}".format(
         attack_type, seed, q, o2, m, n, M, N)
     xl_system_path = Path(system_folder_path, base_system_name + '.xl')
+    crossbred_system_path = Path(system_folder_path, base_system_name + '.cb')
     mq_system_path = Path(system_folder_path, base_system_name + '.mq')
     wdsat_system_path = Path(system_folder_path, base_system_name + '.anf')
     cnf_system_path = Path(system_folder_path, base_system_name + '.cnf')
@@ -820,14 +852,16 @@ def main(q, n, m, o2, xl_path, mq_path, wdsat_path, cms_path, solve_xl, solve_mq
         if attack_type == 'differential':
             save_system(file_format='xl', file_path=xl_system_path,
                         rainbow=rainbow, SS=SS, verbose=verbose)
+        save_system(file_format='crossbred', file_path=crossbred_system_path,
+                    rainbow=rainbow, SS=SS, equations=equations, weil_coeff_list=weil_coeff_list, verbose=verbose)
         save_system(file_format='mq', file_path=mq_system_path, rainbow=rainbow, equations=equations,
                     guessed_vars=guessed_vars, reduce_dimension=reduce_dimension, verbose=verbose)
         save_system(file_format='mq_compact', file_path=mq_compact_system_path, rainbow=rainbow, equations=equations,
                     weil_coeff_list=weil_coeff_list, guessed_vars=guessed_vars, reduce_dimension=reduce_dimension, verbose=verbose)
         save_system(file_format='wdsat', file_path=wdsat_system_path, rainbow=rainbow, equations=equations,
-                    weil_coeff_list=weil_coeff_list, guessed_vars=guessed_vars, reduce_dimension=reduce_dimension, verbose=verbose)
+                    guessed_vars=guessed_vars, reduce_dimension=reduce_dimension, verbose=verbose)
         save_system(file_format='cnf', file_path=cnf_system_path, rainbow=rainbow, equations=equations,
-                    weil_coeff_list=weil_coeff_list, guessed_vars=guessed_vars, reduce_dimension=reduce_dimension, verbose=verbose)
+                    guessed_vars=guessed_vars, reduce_dimension=reduce_dimension, verbose=verbose)
     else:
         print("Skipping the attack equations generation...")
 
@@ -844,8 +878,22 @@ def main(q, n, m, o2, xl_path, mq_path, wdsat_path, cms_path, solve_xl, solve_mq
         print("\nSolution found: {}".format(
             get_solution_from_log(log_path, format='xl', N=N)))
 
+    if solve_crossbred:
+        print("\nStarting the crossbred solver...")
+        os.chdir(crossbred_path)
+        crossbred_solve_command = "./solve.py -d 3 -k 16 -t 20 -v -o {} {}".format(
+            str(Path(current_path, log_path)), str(Path(current_path, crossbred_system_path)))
+        os.system(crossbred_solve_command)
+        os.chdir(current_path)
+        if attack_type != 'differential':
+            print("Solution parsing and interpretation not implemented yet")
+        else:
+            pass
+            print("\nSolution found: {}".format(
+                get_solution_from_log(log_path, format='crossbred', N=N, rainbow=rainbow)))
+
     if solve_mq:
-        print("\nStarting the MQ solver")
+        print("\nStarting the MQ solver...")
         inner_hybridation_arg = " --inner-hybridation " + \
             str(inner_hybridation) if inner_hybridation != -1 else ""
         mq_solve_command = "{}{} < {}".format(
@@ -889,7 +937,7 @@ def main(q, n, m, o2, xl_path, mq_path, wdsat_path, cms_path, solve_xl, solve_mq
             print("\nFirst solution found: {}".format(
                 get_solution_from_log(log_path, format='cms', N=N, rainbow=rainbow)))
 
-    if not (solve_xl or solve_mq or solve_wdsat or solve_cms):
+    if not (solve_xl or solve_crossbred or solve_mq or solve_wdsat or solve_cms):
         print("Please specify a solver.")
 
 
