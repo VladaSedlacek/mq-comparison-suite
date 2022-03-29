@@ -27,8 +27,9 @@ class Rainbow():
         self.reduced = self.q % 2 == 0 and self.n % 2 == 1
         self.V = VectorSpace(F, n)
         self.V2 = VectorSpace(F, m)
+        self.order = "lex"
         self.R = PolynomialRing(F, ['x%s' % p for p in range(
-            1, n + 1)] + ['v%s' % p for p in range(1, m + 1)], order="lex")
+            1, n + 1)] + ['v%s' % p for p in range(1, m + 1)], order=self.order)
         self.R.inject_variables(verbose=False)
         self.weil_ring = PolynomialRing(
             F, ['w%s_%s' % (p1, p2) for p1, p2 in product(range(1, n - m + 1), range(self.ext_deg))], order='degrevlex')
@@ -46,7 +47,7 @@ class Rainbow():
             self.support_minors_dict = dict(
                 zip(self.support_minors_indices, self.support_minors_variables))
             self.support_ring = PolynomialRing(F, ['y%s' % p for p in range(
-                1, n + 1)] + self.support_minors_variables, order="lex")
+                1, n + 1)] + self.support_minors_variables, order=self.order)
             self.support_ring.inject_variables(verbose=False)
             self.yy = vector(self.support_ring.gens()[: n])
             self.cc = vector(self.support_ring.gens()[n:])
