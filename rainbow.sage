@@ -1,8 +1,9 @@
 '''Taken from https://github.com/WardBeullens/BreakingRainbow'''
 # implements Rainbow Key generation
 
-# makes a matrix upper diagonal
+
 def Make_UD(M):
+    # makes a matrix upper diagonal
     n = M.ncols()
     for i in range(n):
         for j in range(i + 1, n):
