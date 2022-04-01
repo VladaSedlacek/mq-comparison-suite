@@ -12,14 +12,21 @@ def main(q, n, m, o2):
     R = PowerSeriesRing(ZZ, 'X')
     X = R.gen()
 
-    def ps_monomials(M, N):
-        return 1 / (1 - X) ^ N
+    def ps_monomials(M, N, q):
+        if q == 2:
+            return (1 + X) ^ N
+        else:
+            return 1 / (1 - X) ^ N
 
-    def ps_reg(M, N):
-        return (1 - X ^ 2) ^ M / (1 - X) ^ N
+    def ps_reg(M, N, q):
+        if q == 2:
+            return (1 + X) ^ N / (1 + X ^ 2) ^ M
+        else:
+            return (1 - X ^ 2) ^ M / (1 - X) ^ N
 
-    def ps_ranks(M, N):
-        return (1 - (1 - X ^ 2) ^ M) / (1 - X) ^ N
+    def ps_ranks(M, N, q):
+        return (ps_monomials(M, N, q) - ps_reg(M, N, q))
+        # for q!=2, this is (1 - (1 - X ^ 2) ^ M) / (1 - X) ^ N
 
     def delete_powers(eq):
         return sum([radical(mon) for mon in eq.monomials()])
@@ -29,17 +36,18 @@ def main(q, n, m, o2):
     L = 2
     while True:
         L += 1
-        if ps_reg(M, N).coefficients()[L - 1] <= 0:
+        if ps_reg(M, N, q).coefficients()[L - 1] <= 0:
             break
 
-    NumberOfMonomials = ps_monomials(M, N).coefficients()[:L]
-    Expected_Coranks = ps_reg(M, N).coefficients()[:L]
+    NumberOfMonomials = ps_monomials(M, N, q).coefficients()[:L]
+    Expected_Coranks = ps_reg(M, N, q).coefficients()[:L]
+    # this is easier than having to count zeros that are stripped by the .coefficients method
     Expected_Ranks = [n - c for n,
                       c in zip(NumberOfMonomials, Expected_Coranks)]
     NumberOfRows = [M * binomial(N + D - 3, N - 1) for D in range(L)]
     data = [NumberOfMonomials[2:], Expected_Ranks[2:], NumberOfRows[2:]]
     df = pd.DataFrame(data, columns=range(2, L))
-    df.index = ["Number of cols/mons:", "Expected ranks:", "Number of rows:"]
+    df.index = ["Number of cols/mons:", "Expected rank:", "Number of rows:"]
     print("q = {}, M = {}, N = {}".format(q, M, N))
     # print("Macaulay matrices at degree D:")
     # print(df.to_string())
@@ -56,11 +64,18 @@ def main(q, n, m, o2):
             D, N - guesses).nbits() + ceil(guesses * log(q, 2))
         return (without_guesses, with_guesses)
 
+    def NumberOfInhomogeneousCols(D, N, q):
+        if q == 2:
+            return sum([binomial(N, d)
+                        for d in range(D + 1)])
+        else:
+            return binomial(N + D, D)
+
     def find_number_of_guesses(D, N, M):
         assert D >= 2
         exp_rank = Expected_Ranks[D]
         number_of_guesses = 0
-        while exp_rank < binomial(N - number_of_guesses + D, D):
+        while exp_rank < NumberOfInhomogeneousCols(D, N - number_of_guesses, q):
             number_of_guesses += 1
         return number_of_guesses
 
