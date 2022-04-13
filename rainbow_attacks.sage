@@ -1,7 +1,7 @@
 from itertools import product
 from pathlib import Path
+from subprocess import Popen
 import click
-import os
 import re
 
 
@@ -870,11 +870,11 @@ def main(q, n, m, o2, xl_path, crossbred_path, mq_path, wdsat_path, cms_path, so
         print("\nCompiling the XL solver...")
         make_command = "make -C {} Q={} M={} N={} -Wno-unused-result -Wno-class-memaccess".format(
             str(xl_path), str(q), str(M), str(N)) + " > " + str(log_path)
-        os.system(make_command)
+        Popen(make_command, shell=True).wait()
         print("\nStarting the XL solver...")
         xl_solve_command = "{} --challenge {} --all".format(
             str(Path(xl_path, "xl")), str(xl_system_path)) + " | tee -a " + str(log_path)
-        os.system(xl_solve_command)
+        Popen(xl_solve_command, shell=True).wait()
         print("\nSolution found: {}".format(
             get_solution_from_log(log_path, format='xl', N=N)))
 
@@ -883,7 +883,7 @@ def main(q, n, m, o2, xl_path, crossbred_path, mq_path, wdsat_path, cms_path, so
         os.chdir(crossbred_path)
         crossbred_solve_command = "./solve.py -d 3 -k 16 -t 20 -v -o {} {}".format(
             str(Path(current_path, log_path)), str(Path(current_path, crossbred_system_path)))
-        os.system(crossbred_solve_command)
+        Popen(crossbred_solve_command, shell=True).wait()
         os.chdir(current_path)
         if attack_type != 'differential':
             print("Solution parsing and interpretation not implemented yet")
@@ -898,7 +898,7 @@ def main(q, n, m, o2, xl_path, crossbred_path, mq_path, wdsat_path, cms_path, so
             str(inner_hybridation) if inner_hybridation != -1 else ""
         mq_solve_command = "{}{} < {}".format(
             str(Path(mq_path, "monica_vector")), inner_hybridation_arg, str(mq_system_path)) + " | tee " + str(log_path)
-        os.system(mq_solve_command)
+        Popen(mq_solve_command, shell=True).wait()
         if attack_type != 'differential':
             print("Solution parsing and interpretation not implemented yet")
         else:
@@ -912,12 +912,12 @@ def main(q, n, m, o2, xl_path, crossbred_path, mq_path, wdsat_path, cms_path, so
         suppressor_flag = "" if not solve_only else "-n"
         make_command = "make -C {0} {1} > {2}".format(
             str(Path(wdsat_path, "src")), suppressor_flag, str(log_path))
-        os.system(make_command)
+        Popen(make_command, shell=True).wait()
         print("\nStarting the WDSat solver...")
         wdsat_solve_command = "{} -i {}".format(
             str(Path(wdsat_path, "wdsat_solver")), str(wdsat_system_path) +
             " | tee -a " + str(log_path))
-        os.system(wdsat_solve_command)
+        Popen(wdsat_solve_command, shell=True).wait()
         if attack_type != 'differential':
             print("Solution parsing and interpretation not implemented yet")
         else:
@@ -925,12 +925,12 @@ def main(q, n, m, o2, xl_path, crossbred_path, mq_path, wdsat_path, cms_path, so
                 get_solution_from_log(log_path, format='wdsat', N=N, rainbow=rainbow)))
 
     if solve_cms:
-        os.system(" > {}".format(str(log_path)))
+        Popen(" > {}".format(str(log_path)), shell=True).wait()
         print("\nStarting the CryptoMiniSat solver...")
         cms_solve_command = "{} --verb 0 {}".format(
             str(Path(cms_path, "cryptominisat5")), str(cnf_system_path) +
             " | tee -a " + str(log_path))
-        os.system(cms_solve_command)
+        Popen(cms_solve_command, shell=True).wait()
         if attack_type != 'differential':
             print("Solution parsing and interpretation not implemented yet")
         else:
