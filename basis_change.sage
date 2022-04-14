@@ -165,13 +165,6 @@ def compare_approaches(MM, tries=100, show_matrices=True, show_total_weight=Fals
         print_matrices(MM)
     print_weights(MM, I, show_total_weight)
 
-    print("\nWith elementary greedy strategy:")
-    E = elementary_greedy_strategy(MM, tries)
-    if show_matrices:
-        print("Transformation matrix:\n{}\n".format(E))
-        print_matrices(transform_basis(MM, E))
-    print_weights(MM, E, show_total_weight)
-
     print("\nWith symplectic basis for two matrices:")
     S = find_symplectic_for_two(MM)
     if show_matrices:
@@ -185,6 +178,14 @@ def compare_approaches(MM, tries=100, show_matrices=True, show_total_weight=Fals
         print("Transformation matrix:\n{}\n".format(R))
         print_matrices(transform_basis(MM, R))
     print_weights(MM, R, show_total_weight)
+
+    print("\nWith elementary greedy strategy:")
+    E = elementary_greedy_strategy(MM, tries)
+    if show_matrices:
+        print("Transformation matrix:\n{}\n".format(E))
+        print_matrices(transform_basis(MM, E))
+    print_weights(MM, E, show_total_weight)
+
 
 
 # q, n, m, o2 = 2, 12, 8, 4
