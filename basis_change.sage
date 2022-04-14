@@ -117,6 +117,36 @@ def find_symplectic_for_two(MM, verbose=False, checks=False):
     return U
 
 
+def elementary_improvement(MM, i, j, s=1, verbose=False):
+    # try adding the j-th row scaled by s to the i-th row
+    K = MM[0][0, 0].parent()
+    n = MM[0].nrows()
+    I = identity_matrix(K, n)
+    E = elementary_matrix(K, n, row1=i, row2=j, scale=s)
+    old_weight = global_weight(MM, I)
+    new_weight = global_weight(MM, E)
+    improved = old_weight > new_weight
+    if verbose and improved:
+        print("weights:", old_weight, new_weight)
+    return improved, E
+
+
+def elementary_greedy_strategy(MM, tries=100):
+    K = MM[0][0, 0].parent()
+    n = MM[0].nrows()
+    E_total = identity_matrix(K, n)
+    for _ in range(tries):
+        i = Integers(n).random_element()
+        j = Integers(n).random_element()
+        if i == j:
+            continue
+        improved, E = elementary_improvement(MM, i, j)
+        if improved:
+            E_total *= E
+            MM = [E.transpose() * M * E for M in MM]
+    return E_total
+
+
 def print_weights(MM, U, show_total_weight=False):
     if not show_total_weight:
         print("Global weight: {}".format(global_weight(MM, U)))
@@ -134,6 +164,13 @@ def compare_approaches(MM, tries=100, show_matrices=True, show_total_weight=Fals
     if show_matrices:
         print_matrices(MM)
     print_weights(MM, I, show_total_weight)
+
+    print("\nWith elementary greedy strategy:")
+    E = elementary_greedy_strategy(MM, tries)
+    if show_matrices:
+        print("Transformation matrix:\n{}\n".format(E))
+        print_matrices(transform_basis(MM, E))
+    print_weights(MM, E, show_total_weight)
 
     print("\nWith symplectic basis for two matrices:")
     S = find_symplectic_for_two(MM)
