@@ -137,15 +137,15 @@ def compare_approaches(MM, tries=100, show_matrices=True, show_total_weight=Fals
 
     print("\nWith symplectic basis for two matrices:")
     S = find_symplectic_for_two(MM)
-    print("Transformation matrix:\n{}\n".format(S))
     if show_matrices:
+        print("Transformation matrix:\n{}\n".format(S))
         print_matrices(transform_basis(MM, S))
     print_weights(MM, S, show_total_weight)
 
     print("\nAt random:")
     R = find_best_random(MM, tries)
-    print("Transformation matrix:\n{}\n".format(R))
     if show_matrices:
+        print("Transformation matrix:\n{}\n".format(R))
         print_matrices(transform_basis(MM, R))
     print_weights(MM, R, show_total_weight)
 
@@ -155,4 +155,4 @@ q, n, m, o2 = 2, 6, 6, 2
 set_random_seed(2)
 PK, O2, O1, W = Keygen(q, n, m, o2)
 MM = [get_polar_form(M) for M in PK]
-compare_approaches(MM, tries=1000)
+compare_approaches(MM, show_matrices=False, tries=1000)
