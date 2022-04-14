@@ -127,6 +127,7 @@ def print_weights(MM, U, show_total_weight=False):
 
 def compare_approaches(MM, tries=100, show_matrices=True, show_total_weight=False):
     K = MM[0][0, 0].parent()
+    n = MM[0].nrows()
     I = identity_matrix(K, n)
 
     print("With I:")
