@@ -131,10 +131,13 @@ def elementary_improvement(MM, i, j, s=1, verbose=False):
     return improved, E
 
 
-def elementary_greedy_strategy(MM, tries=100):
+def elementary_greedy_strategy(MM, tries=100, I_start=None):
     K = MM[0][0, 0].parent()
     n = MM[0].nrows()
     E_total = identity_matrix(K, n)
+    if I_start is not None:
+        MM = [I_start.transpose() * M * I_start for M in MM]
+        E_total = I_start
     for _ in range(tries):
         i = Integers(n).random_element()
         j = Integers(n).random_element()
@@ -186,6 +189,12 @@ def compare_approaches(MM, tries=100, show_matrices=True, show_total_weight=Fals
         print_matrices(transform_basis(MM, E))
     print_weights(MM, E, show_total_weight)
 
+    print("\nWith elementary greedy strategy, starting at best random R:")
+    E = elementary_greedy_strategy(MM, tries, I_start=R)
+    if show_matrices:
+        print("Transformation matrix:\n{}\n".format(E))
+        print_matrices(transform_basis(MM, E))
+    print_weights(MM, E, show_total_weight)
 
 
 # q, n, m, o2 = 2, 12, 8, 4
