@@ -53,20 +53,19 @@ def poly_sqrt(poly):
 
 
 def find_pair(MM):
-    found = False
     m = len(MM)
     n = MM[0].ncols()
     K = MM[0][0, 0].parent()
     Mij = zero_matrix(K, n)
     for i in range(m):
         for j in range(i + 1, m):
-            if not found:
-                if MM[i].is_invertible() and MM[j].is_invertible():
-                    Mij = MM[i] ^ -1 * MM[j]
-                    f = poly_sqrt(Mij.characteristic_polynomial())
-                    if f.is_irreducible():
-                        found = True
-                        return Mij, i, j
+            if MM[i].is_invertible() and MM[j].is_invertible():
+                Mij = MM[i].inverse() * MM[j]
+                f = poly_sqrt(Mij.characteristic_polynomial())
+                if f.is_irreducible():
+                    return Mij, i, j
+    print("No good ratio of matrices found!")
+    return None, None, None
 
 
 def find_best_random(MM, tries=100):
@@ -87,6 +86,10 @@ def find_best_random(MM, tries=100):
 
 def find_symplectic_for_two(MM, verbose=False, checks=False):
     Mij, i, j = find_pair(MM)
+    if Mij == None:
+        K = MM[0][0, 0].parent()
+        n = MM[0].nrows()
+        return identity_matrix(K, n)
     fact = factor(Mij.characteristic_polynomial())
     f = poly_sqrt(Mij.characteristic_polynomial())
     if verbose:
