@@ -150,6 +150,26 @@ def elementary_greedy_strategy(MM, tries=100, I_start=None):
     return E_total
 
 
+def elementary_greedy_strategy_iterated(MM, tries=100, starts=5):
+    n = MM[0].ncols()
+    K = MM[0][0, 0].parent()
+    I = identity_matrix(K, n)
+    record_U = I
+    record_weight = global_weight(MM, I)
+    for _ in range(starts):
+        from sage.matrix.constructor import random_unimodular_matrix
+        I_start = random_unimodular_matrix(
+            sage.matrix.matrix_space.MatrixSpace(K, n))
+        if not I_start.is_invertible():
+            print("nope")
+            continue
+        U = elementary_greedy_strategy(MM, tries=tries, I_start=I_start)
+        if global_weight(MM, U) < record_weight:
+            record_weight = global_weight(MM, U)
+            record_U = U
+    return record_U
+
+
 def print_weights(MM, U, show_total_weight=False):
     if not show_total_weight:
         print("Global weight: {}".format(global_weight(MM, U)))
@@ -191,6 +211,13 @@ def compare_approaches(MM, tries=100, show_matrices=True, show_total_weight=Fals
 
     print("\nWith elementary greedy strategy, starting at best random R:")
     E = elementary_greedy_strategy(MM, tries, I_start=R)
+    if show_matrices:
+        print("Transformation matrix:\n{}\n".format(E))
+        print_matrices(transform_basis(MM, E))
+    print_weights(MM, E, show_total_weight)
+
+    print("\nWith elementary greedy strategy, starting at random Rs:")
+    E = elementary_greedy_strategy_iterated(MM, tries)
     if show_matrices:
         print("Transformation matrix:\n{}\n".format(E))
         print_matrices(transform_basis(MM, E))
