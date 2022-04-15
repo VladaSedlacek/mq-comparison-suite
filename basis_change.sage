@@ -36,11 +36,14 @@ def global_weight(MM, U):
     return weight
 
 
-def print_matrices(MM):
-    for i in range(MM[0].nrows()):
-        for M in MM:
-            print(list(M[i]), end="\t")
-        print("")
+def print_matrices(MM, pencilize=True):
+    if pencilize:
+        print(Pencil(MM).matrix)
+    else:
+        for i in range(MM[0].nrows()):
+            for M in MM:
+                print(list(M[i]), end="\t")
+            print("")
 
 
 def poly_sqrt(poly):
