@@ -153,7 +153,7 @@ def elementary_greedy_strategy(MM, tries=100, I_start=None):
             continue
         improved, E = elementary_improvement(MM, i, j)
         if improved:
-            E_total *= E
+            E_total = E_total * E
             MM = [E.transpose() * M * E for M in MM]
     return E_total
 
