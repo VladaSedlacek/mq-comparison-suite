@@ -14,20 +14,20 @@ def hamming_weight(M):
     return weight
 
 
-def transform_basis(PK, U):
-    return [U.transpose() * M * U for M in PK]
+def transform_basis(MM, U):
+    return [U.transpose() * M * U for M in MM]
 
 
-def total_weight(PK, U):
-    return sum([hamming_weight(M) for M in transform_basis(PK, U)])
+def total_weight(MM, U):
+    return sum([hamming_weight(M) for M in transform_basis(MM, U)])
 
 
-def global_weight(PK, U):
+def global_weight(MM, U):
     weight = 0
-    for i in range(PK[0].nrows()):
-        for j in range(i + 1, PK[0].ncols()):
+    for i in range(MM[0].nrows()):
+        for j in range(i + 1, MM[0].ncols()):
             all_zeros = True
-            for M in transform_basis(PK, U):
+            for M in transform_basis(MM, U):
                 if M[i, j] != 0:
                     all_zeros = False
                     break
@@ -36,9 +36,9 @@ def global_weight(PK, U):
     return weight
 
 
-def print_matrices(PK):
-    for i in range(PK[0].nrows()):
-        for M in PK:
+def print_matrices(MM):
+    for i in range(MM[0].nrows()):
+        for M in MM:
             print(list(M[i]), end="\t")
         print("")
 
