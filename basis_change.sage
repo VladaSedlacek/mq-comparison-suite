@@ -178,6 +178,89 @@ def print_weights(MM, U, show_total_weight=False):
             global_weight(MM, U), total_weight(MM, U)))
 
 
+class Pencil(object):
+    """a class representing a pencil of bilinear forms"""
+
+    def __init__(self, MM, tries=100):
+        self.MM = MM
+        self.m = len(MM)
+        self.n = MM[0].ncols()
+        self.K = MM[0][0, 0].parent()
+        self.I = identity_matrix(self.K, self.n)
+        self.PR = PolynomialRing(self.K, 'z')
+        self.z = self.PR.gen()
+        self.module = FreeModule(self.K, len(MM))
+        self.matrix = sum([M * self.z ^ i for i, M in enumerate(MM)])
+        self.tries = tries
+
+    def custom_reduce(self, restart=True):
+        MMP = self.matrix
+        E_total = self.I
+        E_best = E_total
+        for _ in range(self.tries):
+            if restart:
+                E_total = self.I
+            perm = Permutations(self.n).random_element()
+            for col in perm.action(MMP.columns()):
+                for deg in range(m):
+                    perm = Permutations(self.n).random_element()
+                    pivot_poly = 0
+                    pivot_index = -1
+                    for i, poly in perm.action(list(enumerate(col))):
+                        if get_coeff(poly, deg) != 0:
+                            if pivot_poly == 0:
+                                pivot_poly = poly
+                                pivot_index = i
+                            else:
+                                poly += 1 * pivot_poly
+                                # add the j-th row scaled by 1 to the i-th row
+                                E = elementary_matrix(
+                                    self.K, self.n, row1=i, row2=pivot_index, scale=1)
+                                E_total = E_total * E
+            if global_weight(self.MM, E_best) > global_weight(self.MM, E_total):
+                E_best = E_total
+        return E_best
+
+    def reduce(self, deg):
+        _, U = self.matrix.reduced_form(transformation=True)
+        Uc = coefficient_matrix(U, deg)
+        return self.invertible_or_identity(Uc)
+
+    def hermite(self, deg):
+        _, U = self.matrix.hermite_form(transformation=True)
+        Uc = coefficient_matrix(U, deg)
+        return self.invertible_or_identity(Uc)
+
+    def smith_right(self, deg):
+        D, U, V = self.matrix.smith_form()
+        Vc = coefficient_matrix(U, deg)
+        return self.invertible_or_identity(Vc)
+
+    def smith_left(self, deg):
+        D, U, V = self.matrix.smith_form()
+        Uc = coefficient_matrix(U, deg)
+        return self.invertible_or_identity(Uc)
+
+    def invertible_or_identity(self, U):
+        if U.is_invertible():
+            return U
+        return self.I
+
+
+def all_coeffs(poly, max_deg):
+    return list(poly) + (max_deg + 1 - len(list(poly))) * [0]
+
+
+def get_coeff(poly, deg):
+    return all_coeffs(poly, deg)[deg]
+
+
+def coefficient_matrix(poly_matrix, deg):
+    rows = [vector(get_coeff(poly, deg) for poly in row)
+            for row in poly_matrix]
+    return Matrix(rows)
+
+
 def compare_approaches(MM, tries=100, show_matrices=True, show_total_weight=False):
     K = MM[0][0, 0].parent()
     n = MM[0].nrows()
