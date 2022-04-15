@@ -182,7 +182,7 @@ def compare_approaches(MM, tries=100, show_matrices=True, show_total_weight=Fals
     K = MM[0][0, 0].parent()
     n = MM[0].nrows()
     I = identity_matrix(K, n)
-
+    print("Maximal global weight:", ZZ(n * (n - 1) / 2))
     print("With I:")
     if show_matrices:
         print_matrices(MM)
