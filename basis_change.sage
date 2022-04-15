@@ -210,7 +210,7 @@ class Pencil(object):
                 E_total = self.I
             perm = Permutations(self.n).random_element()
             for col in perm.action(MMP.columns()):
-                for deg in range(m):
+                for deg in range(self.m):
                     perm = Permutations(self.n).random_element()
                     pivot_poly = 0
                     pivot_index = -1
