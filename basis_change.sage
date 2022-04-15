@@ -206,7 +206,8 @@ class Pencil(object):
         MMP = self.matrix
         E_total = self.I
         E_best = E_total
-        for _ in range(self.tries):
+        tries = self.tries
+        while tries > 0:
             if restart:
                 E_total = self.I
             perm = Permutations(self.n).random_element()
@@ -217,6 +218,7 @@ class Pencil(object):
                     pivot_index = -1
                     for i, poly in perm.action(list(enumerate(col))):
                         if get_coeff(poly, deg) != 0:
+                            tries = tries - 1
                             if pivot_poly == 0:
                                 pivot_poly = poly
                                 pivot_index = i
