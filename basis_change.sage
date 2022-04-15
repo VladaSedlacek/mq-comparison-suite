@@ -46,6 +46,11 @@ def print_matrices(MM, pencilize=True):
             print("")
 
 
+def print_details(MM, U, pencilize=True):
+    print("Transformation matrix:\n{}\n".format(U))
+    print_matrices(transform_basis(MM, U), pencilize)
+
+
 def poly_sqrt(poly):
     lst = list(factor(poly))
     result = 1
@@ -264,35 +269,32 @@ def coefficient_matrix(poly_matrix, deg):
     return Matrix(rows)
 
 
-def compare_approaches(MM, tries=100, show_matrices=True, show_total_weight=False):
+def compare_approaches(MM, tries=100, print_details=True, show_total_weight=False):
     K = MM[0][0, 0].parent()
     n = MM[0].nrows()
     I = identity_matrix(K, n)
     print("Maximal global weight:", ZZ(n * (n - 1) / 2))
     print("With I:")
-    if show_matrices:
+    if print_details:
         print_matrices(MM)
     print_weights(MM, I, show_total_weight)
 
     print("\nWith symplectic basis for two matrices:")
     S = find_symplectic_for_two(MM)
-    if show_matrices:
-        print("Transformation matrix:\n{}\n".format(S))
-        print_matrices(transform_basis(MM, S))
+    if print_details:
+        print_details(MM, S)
     print_weights(MM, S, show_total_weight)
 
     print("\nAt random:")
     R = find_best_random(MM, tries)
-    if show_matrices:
-        print("Transformation matrix:\n{}\n".format(R))
-        print_matrices(transform_basis(MM, R))
+    if print_details:
+        print_details(MM, R)
     print_weights(MM, R, show_total_weight)
 
     print("\nWith elementary greedy strategy:")
     E = elementary_greedy_strategy(MM, tries)
-    if show_matrices:
-        print("Transformation matrix:\n{}\n".format(E))
-        print_matrices(transform_basis(MM, E))
+    if print_details:
+        print_details(MM, E)
     print_weights(MM, E, show_total_weight)
 
 
@@ -301,4 +303,4 @@ q, n, m, o2 = 2, 6, 6, 2
 set_random_seed(2)
 PK, O2, O1, W = Keygen(q, n, m, o2)
 MM = [get_polar_form(M) for M in PK]
-compare_approaches(MM, show_matrices=False, tries=1000)
+compare_approaches(MM, print_details=False, tries=1000)
