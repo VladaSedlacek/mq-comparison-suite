@@ -297,6 +297,45 @@ def compare_approaches(MM, tries=100, print_details=True, show_total_weight=Fals
         print_details(MM, E)
     print_weights(MM, E, show_total_weight)
 
+    print("\nWith custom pencil strategy:")
+    pencil = Pencil(MM, tries=tries)
+    E = pencil.custom_reduce(restart=True)
+    if print_details:
+        print_details(MM, E)
+    print_weights(MM, E, show_total_weight)
+
+    print("\nWith reduced pencil strategy:")
+    pencil = Pencil(MM, tries=tries)
+    for deg in range(len(MM)):
+        R = pencil.reduce(deg)
+        if print_details:
+            print_details(MM, R)
+        print_weights(MM, R, show_total_weight)
+
+    print("\nWith Hermite pencil strategy:")
+    pencil = Pencil(MM, tries=tries)
+    for deg in range(len(MM)):
+        H = pencil.hermite(deg)
+        if print_details:
+            print_details(MM, H)
+        print_weights(MM, H, show_total_weight)
+
+    print("\nWith right Smith pencil strategy:")
+    pencil = Pencil(MM, tries=tries)
+    for deg in range(len(MM)):
+        RS = pencil.smith_right(deg)
+        if print_details:
+            print_details(MM, RS)
+        print_weights(MM, RS, show_total_weight)
+
+    print("\nWith left Smith pencil strategy:")
+    pencil = Pencil(MM, tries=tries)
+    for deg in range(len(MM)):
+        RS = pencil.smith_left(deg)
+        if print_details:
+            print_details(MM, RS)
+        print_weights(MM, RS, show_total_weight)
+
 
 # q, n, m, o2 = 2, 12, 8, 4
 q, n, m, o2 = 2, 6, 6, 2
