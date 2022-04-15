@@ -1,3 +1,4 @@
+import click
 load('rainbow.sage')
 
 
@@ -337,9 +338,19 @@ def compare_approaches(MM, tries=100, print_details=True, show_total_weight=Fals
         print_weights(MM, RS, show_total_weight)
 
 
-# q, n, m, o2 = 2, 12, 8, 4
-q, n, m, o2 = 2, 6, 6, 2
-set_random_seed(2)
-PK, O2, O1, W = Keygen(q, n, m, o2)
-MM = [get_polar_form(M) for M in PK]
-compare_approaches(MM, print_details=False, tries=1000)
+@ click.command()
+@ click.option('--q', default=2, help='the field order', type=int)
+@ click.option('--n', default=10, help='the number of variables', type=int)
+@ click.option('--m', default=6, help='the number of equations', type=int)
+@ click.option('--o2', default=2, help='the oil subspace dimension', type=int)
+@ click.option('-s', '--seed', default=0, help='the seed for randomness replication', type=int)
+@ click.option('-t', '--tries', default=100, help='the number of tries for each random strategy', type=int)
+def main(q, n, m, o2, seed, tries):
+    set_random_seed(seed)
+    PK, O2, O1, W = Keygen(q, n, m, o2)
+    MM = [get_polar_form(M) for M in PK]
+    compare_approaches(MM, print_details=False, tries=tries)
+
+
+if __name__ == '__main__':
+    main()
