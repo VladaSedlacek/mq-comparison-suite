@@ -209,20 +209,6 @@ def compare_approaches(MM, tries=100, show_matrices=True, show_total_weight=Fals
         print_matrices(transform_basis(MM, E))
     print_weights(MM, E, show_total_weight)
 
-    print("\nWith elementary greedy strategy, starting at best random R:")
-    E = elementary_greedy_strategy(MM, tries, I_start=R)
-    if show_matrices:
-        print("Transformation matrix:\n{}\n".format(E))
-        print_matrices(transform_basis(MM, E))
-    print_weights(MM, E, show_total_weight)
-
-    print("\nWith elementary greedy strategy, starting at random Rs:")
-    E = elementary_greedy_strategy_iterated(MM, tries)
-    if show_matrices:
-        print("Transformation matrix:\n{}\n".format(E))
-        print_matrices(transform_basis(MM, E))
-    print_weights(MM, E, show_total_weight)
-
 
 # q, n, m, o2 = 2, 12, 8, 4
 q, n, m, o2 = 2, 6, 6, 2
