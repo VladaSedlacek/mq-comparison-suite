@@ -273,6 +273,57 @@ def coefficient_matrix(poly_matrix, deg):
     return Matrix(rows)
 
 
+def corank(M):
+    return M.ncols() - M.rank()
+
+
+def count_zeros_in_vector(v):
+    return sum([int(vi == 0) for vi in v])
+
+
+def locally_optimal_strategy(MM, verbose=False):
+    K = MM[0][0, 0].parent()
+    n = MM[0].nrows()
+    I = identity_matrix(K, n)
+    L_total = identity_matrix(K, n)
+    for i in range(n):
+        M_across = Matrix([M[i] for M in MM])
+        if verbose:
+            print("Investigating row", i)
+            print("\nM_across:\n{}\nco-rank: {}".format(
+                M_across, corank(M_across)))
+        ker = M_across.right_kernel()
+        if ker.dimension() > count_zeros_in_vector((Pencil(MM).matrix)[i]):
+            if verbose:
+                print("Improvement might be possible...")
+                print("Kernel basis matrix:\n{}".format(ker))
+            for ker_vec in ker.basis_matrix():
+                candidate_cols = [i for i in range(
+                    len(ker_vec)) if ker_vec[i] != 0]
+                if verbose:
+                    print("candidate cols:", candidate_cols)
+                improved = False
+                for col in candidate_cols:
+                    L = identity_matrix(K, n)
+                    L[:, col] = ker_vec
+                    if global_weight(MM, L, max_row=i) < global_weight(MM, I, max_row=i):
+                        assert L.is_invertible()
+                        L_total = L_total * L
+                        MM = transform_basis(MM, L)
+                        if verbose:
+                            print("Improvement made!")
+                            print("L:", L)
+                            print_matrices(MM)
+                            print("Current global weight:",
+                                  global_weight(MM, I))
+                        improved = True
+                    if improved:
+                        break
+        elif verbose:
+            print("Zeros at max already")
+    return L_total
+
+
 def compare_approaches(MM, tries=100, verbose=True, show_total_weight=False):
     K = MM[0][0, 0].parent()
     n = MM[0].nrows()
@@ -282,6 +333,12 @@ def compare_approaches(MM, tries=100, verbose=True, show_total_weight=False):
     if verbose:
         print_matrices(MM)
     print_weights(MM, I, show_total_weight)
+
+    print("\nWith locally optimal strategy:")
+    L = locally_optimal_strategy(MM)
+    if verbose:
+        print_details(MM, L)
+    print_weights(MM, L, show_total_weight)
 
     print("\nWith symplectic basis for two matrices:")
     S = find_symplectic_for_two(MM)
