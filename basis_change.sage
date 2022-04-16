@@ -23,16 +23,17 @@ def total_weight(MM, U):
     return sum([hamming_weight(M) for M in transform_basis(MM, U)])
 
 
-def global_weight(MM, U):
+def global_weight(MM, U=None, max_row=None, max_col=None):
+    if U is not None:
+        MM = transform_basis(MM, U)
+    if max_row is None:
+        max_row = MM[0].nrows()
+    if max_col is None:
+        max_col = MM[0].ncols()
     weight = 0
-    for i in range(MM[0].nrows()):
-        for j in range(i + 1, MM[0].ncols()):
-            all_zeros = True
-            for M in transform_basis(MM, U):
-                if M[i, j] != 0:
-                    all_zeros = False
-                    break
-            if not all_zeros:
+    for i in range(max_row):
+        for j in range(i + 1, max_col):
+            if Pencil(MM).matrix[i, j] != 0:
                 weight += 1
     return weight
 
@@ -80,9 +81,8 @@ def find_pair(MM):
 def find_best_random(MM, tries=100):
     n = MM[0].ncols()
     K = MM[0][0, 0].parent()
-    I = identity_matrix(K, n)
-    record_U = I
-    record_weight = global_weight(MM, I)
+    record_U = identity_matrix(K, n)
+    record_weight = global_weight(MM)
     for _ in range(tries):
         U = random_matrix(K, n)
         if not U.is_invertible():
@@ -131,9 +131,8 @@ def elementary_improvement(MM, i, j, s=1, verbose=False):
     # try adding the j-th row scaled by s to the i-th row
     K = MM[0][0, 0].parent()
     n = MM[0].nrows()
-    I = identity_matrix(K, n)
     E = elementary_matrix(K, n, row1=i, row2=j, scale=s)
-    old_weight = global_weight(MM, I)
+    old_weight = global_weight(MM)
     new_weight = global_weight(MM, E)
     improved = old_weight > new_weight
     if verbose and improved:
@@ -163,9 +162,8 @@ def elementary_greedy_strategy(MM, tries=100, I_start=None):
 def elementary_greedy_strategy_iterated(MM, tries=100, starts=5):
     n = MM[0].ncols()
     K = MM[0][0, 0].parent()
-    I = identity_matrix(K, n)
-    record_U = I
-    record_weight = global_weight(MM, I)
+    record_U = identity_matrix(K, n)
+    record_weight = global_weight(MM)
     for _ in range(starts):
         from sage.matrix.constructor import random_unimodular_matrix
         I_start = random_unimodular_matrix(
@@ -284,7 +282,6 @@ def count_zeros_in_vector(v):
 def locally_optimal_strategy(MM, verbose=False):
     K = MM[0][0, 0].parent()
     n = MM[0].nrows()
-    I = identity_matrix(K, n)
     L_total = identity_matrix(K, n)
     for i in range(n):
         M_across = Matrix([M[i] for M in MM])
@@ -306,7 +303,7 @@ def locally_optimal_strategy(MM, verbose=False):
                 for col in candidate_cols:
                     L = identity_matrix(K, n)
                     L[:, col] = ker_vec
-                    if global_weight(MM, L, max_row=i) < global_weight(MM, I, max_row=i):
+                    if global_weight(MM, L, max_row=i) < global_weight(MM, max_row=i):
                         assert L.is_invertible()
                         L_total = L_total * L
                         MM = transform_basis(MM, L)
@@ -315,7 +312,7 @@ def locally_optimal_strategy(MM, verbose=False):
                             print("L:", L)
                             print_matrices(MM)
                             print("Current global weight:",
-                                  global_weight(MM, I))
+                                  global_weight(MM))
                         improved = True
                     if improved:
                         break
@@ -327,12 +324,11 @@ def locally_optimal_strategy(MM, verbose=False):
 def compare_approaches(MM, tries=100, verbose=True, show_total_weight=False):
     K = MM[0][0, 0].parent()
     n = MM[0].nrows()
-    I = identity_matrix(K, n)
     print("Maximal global weight:", ZZ(n * (n - 1) / 2))
     print("With I:")
     if verbose:
         print_matrices(MM)
-    print_weights(MM, I, show_total_weight)
+    print_weights(MM, identity_matrix(K, n), show_total_weight)
 
     print("\nWith locally optimal strategy:")
     L = locally_optimal_strategy(MM)
