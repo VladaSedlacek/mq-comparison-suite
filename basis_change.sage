@@ -94,6 +94,7 @@ def find_best_random(MM, tries=100):
 
 
 def find_symplectic_for_two(MM, verbose=False, checks=False):
+    # TODO: generalize this to linear combinations
     Mij, i, j = find_pair(MM)
     if Mij == None:
         K = MM[0][0, 0].parent()
