@@ -273,38 +273,38 @@ def coefficient_matrix(poly_matrix, deg):
     return Matrix(rows)
 
 
-def compare_approaches(MM, tries=100, print_details=True, show_total_weight=False):
+def compare_approaches(MM, tries=100, verbose=True, show_total_weight=False):
     K = MM[0][0, 0].parent()
     n = MM[0].nrows()
     I = identity_matrix(K, n)
     print("Maximal global weight:", ZZ(n * (n - 1) / 2))
     print("With I:")
-    if print_details:
+    if verbose:
         print_matrices(MM)
     print_weights(MM, I, show_total_weight)
 
     print("\nWith symplectic basis for two matrices:")
     S = find_symplectic_for_two(MM)
-    if print_details:
+    if verbose:
         print_details(MM, S)
     print_weights(MM, S, show_total_weight)
 
     print("\nAt random:")
     R = find_best_random(MM, tries)
-    if print_details:
+    if verbose:
         print_details(MM, R)
     print_weights(MM, R, show_total_weight)
 
     print("\nWith elementary greedy strategy:")
     E = elementary_greedy_strategy(MM, tries)
-    if print_details:
+    if verbose:
         print_details(MM, E)
     print_weights(MM, E, show_total_weight)
 
     print("\nWith custom pencil strategy:")
     pencil = Pencil(MM, tries=tries)
     E = pencil.custom_reduce(restart=True)
-    if print_details:
+    if verbose:
         print_details(MM, E)
     print_weights(MM, E, show_total_weight)
 
@@ -316,11 +316,12 @@ def compare_approaches(MM, tries=100, print_details=True, show_total_weight=Fals
 @ click.option('--o2', default=2, help='the oil subspace dimension', type=int)
 @ click.option('-s', '--seed', default=0, help='the seed for randomness replication', type=int)
 @ click.option('-t', '--tries', default=100, help='the number of tries for each random strategy', type=int)
-def main(q, n, m, o2, seed, tries):
+@ click.option('-v', '--verbose', default=False, help='the number of tries for each random strategy', is_flag=True)
+def main(q, n, m, o2, seed, tries, verbose):
     set_random_seed(seed)
     PK, O2, O1, W = Keygen(q, n, m, o2)
     MM = [get_polar_form(M) for M in PK]
-    compare_approaches(MM, print_details=False, tries=tries)
+    compare_approaches(MM, verbose=verbose, tries=tries)
 
 
 if __name__ == '__main__':
