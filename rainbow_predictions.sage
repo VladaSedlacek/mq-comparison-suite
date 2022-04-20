@@ -64,18 +64,27 @@ def main(q, n, m, o2):
             D, N - guesses).nbits() + ceil(guesses * log(q, 2))
         return (without_guesses, with_guesses)
 
-    def NumberOfInhomogeneousCols(D, N, q):
-        if q == 2:
-            return sum([binomial(N, d)
-                        for d in range(D + 1)])
+    def NumberOfInhomogeneousCols(D, N, q, weil=False):
+        if not weil:
+            if q == 2:
+                return sum([binomial(N, d)
+                            for d in range(D + 1)])
+            else:
+                return binomial(N + D, D)
         else:
-            return binomial(N + D, D)
+            assert D == 2
+            e = log(q, radical(q))
+            return e * N + binomial(e * N, 2) - N * binomial(e, 2)
 
-    def find_number_of_guesses(D, N, M):
+    def find_number_of_guesses(D, N, M, weil=False):
         assert D >= 2
-        exp_rank = Expected_Ranks[D]
+        if not weil:
+            exp_rank = Expected_Ranks[D]
+        else:
+            assert D == 2
+            exp_rank = 4 * M
         number_of_guesses = 0
-        while exp_rank < NumberOfInhomogeneousCols(D, N - number_of_guesses, q):
+        while exp_rank < NumberOfInhomogeneousCols(D, N - number_of_guesses, q, weil=weil):
             number_of_guesses += 1
         return number_of_guesses
 
