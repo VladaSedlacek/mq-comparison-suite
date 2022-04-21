@@ -355,40 +355,46 @@ def locally_optimal_strategy(MM, quadratic=False, reverse=True, verbose=False):
             i = n - 1 - i
         M_across = Matrix([M[i] for M in MM])
         if verbose:
-            print("Investigating row", i)
-            print("\nM_across:\n{}\nco-rank: {}".format(
+            print("\nInvestigating row {}:".format(i))
+            print("M_across:\n{}\nCo-rank: {}".format(
                 M_across, corank(M_across)))
         ker = M_across.right_kernel()
-        if ker.dimension() > count_zeros_in_vector((Pencil(MM).matrix)[i]):
+        zeros_in_row = count_zeros_in_vector((Pencil(MM).matrix)[i])
+        potential_improvements = ker.dimension() - zeros_in_row
+        while potential_improvements > 0:
             if verbose:
-                print("Improvement might be possible...")
-                print("Kernel basis matrix:\n{}".format(ker))
+                print("Potential improvements:", potential_improvements)
             for ker_vec in ker.basis_matrix():
-                candidate_cols = [i for i in range(
-                    len(ker_vec)) if ker_vec[i] != 0]
+                candidate_cols = [j for j, c in enumerate(ker_vec) if c != 0]
+                if len(candidate_cols) == 1:
+                    potential_improvements -= 1
+                    continue
                 if verbose:
-                    print("candidate cols:", candidate_cols)
-                improved = False
+                    print("Candidate cols:", candidate_cols)
                 for col in candidate_cols:
                     L = identity_matrix(K, n)
                     L[:, col] = ker_vec
-                    if global_weight(MM, L, max_row=i, include_diag=quadratic) < global_weight(MM, max_row=i, include_diag=quadratic):
+                    if quadratic:
+                        MM_test = bilinear_to_quadratic(
+                            transform_basis(MM, L))
+                        condition = global_weight(MM_test, include_diag=True) < global_weight(
+                            MM, include_diag=True)
+                    else:
+                        MM_test = transform_basis(MM, L)
+                        condition = global_weight(
+                            MM, L, max_row=i) < global_weight(MM, max_row=i)
+                    if condition:
                         assert L.is_invertible()
                         L_total = L_total * L
-                        MM = transform_basis(MM, L)
-                        if quadratic:
-                            MM = bilinear_to_quadratic(MM)
+                        MM = MM_test
                         if verbose:
-                            print("Improvement made!")
-                            print("L:", L)
-                            print_matrices(MM)
-                            print("Current global weight:",
+                            print("Improvement made! New global weight:",
                                   global_weight(MM, include_diag=quadratic))
-                        improved = True
-                    if improved:
+                            print_matrices(MM)
                         break
-        elif verbose:
-            print("Zeros at max already")
+                potential_improvements -= 1
+        print("No potential improvements, moving on...")
+    print("")
     return L_total
 
 
