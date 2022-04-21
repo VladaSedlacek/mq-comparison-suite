@@ -391,7 +391,10 @@ def locally_optimal_strategy(MM, quadratic=False, verbose=False):
 def compare_approaches(MM, tries=100, quadratic=False, verbose=True):
     K = MM[0][0, 0].parent()
     n = MM[0].nrows()
-    print("Maximal global weight:", ZZ(n * (n - 1) / 2))
+    max_weight = ZZ(n * (n - 1) / 2)
+    if quadratic:
+        max_weight += n
+    print("Maximal global weight:", max_weight)
     print("With I:")
     if verbose:
         print_matrices(MM, quadratic=quadratic)
