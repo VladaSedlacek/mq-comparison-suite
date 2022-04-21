@@ -397,7 +397,7 @@ def compare_approaches(MM, tries=100, quadratic=False, verbose=True):
     print("Maximal global weight:", max_weight)
     print("With I:")
     if verbose:
-        print_matrices(MM, quadratic=quadratic)
+        print_matrices(MM)
     print_weight(MM, quadratic=quadratic)
 
     print("\nWith locally optimal strategy:")
@@ -442,7 +442,7 @@ def main(q, n, m, o2, seed, tries, verbose, quadratic):
         print_matrices(SS, pencilize=True)
         print_weight(SS, quadratic=True)
         print("\nNew quadratic system:")
-        print_details(SS, L, pencilize=True)
+        print_details(SS, L, quadratic=True, pencilize=True)
         print_weight(SS, L, quadratic=True)
 
 
