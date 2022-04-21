@@ -276,7 +276,7 @@ class Rainbow():
         SS = [D_x_ker * M * D_x_ker.transpose() for M in self.PP]
 
         for s in SS:
-            Make_UD(self.F, s)
+            Make_UD(s)
 
         if not Sol is None:
             assert Eval(SS, Sol) == vector(m * [0])
@@ -355,12 +355,13 @@ def Differential(F, x, y):
 
 
 # makes a matrix upper diagonal
-def Make_UD(F, M):
+def Make_UD(M):
     n = M.ncols()
+    K = M[0, 0].parent()
     for i in range(n):
         for j in range(i + 1, n):
             M[i, j] += M[j, i]
-            M[j, i] = F(0)
+            M[j, i] = K(0)
 
 
 def elt_to_str(q, a):

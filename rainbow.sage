@@ -2,9 +2,10 @@
 # implements Rainbow Key generation
 
 
-def Make_UD(M, K):
+def Make_UD(M):
     # makes a matrix upper diagonal
     n = M.ncols()
+    K = M[0, 0].parent()
     for i in range(n):
         for j in range(i + 1, n):
             M[i, j] += M[j, i]
@@ -47,7 +48,7 @@ def Keygen(q, n, m, o2):
         P = Matrix(K, n, n)
         for j in range(m):
             P += T[i, j] * Pre_Public_Key[j]
-        Make_UD(P, K)
+        Make_UD(P)
         Public_Key.append(P)
 
     basis_Fn = (K**n).basis()
