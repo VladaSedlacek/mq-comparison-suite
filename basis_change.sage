@@ -87,6 +87,8 @@ def transform_basis(MM, U):
 def global_weight(MM, U=None, max_row=None, max_col=None, include_diag=False):
     if U is not None:
         MM = transform_basis(MM, U)
+    if include_diag:
+        MM = bilinear_to_quadratic(MM)
     if max_row is None:
         max_row = MM[0].nrows()
     if max_col is None:
@@ -249,11 +251,6 @@ def elementary_greedy_strategy_iterated(MM, tries=100, starts=5):
     return record_U
 
 
-def print_weights(MM, U, quadratic=False):
-    print("Global weight: {}".format(
-        global_weight(MM, U, include_diag=quadratic)))
-
-
 class Pencil(object):
     """a class representing a pencil of bilinear forms"""
 
@@ -397,8 +394,8 @@ def compare_approaches(MM, tries=100, quadratic=False, verbose=True):
     print("Maximal global weight:", ZZ(n * (n - 1) / 2))
     print("With I:")
     if verbose:
-        print_matrices(MM)
-    print_weight(MM)
+        print_matrices(MM, quadratic=quadratic)
+    print_weight(MM, quadratic=quadratic)
 
     print("\nWith locally optimal strategy:")
     L = locally_optimal_strategy(MM, quadratic=quadratic, verbose=False)
@@ -411,6 +408,8 @@ def compare_approaches(MM, tries=100, quadratic=False, verbose=True):
     if verbose:
         print_details(MM, E, quadratic=quadratic)
     print_weight(MM, E, quadratic=quadratic)
+
+    return L
 
 
 @ click.command()
@@ -435,14 +434,13 @@ def main(q, n, m, o2, seed, tries, verbose, quadratic):
     else:
         L = compare_approaches(SS_bil, quadratic=False,
                                verbose=verbose, tries=tries)
-
-    print("Original quadratic system:")
-    print_matrices(SS, pencilize=True)
-    print("Global weight:", global_weight(SS, include_diag=True))
-    print("New quadratic system:")
-    SS_new = bilinear_to_quadratic(transform_basis(SS, L))
-    print_matrices(SS_new, pencilize=True)
-    print("Global weight:", global_weight(SS_new, include_diag=True))
+    if quadratic and verbose:
+        print("\nOriginal quadratic system:")
+        print_matrices(SS, pencilize=True)
+        print_weight(SS, quadratic=True)
+        print("\nNew quadratic system:")
+        print_details(SS, L, pencilize=True)
+        print_weight(SS, L, quadratic=True)
 
 
 if __name__ == '__main__':
