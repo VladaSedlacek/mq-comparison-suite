@@ -74,6 +74,12 @@ def get_polar_form(Q):
     return Q + Q.transpose()
 
 
+def bilinear_to_quadratic(MM):
+    for M in MM:
+        Make_UD(M)
+    return MM
+
+
 def hamming_weight(M):
     weight = 0
     for i in range(M.nrows()):
@@ -91,7 +97,7 @@ def total_weight(MM, U):
     return sum([hamming_weight(M) for M in transform_basis(MM, U)])
 
 
-def global_weight(MM, U=None, max_row=None, max_col=None):
+def global_weight(MM, U=None, max_row=None, max_col=None, include_diag=False):
     if U is not None:
         MM = transform_basis(MM, U)
     if max_row is None:
@@ -100,7 +106,8 @@ def global_weight(MM, U=None, max_row=None, max_col=None):
         max_col = MM[0].ncols()
     weight = 0
     for i in range(max_row):
-        for j in range(i + 1, max_col):
+        min_col = i + 1 - int(include_diag)
+        for j in range(min_col, max_col):
             if Pencil(MM).matrix[i, j] != 0:
                 weight += 1
     return weight
@@ -116,9 +123,12 @@ def print_matrices(MM, pencilize=True):
             print("")
 
 
-def print_details(MM, U, pencilize=True):
+def print_details(MM, U, quadratic=False, pencilize=True):
     print("Transformation matrix:\n{}\n".format(U))
-    print_matrices(transform_basis(MM, U), pencilize)
+    transformed = transform_basis(MM, U)
+    if quadratic:
+        transformed = bilinear_to_quadratic(transformed)
+    print_matrices(transformed, pencilize)
 
 
 def poly_sqrt(poly):
@@ -195,20 +205,20 @@ def find_symplectic_for_two(MM, verbose=False, checks=False):
     return U
 
 
-def elementary_improvement(MM, i, j, s=1, verbose=False):
+def elementary_improvement(MM, i, j, s=1, quadratic=False, verbose=False):
     # try adding the j-th row scaled by s to the i-th row
     K = MM[0][0, 0].parent()
     n = MM[0].nrows()
     E = elementary_matrix(K, n, row1=i, row2=j, scale=s)
-    old_weight = global_weight(MM)
-    new_weight = global_weight(MM, E)
+    old_weight = global_weight(MM, include_diag=quadratic)
+    new_weight = global_weight(MM, E, include_diag=quadratic)
     improved = old_weight > new_weight
     if verbose and improved:
         print("weights:", old_weight, new_weight)
     return improved, E
 
 
-def elementary_greedy_strategy(MM, tries=100, I_start=None):
+def elementary_greedy_strategy(MM, tries=100, quadratic=False, I_start=None):
     K = MM[0][0, 0].parent()
     n = MM[0].nrows()
     E_total = identity_matrix(K, n)
@@ -224,6 +234,7 @@ def elementary_greedy_strategy(MM, tries=100, I_start=None):
         if improved:
             E_total = E_total * E
             MM = [E.transpose() * M * E for M in MM]
+            MM = bilinear_to_quadratic(MM)
     return E_total
 
 
@@ -246,12 +257,13 @@ def elementary_greedy_strategy_iterated(MM, tries=100, starts=5):
     return record_U
 
 
-def print_weights(MM, U, show_total_weight=False):
+def print_weights(MM, U, quadratic=False, show_total_weight=False):
     if not show_total_weight:
-        print("Global weight: {}".format(global_weight(MM, U)))
+        print("Global weight: {}".format(
+            global_weight(MM, U, include_diag=quadratic)))
     else:
         print("Global weight: {}, total weight: {}".format(
-            global_weight(MM, U), total_weight(MM, U)))
+            global_weight(MM, U, include_diag=quadratic), total_weight(MM, U)))
 
 
 class Pencil(object):
@@ -347,7 +359,7 @@ def count_zeros_in_vector(v):
     return sum([int(vi == 0) for vi in v])
 
 
-def locally_optimal_strategy(MM, verbose=False):
+def locally_optimal_strategy(MM, quadratic=False, verbose=False):
     K = MM[0][0, 0].parent()
     n = MM[0].nrows()
     L_total = identity_matrix(K, n)
@@ -371,16 +383,18 @@ def locally_optimal_strategy(MM, verbose=False):
                 for col in candidate_cols:
                     L = identity_matrix(K, n)
                     L[:, col] = ker_vec
-                    if global_weight(MM, L, max_row=i) < global_weight(MM, max_row=i):
+                    if global_weight(MM, L, max_row=i, include_diag=quadratic) < global_weight(MM, max_row=i, include_diag=quadratic):
                         assert L.is_invertible()
                         L_total = L_total * L
                         MM = transform_basis(MM, L)
+                        if quadratic:
+                            MM = bilinear_to_quadratic(MM)
                         if verbose:
                             print("Improvement made!")
                             print("L:", L)
                             print_matrices(MM)
                             print("Current global weight:",
-                                  global_weight(MM))
+                                  global_weight(MM, include_diag=quadratic))
                         improved = True
                     if improved:
                         break
@@ -389,7 +403,7 @@ def locally_optimal_strategy(MM, verbose=False):
     return L_total
 
 
-def compare_approaches(MM, tries=100, verbose=True, show_total_weight=False):
+def compare_approaches(MM, tries=100, quadratic=False, verbose=True, show_total_weight=False):
     K = MM[0][0, 0].parent()
     n = MM[0].nrows()
     print("Maximal global weight:", ZZ(n * (n - 1) / 2))
@@ -399,10 +413,11 @@ def compare_approaches(MM, tries=100, verbose=True, show_total_weight=False):
     print_weights(MM, identity_matrix(K, n), show_total_weight)
 
     print("\nWith locally optimal strategy:")
-    L = locally_optimal_strategy(MM)
+    L = locally_optimal_strategy(MM, quadratic=quadratic, verbose=False)
     if verbose:
-        print_details(MM, L)
-    print_weights(MM, L, show_total_weight)
+        print_details(MM, L, quadratic=quadratic)
+    print_weights(MM, L, show_total_weight=show_total_weight,
+                  quadratic=quadratic)
 
     print("\nWith symplectic basis for two matrices:")
     S = find_symplectic_for_two(MM)
@@ -417,10 +432,11 @@ def compare_approaches(MM, tries=100, verbose=True, show_total_weight=False):
     print_weights(MM, R, show_total_weight)
 
     print("\nWith elementary greedy strategy:")
-    E = elementary_greedy_strategy(MM, tries)
+    E = elementary_greedy_strategy(MM, tries, quadratic=quadratic)
     if verbose:
-        print_details(MM, E)
-    print_weights(MM, E, show_total_weight)
+        print_details(MM, E, quadratic=quadratic)
+    print_weights(MM, E, show_total_weight=show_total_weight,
+                  quadratic=quadratic)
 
     print("\nWith custom pencil strategy:")
     pencil = Pencil(MM, tries=tries)
@@ -428,6 +444,8 @@ def compare_approaches(MM, tries=100, verbose=True, show_total_weight=False):
     if verbose:
         print_details(MM, E)
     print_weights(MM, E, show_total_weight)
+
+    return L
 
 
 @ click.command()
@@ -437,12 +455,29 @@ def compare_approaches(MM, tries=100, verbose=True, show_total_weight=False):
 @ click.option('--o2', default=2, help='the oil subspace dimension', type=int)
 @ click.option('-s', '--seed', default=0, help='the seed for randomness replication', type=int)
 @ click.option('-t', '--tries', default=100, help='the number of tries for each random strategy', type=int)
-@ click.option('-v', '--verbose', default=False, help='the number of tries for each random strategy', is_flag=True)
-def main(q, n, m, o2, seed, tries, verbose):
+@ click.option('-v', '--verbose', default=False, help='verbosity flag', is_flag=True)
+@ click.option('-q', '--quadratic', default=False, help='flag for quadratic strategies instead of bilinear ones', is_flag=True)
+def main(q, n, m, o2, seed, tries, verbose, quadratic):
     set_random_seed(seed)
     PK, O2, O1, W = Keygen(q, n, m, o2)
     MM = [get_polar_form(M) for M in PK]
-    compare_approaches(MM, verbose=verbose, tries=tries)
+    SS = Attack(PK, O2)
+    SS_bil = [get_polar_form(S) for S in SS]
+
+    if quadratic:
+        L = compare_approaches(
+            SS, quadratic=True, verbose=verbose, tries=tries)
+    else:
+        L = compare_approaches(SS_bil, quadratic=False,
+                               verbose=verbose, tries=tries)
+
+    print("Original quadratic system:")
+    print_matrices(SS, pencilize=True)
+    print("Global weight:", global_weight(SS, include_diag=True))
+    print("New quadratic system:")
+    SS_new = bilinear_to_quadratic(transform_basis(SS, L))
+    print_matrices(SS_new, pencilize=True)
+    print("Global weight:", global_weight(SS_new, include_diag=True))
 
 
 if __name__ == '__main__':
