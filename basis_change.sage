@@ -2,6 +2,74 @@ import click
 load('rainbow.sage')
 
 
+def Attack(PK, O2=None):
+    m = len(PK)
+    n = PK[0].ncols()
+    K = PK[0][0, 0].parent()
+    q = K.order()
+    basis_Fn = (K**n).basis()
+
+    global attempts
+    attempts = 0
+
+    # pick a random vector x
+    x = vector([K.random_element() for i in range(n)])
+    while Eval(PK, x)[0] == 0:
+        x = vector([K.random_element() for i in range(n)])
+
+    # compute linear map D_x = P'(x,.)
+    D_x = Matrix(K, [Differential(PK, x, b) for b in basis_Fn])
+    D_x_ker = Matrix(D_x.kernel().basis())
+
+    if q % 2 == 0:
+        D_x_ker[0] = x
+
+    if D_x_ker.rank() != n - m:
+        return Attack(PK, O2)
+
+    attempts += 1
+
+    Sol = None
+    if O2 is not None:
+        V = K**n
+        I = V.span(D_x_ker).intersection(V.span(O2.transpose()))
+        if I.dimension() == 0:
+            # print("Attack would fail. resample x")
+            return Attack(PK, O2)
+
+        print("Intersection has dimension:", I.dimension())
+        Sol = I.basis()[0]
+
+        Sol = D_x_ker.transpose().solve_right(Sol)
+
+        if Sol[-1] == 0:
+            print("last entry is zero, resample x")
+            return Attack(PK, O2)
+
+        Sol = Sol / Sol[-1]
+
+        print("Good D_x found after %d attempts." % attempts)
+
+        print("The expected subsolution is:")
+        print(Sol[1:])
+
+    # Compose smaller system D_x(o)= 0 and P(o) = 0
+    SS = [D_x_ker * M * D_x_ker.transpose() for M in PK]
+    for s in SS:
+        Make_UD(s)
+    if not O2 is None:
+        assert Eval(SS, Sol) == vector([0] * m)
+
+    if q % 2 == 0:
+        Px = Eval(PK, x)
+        SSS = [(SS[i] * Px[0] + SS[0] * Px[i])[1:, 1:]
+               for i in range(1, len(SS))]
+        SS = SSS
+        if not O2 is None:
+            assert Eval(SSS, Sol[1:]) == vector([0] * (m - 1))
+    return SS
+
+
 def get_polar_form(Q):
     return Q + Q.transpose()
 
