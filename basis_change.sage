@@ -397,7 +397,8 @@ def locally_optimal_strategy(MM, quadratic=False, reverse=True, try_all=True, ve
                             print_matrices(MM)
                         break
                 potential_improvements -= 1
-        print("No potential improvements, moving on...")
+        if verbose:
+            print("No potential improvements, moving on...")
     print("")
     return L_total
 
@@ -423,7 +424,7 @@ def compare_approaches(MM, tries=100, quadratic=False, verbose=True, width=100):
     print_weight(MM, L, quadratic=quadratic)
 
     print("=" * width + "\n")
-    print("With elementary greedy strategy:")
+    print("With elementary greedy strategy:\n")
     E = elementary_greedy_strategy(MM, tries, quadratic=quadratic)
     if verbose:
         print_details(MM, E, quadratic=quadratic)
