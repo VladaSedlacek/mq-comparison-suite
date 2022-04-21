@@ -419,33 +419,12 @@ def compare_approaches(MM, tries=100, quadratic=False, verbose=True, show_total_
     print_weights(MM, L, show_total_weight=show_total_weight,
                   quadratic=quadratic)
 
-    print("\nWith symplectic basis for two matrices:")
-    S = find_symplectic_for_two(MM)
-    if verbose:
-        print_details(MM, S)
-    print_weights(MM, S, show_total_weight)
-
-    print("\nAt random:")
-    R = find_best_random(MM, tries)
-    if verbose:
-        print_details(MM, R)
-    print_weights(MM, R, show_total_weight)
-
     print("\nWith elementary greedy strategy:")
     E = elementary_greedy_strategy(MM, tries, quadratic=quadratic)
     if verbose:
         print_details(MM, E, quadratic=quadratic)
     print_weights(MM, E, show_total_weight=show_total_weight,
                   quadratic=quadratic)
-
-    print("\nWith custom pencil strategy:")
-    pencil = Pencil(MM, tries=tries)
-    E = pencil.custom_reduce(restart=True)
-    if verbose:
-        print_details(MM, E)
-    print_weights(MM, E, show_total_weight)
-
-    return L
 
 
 @ click.command()
