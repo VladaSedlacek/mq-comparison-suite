@@ -453,7 +453,7 @@ def main(q, n, m, o2, seed, tries, verbose, quadratic):
     else:
         L = compare_approaches(SS_bil, quadratic=False,
                                verbose=verbose, tries=tries, width=width)
-    if quadratic and verbose:
+    if verbose:
         print("=" * width + "\n")
         print("Original quadratic system:")
         print_matrices(SS, pencilize=True)
