@@ -388,9 +388,10 @@ def locally_optimal_strategy(MM, quadratic=False, verbose=False):
     return L_total
 
 
-def compare_approaches(MM, tries=100, quadratic=False, verbose=True):
+def compare_approaches(MM, tries=100, quadratic=False, verbose=True, width=100):
     K = MM[0][0, 0].parent()
     n = MM[0].nrows()
+    print("=" * width + "\n")
     max_weight = ZZ(n * (n - 1) / 2)
     if quadratic:
         max_weight += n
@@ -400,17 +401,20 @@ def compare_approaches(MM, tries=100, quadratic=False, verbose=True):
         print_matrices(MM)
     print_weight(MM, quadratic=quadratic)
 
-    print("\nWith locally optimal strategy:")
+    print("=" * width + "\n")
+    print("With locally optimal strategy:")
     L = locally_optimal_strategy(MM, quadratic=quadratic, verbose=False)
     if verbose:
         print_details(MM, L, quadratic=quadratic)
     print_weight(MM, L, quadratic=quadratic)
 
-    print("\nWith elementary greedy strategy:")
+    print("=" * width + "\n")
+    print("With elementary greedy strategy:")
     E = elementary_greedy_strategy(MM, tries, quadratic=quadratic)
     if verbose:
         print_details(MM, E, quadratic=quadratic)
     print_weight(MM, E, quadratic=quadratic)
+    print("=" * width)
 
     return L
 
@@ -425,23 +429,27 @@ def compare_approaches(MM, tries=100, quadratic=False, verbose=True):
 @ click.option('-v', '--verbose', default=False, help='verbosity flag', is_flag=True)
 @ click.option('-q', '--quadratic', default=False, help='flag for quadratic strategies instead of bilinear ones', is_flag=True)
 def main(q, n, m, o2, seed, tries, verbose, quadratic):
+    width = 100
     set_random_seed(seed)
     PK, O2, O1, W = Keygen(q, n, m, o2)
     MM = [get_polar_form(M) for M in PK]
     SS = Attack(PK, O2)
     SS_bil = [get_polar_form(S) for S in SS]
+    print("=" * width)
 
     if quadratic:
         L = compare_approaches(
-            SS, quadratic=True, verbose=verbose, tries=tries)
+            SS, quadratic=True, verbose=verbose, tries=tries, width=width)
     else:
         L = compare_approaches(SS_bil, quadratic=False,
-                               verbose=verbose, tries=tries)
+                               verbose=verbose, tries=tries, width=width)
     if quadratic and verbose:
-        print("\nOriginal quadratic system:")
+        print("=" * width + "\n")
+        print("Original quadratic system:")
         print_matrices(SS, pencilize=True)
         print_weight(SS, quadratic=True)
-        print("\nNew quadratic system:")
+        print("=" * width + "\n")
+        print("New quadratic system:")
         print_details(SS, L, quadratic=True, pencilize=True)
         print_weight(SS, L, quadratic=True)
 
