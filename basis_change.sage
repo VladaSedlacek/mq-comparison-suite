@@ -344,7 +344,7 @@ def count_zeros_in_vector(v):
     return sum([int(vi == 0) for vi in v])
 
 
-def locally_optimal_strategy(MM, quadratic=False, reverse=True, verbose=False):
+def locally_optimal_strategy(MM, quadratic=False, reverse=True, try_all=True, verbose=False):
     if not quadratic:
         reverse = False
     K = MM[0][0, 0].parent()
@@ -359,12 +359,16 @@ def locally_optimal_strategy(MM, quadratic=False, reverse=True, verbose=False):
             print("M_across:\n{}\nCo-rank: {}".format(
                 M_across, corank(M_across)))
         ker = M_across.right_kernel()
+        if try_all:
+            vectors_to_try = ker
+        else:
+            vectors_to_try = ker.basis_matrix()
         zeros_in_row = count_zeros_in_vector((Pencil(MM).matrix)[i])
         potential_improvements = ker.dimension() - zeros_in_row
         while potential_improvements > 0:
             if verbose:
                 print("Potential improvements:", potential_improvements)
-            for ker_vec in ker.basis_matrix():
+            for ker_vec in vectors_to_try:
                 candidate_cols = [j for j, c in enumerate(ker_vec) if c != 0]
                 if len(candidate_cols) == 1:
                     potential_improvements -= 1
