@@ -388,7 +388,6 @@ def locally_optimal_strategy(MM, quadratic=False, reverse=False, try_all=True, v
                         condition = global_weight(
                             MM, L, max_row=i) < global_weight(MM, max_row=i)
                     if condition:
-                        assert L.is_invertible()
                         L_total = L_total * L
                         MM = MM_test
                         if verbose:
@@ -420,6 +419,7 @@ def compare_approaches(MM, tries=100, quadratic=False, verbose=True, width=100):
     print("With locally optimal strategy:")
     L = locally_optimal_strategy(
         MM, quadratic=quadratic, reverse=False, verbose=False)
+    assert L.is_invertible()
     if verbose:
         print_details(MM, L, quadratic=quadratic)
     print_weight(MM, L, quadratic=quadratic)
