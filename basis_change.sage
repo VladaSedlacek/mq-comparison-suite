@@ -80,21 +80,8 @@ def bilinear_to_quadratic(MM):
     return MM
 
 
-def hamming_weight(M):
-    weight = 0
-    for i in range(M.nrows()):
-        for j in range(i + 1, M.ncols()):
-            if M[i, j] != 0:
-                weight += 1
-    return weight
-
-
 def transform_basis(MM, U):
     return [U.transpose() * M * U for M in MM]
-
-
-def total_weight(MM, U):
-    return sum([hamming_weight(M) for M in transform_basis(MM, U)])
 
 
 def global_weight(MM, U=None, max_row=None, max_col=None, include_diag=False):
@@ -111,6 +98,11 @@ def global_weight(MM, U=None, max_row=None, max_col=None, include_diag=False):
             if Pencil(MM).matrix[i, j] != 0:
                 weight += 1
     return weight
+
+
+def print_weight(MM, U=None, quadratic=False):
+    print("Global weight: {}".format(
+        global_weight(MM, U, include_diag=quadratic)))
 
 
 def print_matrices(MM, pencilize=True):
@@ -257,13 +249,9 @@ def elementary_greedy_strategy_iterated(MM, tries=100, starts=5):
     return record_U
 
 
-def print_weights(MM, U, quadratic=False, show_total_weight=False):
-    if not show_total_weight:
-        print("Global weight: {}".format(
-            global_weight(MM, U, include_diag=quadratic)))
-    else:
-        print("Global weight: {}, total weight: {}".format(
-            global_weight(MM, U, include_diag=quadratic), total_weight(MM, U)))
+def print_weights(MM, U, quadratic=False):
+    print("Global weight: {}".format(
+        global_weight(MM, U, include_diag=quadratic)))
 
 
 class Pencil(object):
@@ -403,28 +391,26 @@ def locally_optimal_strategy(MM, quadratic=False, verbose=False):
     return L_total
 
 
-def compare_approaches(MM, tries=100, quadratic=False, verbose=True, show_total_weight=False):
+def compare_approaches(MM, tries=100, quadratic=False, verbose=True):
     K = MM[0][0, 0].parent()
     n = MM[0].nrows()
     print("Maximal global weight:", ZZ(n * (n - 1) / 2))
     print("With I:")
     if verbose:
         print_matrices(MM)
-    print_weights(MM, identity_matrix(K, n), show_total_weight)
+    print_weight(MM)
 
     print("\nWith locally optimal strategy:")
     L = locally_optimal_strategy(MM, quadratic=quadratic, verbose=False)
     if verbose:
         print_details(MM, L, quadratic=quadratic)
-    print_weights(MM, L, show_total_weight=show_total_weight,
-                  quadratic=quadratic)
+    print_weight(MM, L, quadratic=quadratic)
 
     print("\nWith elementary greedy strategy:")
     E = elementary_greedy_strategy(MM, tries, quadratic=quadratic)
     if verbose:
         print_details(MM, E, quadratic=quadratic)
-    print_weights(MM, E, show_total_weight=show_total_weight,
-                  quadratic=quadratic)
+    print_weight(MM, E, quadratic=quadratic)
 
 
 @ click.command()
