@@ -344,11 +344,15 @@ def count_zeros_in_vector(v):
     return sum([int(vi == 0) for vi in v])
 
 
-def locally_optimal_strategy(MM, quadratic=False, verbose=False):
+def locally_optimal_strategy(MM, quadratic=False, reverse=True, verbose=False):
+    if not quadratic:
+        reverse = False
     K = MM[0][0, 0].parent()
     n = MM[0].nrows()
     L_total = identity_matrix(K, n)
     for i in range(n):
+        if reverse:
+            i = n - 1 - i
         M_across = Matrix([M[i] for M in MM])
         if verbose:
             print("Investigating row", i)
