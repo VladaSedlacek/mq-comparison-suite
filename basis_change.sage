@@ -344,7 +344,7 @@ def count_zeros_in_vector(v):
     return sum([int(vi == 0) for vi in v])
 
 
-def locally_optimal_strategy(MM, quadratic=False, reverse=True, try_all=True, verbose=False):
+def locally_optimal_strategy(MM, quadratic=False, reverse=False, try_all=True, verbose=False):
     if not quadratic:
         reverse = False
     K = MM[0][0, 0].parent()
@@ -418,7 +418,8 @@ def compare_approaches(MM, tries=100, quadratic=False, verbose=True, width=100):
 
     print("=" * width + "\n")
     print("With locally optimal strategy:")
-    L = locally_optimal_strategy(MM, quadratic=quadratic, verbose=False)
+    L = locally_optimal_strategy(
+        MM, quadratic=quadratic, reverse=False, verbose=False)
     if verbose:
         print_details(MM, L, quadratic=quadratic)
     print_weight(MM, L, quadratic=quadratic)
