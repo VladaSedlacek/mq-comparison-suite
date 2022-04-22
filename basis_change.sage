@@ -472,7 +472,7 @@ def compare_approaches(MM, quadratic, tries, extra_tries, reverse, verbose=True,
 @ click.option('-e', '--extra', default=40, help='the maximum number of extra tries for the locally optimal strategy', type=int)
 @ click.option('-v', '--verbose', default=False, help='verbosity flag', is_flag=True)
 @ click.option('-r', '--reverse', default=False, help='flag for reverse direction in the locally optimal strategy', is_flag=True)
-@ click.option('-q', '--quadratic', default=False, help='flag for quadratic strategies instead of bilinear ones', is_flag=True)
+@ click.option('-q', '--quadratic', default=True, help='flag for quadratic strategies instead of bilinear ones', is_flag=True)
 def main(q, n, m, o2, seed, quadratic, tries, extra, reverse, verbose):
     width = 100
     set_random_seed(seed)
