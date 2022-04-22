@@ -344,6 +344,14 @@ def count_zeros_in_vector(v):
     return sum([int(vi == 0) for vi in v])
 
 
+def get_slices(MM):
+    return [Matrix([M[i][i:] for M in MM]) for i in range(MM[0].nrows())]
+
+
+def guess_optimal_weight(MM):
+    return sum([rank(M_slice) for M_slice in get_slices(MM)])
+
+
 def locally_optimal_strategy(MM, quadratic=False, reverse=False, try_all=True, verbose=False):
     if not quadratic:
         reverse = False
@@ -410,6 +418,8 @@ def compare_approaches(MM, tries=100, quadratic=False, verbose=True, width=100):
     if quadratic:
         max_weight += n
     print("Maximal global weight:", max_weight)
+    print("Ranks of slices:", [rank(M_slice) for M_slice in get_slices(MM)])
+    print("Estimated optimal weight:", guess_optimal_weight(MM))
     print("With I:")
     if verbose:
         print_matrices(MM)
