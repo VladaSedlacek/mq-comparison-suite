@@ -427,7 +427,7 @@ def locally_optimal_strategy(MM, extra_tries, quadratic=False, reverse=False, ve
     return L_total
 
 
-def compare_approaches(MM, tries, extra_tries, quadratic=False, verbose=True, width=100):
+def compare_approaches(MM, quadratic, tries, extra_tries, reverse, verbose=True, width=100):
     K = MM[0][0, 0].parent()
     n = MM[0].nrows()
     print("=" * width + "\n")
@@ -445,7 +445,7 @@ def compare_approaches(MM, tries, extra_tries, quadratic=False, verbose=True, wi
     print("=" * width + "\n")
     print("With locally optimal strategy:")
     L = locally_optimal_strategy(
-        MM, quadratic=quadratic, extra_tries=extra_tries, reverse=False, verbose=False)
+        MM, quadratic=quadratic, extra_tries=extra_tries, reverse=reverse, verbose=False)
     assert L.is_invertible()
     if verbose:
         print_details(MM, L, quadratic=quadratic)
@@ -471,8 +471,9 @@ def compare_approaches(MM, tries, extra_tries, quadratic=False, verbose=True, wi
 @ click.option('-t', '--tries', default=100, help='the number of tries for each random strategy', type=int)
 @ click.option('-e', '--extra', default=40, help='the maximum number of extra tries for the locally optimal strategy', type=int)
 @ click.option('-v', '--verbose', default=False, help='verbosity flag', is_flag=True)
+@ click.option('-r', '--reverse', default=False, help='flag for reverse direction in the locally optimal strategy', is_flag=True)
 @ click.option('-q', '--quadratic', default=False, help='flag for quadratic strategies instead of bilinear ones', is_flag=True)
-def main(q, n, m, o2, seed, tries, extra, verbose, quadratic):
+def main(q, n, m, o2, seed, quadratic, tries, extra, reverse, verbose):
     width = 100
     set_random_seed(seed)
     PK, O2, O1, W = Keygen(q, n, m, o2)
@@ -483,10 +484,10 @@ def main(q, n, m, o2, seed, tries, extra, verbose, quadratic):
 
     if quadratic:
         L = compare_approaches(
-            SS, quadratic=True, verbose=verbose, tries=tries, extra_tries=extra, width=width)
+            SS, quadratic=True, verbose=verbose, tries=tries, extra_tries=extra, reverse=reverse, width=width)
     else:
         L = compare_approaches(SS_bil, quadratic=False,
-                               verbose=verbose, tries=tries, extra_tries=extra, width=width)
+                               verbose=verbose, tries=tries, extra_tries=extra, reverse=reverse, width=width)
     if verbose:
         print("=" * width + "\n")
         print("Original quadratic system:")
