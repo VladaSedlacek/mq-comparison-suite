@@ -352,65 +352,82 @@ def guess_optimal_weight(MM):
     return sum([rank(M_slice) for M_slice in get_slices(MM)])
 
 
-def locally_optimal_strategy(MM, quadratic=False, reverse=False, try_all=True, verbose=False):
+def potential_improvements(MM, i, head=0):
+    M_slice = Matrix([M[i][head:] for M in MM])
+    zeros = count_zeros_in_vector((Pencil(MM).matrix)[i])
+    return corank(M_slice) - zeros
+
+
+def nonzero_cols(v):
+    return [j for j, c in enumerate(v) if c != 0]
+
+
+def get_vectors_to_try(MM, i, head=0):
+    M_slice = Matrix([M[i][head:] for M in MM])
+    return [vector([0] * head + list(v)) for v in M_slice.right_kernel()]
+
+
+def locally_optimal_strategy(MM, extra_tries, quadratic=False, reverse=False, verbose=False):
     if not quadratic:
         reverse = False
     K = MM[0][0, 0].parent()
     n = MM[0].nrows()
     L_total = identity_matrix(K, n)
     for i in range(n):
+        head = 0
+        if potential_improvements(MM, i) == 0:
+            continue
+        M_slice = Matrix([M[i][head:] for M in MM])
         if reverse:
             i = n - 1 - i
-        M_across = Matrix([M[i] for M in MM])
         if verbose:
             print("\nInvestigating row {}:".format(i))
-            print("M_across:\n{}\nCo-rank: {}".format(
-                M_across, corank(M_across)))
-        ker = M_across.right_kernel()
-        if try_all:
-            vectors_to_try = ker
-        else:
-            vectors_to_try = ker.basis_matrix()
-        zeros_in_row = count_zeros_in_vector((Pencil(MM).matrix)[i])
-        potential_improvements = ker.dimension() - zeros_in_row
-        while potential_improvements > 0:
+            print("M_slice:\n{}\nCo-rank: {}".format(
+                M_slice, corank(M_slice)))
+        vectors_to_try = get_vectors_to_try(MM, i, head)
+        vectors_tried = []
+        cols_used = []
+        extra_counter = 0
+        for v in vectors_to_try:
+            extra_counter += 1
+            if potential_improvements(MM, i) == 0 and extra_counter > extra_tries:
+                break
+            candidate_cols = nonzero_cols(v)
+            if v in vectors_tried or len(candidate_cols) <= 1:
+                vectors_tried.append(v)
+                continue
+            vectors_tried.append(v)
             if verbose:
-                print("Potential improvements:", potential_improvements)
-            for ker_vec in vectors_to_try:
-                candidate_cols = [j for j, c in enumerate(ker_vec) if c != 0]
-                if len(candidate_cols) == 1:
-                    potential_improvements -= 1
+                print("Trying {} out of possible {}, candidate_cols: {}".format(
+                    len(vectors_tried), len(vectors_to_try), candidate_cols))
+            for col in candidate_cols:
+                if col in cols_used:
                     continue
-                if verbose:
-                    print("Candidate cols:", candidate_cols)
-                for col in candidate_cols:
-                    L = identity_matrix(K, n)
-                    L[:, col] = ker_vec
-                    if quadratic:
-                        MM_test = bilinear_to_quadratic(
-                            transform_basis(MM, L))
-                        condition = global_weight(MM_test, include_diag=True) < global_weight(
-                            MM, include_diag=True)
-                    else:
-                        MM_test = transform_basis(MM, L)
-                        condition = global_weight(
-                            MM, L, max_row=i) < global_weight(MM, max_row=i)
-                    if condition:
-                        L_total = L_total * L
-                        MM = MM_test
-                        if verbose:
-                            print("Improvement made! New global weight:",
-                                  global_weight(MM, include_diag=quadratic))
-                            print_matrices(MM)
-                        break
-                potential_improvements -= 1
-        if verbose:
-            print("No potential improvements, moving on...")
+                L = identity_matrix(K, n)
+                L[:, col] = v
+                if quadratic:
+                    MM_test = bilinear_to_quadratic(
+                        transform_basis(MM, L))
+                    condition = global_weight(MM_test, include_diag=True) < global_weight(
+                        MM, include_diag=True)
+                else:
+                    MM_test = transform_basis(MM, L)
+                    condition = global_weight(
+                        MM, L, max_row=i) < global_weight(MM, max_row=i)
+                if condition:
+                    L_total = L_total * L
+                    MM = MM_test
+                    cols_used.append(col)
+                    if verbose:
+                        print("Improvement made! New global weight:",
+                              global_weight(MM, include_diag=quadratic))
+                        print_matrices(MM)
+                    break
     print("")
     return L_total
 
 
-def compare_approaches(MM, tries=100, quadratic=False, verbose=True, width=100):
+def compare_approaches(MM, tries, extra_tries, quadratic=False, verbose=True, width=100):
     K = MM[0][0, 0].parent()
     n = MM[0].nrows()
     print("=" * width + "\n")
@@ -428,7 +445,7 @@ def compare_approaches(MM, tries=100, quadratic=False, verbose=True, width=100):
     print("=" * width + "\n")
     print("With locally optimal strategy:")
     L = locally_optimal_strategy(
-        MM, quadratic=quadratic, reverse=False, verbose=False)
+        MM, quadratic=quadratic, extra_tries=extra_tries, reverse=False, verbose=False)
     assert L.is_invertible()
     if verbose:
         print_details(MM, L, quadratic=quadratic)
@@ -452,9 +469,10 @@ def compare_approaches(MM, tries=100, quadratic=False, verbose=True, width=100):
 @ click.option('--o2', default=2, help='the oil subspace dimension', type=int)
 @ click.option('-s', '--seed', default=0, help='the seed for randomness replication', type=int)
 @ click.option('-t', '--tries', default=100, help='the number of tries for each random strategy', type=int)
+@ click.option('-e', '--extra', default=40, help='the maximum number of extra tries for the locally optimal strategy', type=int)
 @ click.option('-v', '--verbose', default=False, help='verbosity flag', is_flag=True)
 @ click.option('-q', '--quadratic', default=False, help='flag for quadratic strategies instead of bilinear ones', is_flag=True)
-def main(q, n, m, o2, seed, tries, verbose, quadratic):
+def main(q, n, m, o2, seed, tries, extra, verbose, quadratic):
     width = 100
     set_random_seed(seed)
     PK, O2, O1, W = Keygen(q, n, m, o2)
@@ -465,10 +483,10 @@ def main(q, n, m, o2, seed, tries, verbose, quadratic):
 
     if quadratic:
         L = compare_approaches(
-            SS, quadratic=True, verbose=verbose, tries=tries, width=width)
+            SS, quadratic=True, verbose=verbose, tries=tries, extra_tries=extra, width=width)
     else:
         L = compare_approaches(SS_bil, quadratic=False,
-                               verbose=verbose, tries=tries, width=width)
+                               verbose=verbose, tries=tries, extra_tries=extra, width=width)
     if verbose:
         print("=" * width + "\n")
         print("Original quadratic system:")
