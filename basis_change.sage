@@ -1,4 +1,6 @@
 import click
+from sage.matrix.symplectic_basis import symplectic_basis_over_field
+
 load('rainbow.sage')
 
 
@@ -197,6 +199,15 @@ def find_symplectic_for_two(MM, verbose=False, checks=False):
         print(MiD, "\n")
         print(MjD, "\n")
     return U
+
+
+def single_symplectic_strategy(MM_bil):
+    S_candidates = []
+    for M_bil in MM_bil:
+        E, S = symplectic_basis_over_field(M_bil)
+        assert S * M_bil * S.transpose() == E
+        S_candidates.append(S.transpose())
+    return S_candidates
 
 
 def elementary_improvement(MM, i, j, s=1, quadratic=False, verbose=False):
@@ -459,6 +470,15 @@ def compare_approaches(MM, quadratic, tries, extra_tries, reverse, verbose=True,
     print_weight(MM, E, quadratic=quadratic)
     print("=" * width)
 
+    if quadratic:
+        print("With single symplectic strategy:\n")
+        MM_bil = [get_polar_form(M) for M in MM]
+        S_candidates = single_symplectic_strategy(MM_bil)
+        for S in S_candidates:
+            if verbose:
+                print_details(MM, S, quadratic=quadratic)
+            print_weight(MM, S, quadratic=quadratic)
+        print("=" * width + "\n")
     return L
 
 
