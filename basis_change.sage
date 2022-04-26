@@ -423,6 +423,7 @@ def locally_optimal_strategy(MM, extra_tries, quadratic=False, reverse=False, ve
     for i in range(n):
         head = 0
         if potential_improvements(MM, i) == 0:
+            # This might be too restrictive...
             continue
         M_slice = Matrix([M[i][head:] for M in MM])
         if reverse:
