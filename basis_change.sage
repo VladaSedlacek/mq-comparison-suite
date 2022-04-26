@@ -506,15 +506,6 @@ def compare_approaches(MM, quadratic, tries, extra_tries, reverse, verbose=True,
     print_weight(MM, E, quadratic=quadratic)
     print("=" * width)
 
-    if quadratic:
-        print("With single symplectic strategy:\n")
-        MM_bil = [get_polar_form(M) for M in MM]
-        S_candidates = single_symplectic_strategy(MM_bil)
-        for S in S_candidates:
-            if verbose:
-                print_details(MM, S, quadratic=quadratic)
-            print_weight(MM, S, quadratic=quadratic)
-        print("=" * width + "\n")
     return L
 
 
