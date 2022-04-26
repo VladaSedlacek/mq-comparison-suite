@@ -522,7 +522,7 @@ def compare_approaches(MM, quadratic, tries, extra_tries, reverse, verbose=True,
 @ click.option('--o2', default=2, help='the oil subspace dimension', type=int)
 @ click.option('-s', '--seed', default=0, help='the seed for randomness replication', type=int)
 @ click.option('-t', '--tries', default=100, help='the number of tries for each random strategy', type=int)
-@ click.option('-e', '--extra', default=40, help='the maximum number of extra tries for the locally optimal strategy', type=int)
+@ click.option('-e', '--extra', default=0, help='the maximum number of extra tries for the locally optimal strategy', type=int)
 @ click.option('-v', '--verbose', default=False, help='verbosity flag', is_flag=True)
 @ click.option('-r', '--reverse', default=False, help='flag for reverse direction in the locally optimal strategy', is_flag=True)
 @ click.option('-q', '--quadratic', default=True, help='flag for quadratic strategies instead of bilinear ones', is_flag=True)
