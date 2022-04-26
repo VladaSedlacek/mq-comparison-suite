@@ -520,32 +520,35 @@ def compare_approaches(MM, quadratic, tries, extra_tries, reverse, verbose=True,
 @ click.option('-v', '--verbose', default=False, help='verbosity flag', is_flag=True)
 @ click.option('-r', '--reverse', default=False, help='flag for reverse direction in the locally optimal strategy', is_flag=True)
 @ click.option('-q', '--quadratic', default=True, help='flag for quadratic strategies instead of bilinear ones', is_flag=True)
-def main(q, n, m, o2, seed, quadratic, tries, extra, reverse, verbose):
+@ click.option('-a', '--attack', default=False, help='use the system resulting from the Beullens attack', is_flag=True)
+def main(q, n, m, o2, seed, quadratic, tries, extra, reverse, attack, verbose):
     width = 100
     set_random_seed(seed)
     PK, O2, O1, W = Keygen(q, n, m, o2)
-    MM = [get_polar_form(M) for M in PK]
-    SS = Attack(PK, O2)
-    SS_bil = [get_polar_form(S) for S in SS]
+    if attack:
+        MM = Attack(PK, O2)
+    else:
+        MM = PK
+    MM_bil = [get_polar_form(M) for M in MM]
     print("=" * width)
     print(
-        f"The dimensions of the resulting system: n={SS[0].nrows()}, m={len(SS)}")
+        f"The dimensions of the resulting system: n={MM[0].nrows()}, m={len(MM)}")
 
     if quadratic:
         L = compare_approaches(
-            SS, quadratic=True, verbose=verbose, tries=tries, extra_tries=extra, reverse=reverse, width=width)
+            MM, quadratic=True, verbose=verbose, tries=tries, extra_tries=extra, reverse=reverse, width=width)
     else:
-        L = compare_approaches(SS_bil, quadratic=False,
+        L = compare_approaches(MM_bil, quadratic=False,
                                verbose=verbose, tries=tries, extra_tries=extra, reverse=reverse, width=width)
     if verbose:
         print("=" * width + "\n")
         print("Original quadratic system:")
-        print_matrices(SS, pencilize=True)
-        print_weight(SS, quadratic=True)
+        print_matrices(MM, pencilize=True)
+        print_weight(MM, quadratic=True)
         print("=" * width + "\n")
         print("New quadratic system:")
-        print_details(SS, L, quadratic=True, pencilize=True)
-        print_weight(SS, L, quadratic=True)
+        print_details(MM, L, quadratic=True, pencilize=True)
+        print_weight(MM, L, quadratic=True)
 
 
 if __name__ == '__main__':
