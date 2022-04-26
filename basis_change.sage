@@ -1,4 +1,5 @@
 import click
+import pandas as pd
 from sage.matrix.symplectic_basis import symplectic_basis_over_field
 
 load('rainbow.sage')
@@ -125,6 +126,41 @@ def print_details(MM, U, quadratic=False, pencilize=True):
     if quadratic:
         transformed = bilinear_to_quadratic(transformed)
     print_matrices(transformed, pencilize)
+
+
+def probability_of_rank(n, m, r, q=2):
+    # returns the probability that a random m x n matrix over Fq has rank r
+    # computed according to https://www.cs.utoronto.ca/~cvs/coding/random_report.pdf
+    rank_r_matrices = gaussian_binomial(n, r)(q=q) * sum([(-1) ^ (r - l) * gaussian_binomial(
+        r, l)(q=q) * q ^ (m * l + binomial(r - l, 2)) for l in range(r + 1)])
+    all_matrices = q ^ (m * n)
+    return rank_r_matrices / all_matrices
+
+
+def expected_rank(n, m, q=2):
+    # returns the expected rank of a random m x n matrix over Fq
+    # computed according to https://www.cs.utoronto.ca/~cvs/coding/random_report.pdf
+    return sum([r * probability_of_rank(n, m, r, q) for r in range(min(m, n) + 1)])
+
+
+def expected_optimal_weight(n, m, q=2):
+    return sum([expected_rank(i, m, q) for i in range(1, n + 1)]).round()
+
+
+def max_weight(n, quadratic=True):
+    if quadratic:
+        return ZZ(n * (n + 1) / 2)
+    else:
+        return ZZ(n * (n - 1) / 2)
+
+
+def print_expected_optimal_weights(q=2, n_max=10, m_max=10, n_min=4, m_min=4):
+    data = [[f"{expected_optimal_weight(n, m, q)}/{max_weight(n)}"
+             for n in range(n_min, n_max + 1)] for m in range(m_min, m_max + 1)]
+    df = pd.DataFrame(data)
+    df.index = [f"m={m}" for m in range(1, m_max + 1)]
+    df.columns = [f"n={n}" for n in range(1, n_max + 1)]
+    print(df)
 
 
 def poly_sqrt(poly):
