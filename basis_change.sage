@@ -537,6 +537,8 @@ def main(q, n, m, o2, seed, quadratic, tries, extra, reverse, verbose):
     SS = Attack(PK, O2)
     SS_bil = [get_polar_form(S) for S in SS]
     print("=" * width)
+    print(
+        f"The dimensions of the resulting system: n={SS[0].nrows()}, m={len(SS)}")
 
     if quadratic:
         L = compare_approaches(
