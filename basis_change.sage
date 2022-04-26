@@ -492,7 +492,7 @@ def compare_approaches(MM, quadratic, tries, extra_tries, reverse, verbose=True,
     print("=" * width + "\n")
     print("With locally optimal strategy:")
     L = locally_optimal_strategy(
-        MM, quadratic=quadratic, extra_tries=extra_tries, reverse=reverse, verbose=False)
+        MM, quadratic=quadratic, extra_tries=extra_tries, reverse=reverse, verbose=verbose)
     assert L.is_invertible()
     if verbose:
         print_details(MM, L, quadratic=quadratic)
