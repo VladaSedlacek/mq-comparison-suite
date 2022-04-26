@@ -414,6 +414,11 @@ def get_vectors_to_try(MM, i, head=0):
     return [vector([0] * head + list(v)) for v in M_slice.right_kernel()]
 
 
+def is_in_span(v, vectors_used):
+    V = v.parent()
+    return v in V.subspace(vectors_used)
+
+
 def locally_optimal_strategy(MM, extra_tries, quadratic=False, reverse=False, verbose=False):
     if not quadratic:
         reverse = False
@@ -434,6 +439,7 @@ def locally_optimal_strategy(MM, extra_tries, quadratic=False, reverse=False, ve
                 M_slice, corank(M_slice)))
         vectors_to_try = get_vectors_to_try(MM, i, head)
         vectors_tried = []
+        vectors_used = []
         cols_used = []
         extra_counter = 0
         for v in vectors_to_try:
@@ -466,6 +472,9 @@ def locally_optimal_strategy(MM, extra_tries, quadratic=False, reverse=False, ve
                     L_total = L_total * L
                     MM = MM_test
                     cols_used.append(col)
+                    if is_in_span(v, vectors_used):
+                        print("In span!", v, "\n", Matrix(vectors_used))
+                    vectors_used.append(v)
                     if verbose:
                         print("Improvement made! New global weight:",
                               global_weight(MM, include_diag=quadratic))
