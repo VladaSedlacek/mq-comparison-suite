@@ -474,6 +474,8 @@ def locally_optimal_strategy(MM, extra_tries, quadratic=False, reverse=False, ve
                     if verbose:
                         print("Improvement made! New global weight:",
                               global_weight(MM, include_diag=quadratic))
+                        if potential_improvements(MM, i) == 0:
+                            print("Extra tries actually helped!")
                         print_matrices(MM)
                     break
     print("")
