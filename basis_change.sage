@@ -482,6 +482,50 @@ def locally_optimal_strategy(MM, extra_tries, quadratic=False, reverse=False, ve
     return L_total
 
 
+def linear_combination(coefficients, objects):
+    assert len(coefficients) == len(objects)
+    return sum(c * o for c, o in zip(coefficients, objects))
+
+
+def thomae_wolf(MM, quadratic=True):
+    K = MM[0][0, 0].parent()
+    n = MM[0].nrows()
+    m = len(MM)
+    S = identity_matrix(K, n)
+    S[:, 0] = (K ^ n).random_element()
+    S[0, 0] = 1
+
+    conditions = []
+
+    for i in range(1, n):
+        for M in MM:
+            above = list(linear_combination(S.columns()[i - 1], M.rows()))
+            below = [linear_combination(S.columns()[i - 1], row)
+                     for row in M.rows()]
+            conditions.append([a + b for a, b in zip(above, below)])
+
+        C = Matrix(K, conditions)
+        print(f"Solving for column {i}, current rank of C: {C.rank()}")
+        if C.right_kernel().dimension() == 0:
+            break
+
+        for S_col in C.right_kernel():
+            assert C * S_col == vector([0] * i * m)
+
+            S_new = copy(S)
+            S_new[:, i] = S_col
+            if S_new.rank() != n:
+                continue
+            else:
+                S = S_new
+
+    print(f"\nS (of rank {S.rank()}):")
+    print(S, "\n")
+    print_matrices(MM)
+    print("")
+    print_matrices(bilinear_to_quadratic(transform_basis(MM, S)))
+
+
 def compare_approaches(MM, quadratic, tries, extra_tries, reverse, verbose=True, width=100):
     K = MM[0][0, 0].parent()
     n = MM[0].nrows()
