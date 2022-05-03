@@ -523,7 +523,28 @@ def thomae_wolf(MM, quadratic=True):
     print(S, "\n")
     print_matrices(MM)
     print("")
-    print_matrices(bilinear_to_quadratic(transform_basis(MM, S)))
+    print_matrices(bilinear_to_quadratic(
+        transform_basis(MM, S)), pencilize=True)
+
+    return S
+
+
+def combine_matrices(MM):
+    K = MM[0][0, 0].parent()
+    m = len(MM)
+    n = MM[0].nrows()
+
+    MM_new = [linear_combination(v, MM) for v in K ^ m if v != 0]
+    MM_new_sorted = sorted(MM_new, key=lambda M: global_weight([M]))
+    weights = sorted([global_weight([M]) for M in MM_new])
+    print(f"Possible weights: {weights}")
+    print(f"Original weights: {[global_weight([M]) for M in MM]}")
+
+    # Chebyshev inequality
+    alpha = RR(sqrt(m / 8 * binomial(n, 2))).n(digits=5)
+    print(f"Best expected weight: {binomial(n, 2) / 2 - alpha}")
+
+    return MM_new_sorted[:m]
 
 
 def compare_approaches(MM, quadratic, tries, extra_tries, reverse, verbose=True, width=100):
