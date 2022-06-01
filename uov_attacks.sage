@@ -1,4 +1,5 @@
 from itertools import product
+load('rainbow.sage')
 
 
 def get_polar_form(Q):
@@ -38,15 +39,18 @@ class UOV():
                     if i >= n - m and j >= n - m:
                         continue
                     Q[i, j] = self.F.random_element()
+            Make_UD(Q)
             FF.append(Q)
         return FF
 
     def hide_central_map(self):
         m, n = self.m, self.n
-        while True:
-            T = random_matrix(self.F, n)
-            if T.rank() == n:
-                break
+        # while True:
+        #     T = random_matrix(self.F, n)
+        #     if T.rank() == n:
+        #         break
+        B = random_matrix(self.F, self.n - self.m, self.m)
+        T = block_matrix([[1, B], [0, 1]])
         PP = [T.transpose() * Q * T for Q in self.FF]
         MM = [get_polar_form(P) for P in PP]
         return T, PP, MM
@@ -253,33 +257,157 @@ def count_monomials(equations):
     return sorted(list(monomials))
 
 
-def main():
-    q = 4
-    m = 4
-    n = 9
-    uov = UOV(q, m, n)
-    k = uov.k
-    verbose = False
-    if verbose:
-        print("q:", q, ", m:", m, ", n:", n, " k:", k)
-        print("Reduced?", uov.reduced)
-    equations, _, matrices = uov.intersection_attack(verbose=verbose)
-    print("Number of equations:", len(equations))
-    print("Number of monomials:", len(count_monomials(equations)))
-    if verbose:
-        print("")
-        print("The system to be solved:")
-        for eq in equations:
-            print(eq)
+def print_matrices(MM):
+    for i in range(MM[0].nrows()):
+        for M in MM:
+            print(list(M[i]), end="\t")
         print("")
 
-    solution = guess_solve(equations, uov, verbose=verbose)
-    success = check_attack_success(
-        equations, solution, matrices, uov, verbose=True)
-    if success:
-        print("Attack successful!")
-    else:
-        print("Attack not successful :(")
+
+def chunks(lst, n):
+    """Yield successive n-sized chunks from lst."""
+    for i in range(0, len(lst), n):
+        yield lst[i:i + n]
+
+
+def chunks_striped(lst, n):
+    """Yield n number of striped chunks from l."""
+    for i in range(0, n):
+        yield lst[i::n]
+
+
+def delete_powers(eq):
+    return sum([radical(mon) for mon in eq.monomials()])
+
+
+def partial_eval(poly, values):
+    n = len(values)
+    assignment = values + list(poly.parent().gens()[n:])
+    return poly(assignment)
+
+
+def invert_trapdoor(uov):
+    m = uov.m
+    n = uov.n
+    F = uov.F
+    # print("\nCentral map:")
+    # print_matrices(uov.FF)
+    # print("")
+    print("S^-1:")
+    print(uov.T.inverse())
+    print("")
+    R = PolynomialRing(F, ['s%s%s' % (q, p) for p in [1..m]
+                           for q in [1..n - m]], order="lex")
+    ss = R.gens()
+    s_rows = [list(chunk) for chunk in chunks_striped(ss, n - m)]
+    s_cols = [list(chunk) for chunk in chunks(ss, n - m)]
+    s = Matrix(s_rows)
+    S = block_matrix([[1, s], [0, 1]])
+    print("Symbolic S^-1:")
+    print(S)
+
+    symbolic_matrices = [S.transpose() * P * S for P in uov.PP]
+    # print_matrices(symbolic_matrices)
+    eqs = []
+    for sm in symbolic_matrices:
+        Make_UD(sm)
+        for i in [(n - m)..(n - 1)]:
+            for j in [i..n - 1]:
+                eqs.append((sm[i, j], (i - m, j - m)))
+
+    # for eq, pos in eqs:
+    # if diag:
+    #     print(
+    #         f"Diagonal:\t {len(delete_powers(eq).monomials())} out of {binomial(n - m + 1, 2) + 1}")
+    # else:
+    #     print(
+    #         f"Non-diagonal:\t {len(delete_powers(eq).monomials())} out of {(n-m)*(n-m+2)+1}")
+    # S = uov.T.inverse()
+    # print_matrices([S.transpose() * P * S for P in uov.PP])
+
+    seq = Sequence([delete_powers(eq) for eq, pos in eqs if pos[0] == 1])
+    # for e in F ^ 4:
+    for e in [[0, 0, 0, 1]]:
+        first_col = list(e)
+        seq_ev = Sequence([partial_eval(eq, first_col) for eq in seq])
+        A_ext, v = seq_ev.coefficient_matrix()
+        A_ext = A_ext.dense_matrix()
+        A = A_ext[:, : -1]
+        print(f"Evaluation at {first_col} => Ranks of A and A|b:", rank(
+            A), rank(A_ext), "\n")
+
+        if rank(A) != rank(A_ext):
+            # the system is not solvable
+            continue
+
+        b = A_ext[:, -1]
+        Ab = block_matrix([[A, b]])
+        # print(f"\nEquation system evaluated at {first_col}:\n")
+        # print(v.transpose(), "\n")
+        # print(Ab, "\n")
+        # print(Ab.echelon_form(), "\n")
+        # print(Ab.echelon_form() * v, "\n")
+
+        b = vector(b)
+        part = vector(A.solve_right(b))
+        part = A.solve_right(b)
+        # part = vector([0, 1, 0, 1, 1, 0, 1, 1])
+        ker = A.right_kernel()
+        # print("Kernel dimension:", ker.dimension())
+        assert A * part == b
+        for eq in seq_ev:
+            assert partial_eval(eq, first_col + list(part)) == 0
+
+        s_cols = [first_col] + [list(chunk)
+                                for chunk in chunks(part, n - m)]
+        # print(part)
+        # print(s_cols)
+        s = Matrix(s_cols).transpose()
+        # print(s, "\n")
+        S = block_matrix([[1, s], [0, 1]])
+        print("Evaluated S^-1:")
+        print(S, "\n")
+        # print_matrices([S.transpose() * P * S for P in uov.PP])
+        evaluated_matrices = [S.transpose() * P * S for P in uov.PP]
+        for em in evaluated_matrices:
+            Make_UD(em)
+            # for i in [(n - m)..(n - 1)]:
+            #     for j in [i..n - 1]:
+            #         print((em[i, j], (i - m, j - m)))
+        print_matrices(evaluated_matrices)
+
+
+def main():
+    q = 2
+    m = 3
+    n = 7
+    seed = 1
+    set_random_seed(seed)
+    uov = UOV(q, m, n)
+    k = uov.k
+    verbose = True
+    if verbose:
+        print("q:", q, ", m:", m, ", n:", n, " k:", k)
+    #     print("Reduced?", uov.reduced)
+    # equations, _, matrices = uov.intersection_attack(verbose=verbose)
+    # print("Number of equations:", len(equations))
+    # print("Number of monomials:", len(count_monomials(equations)))
+    # if verbose:
+    #     print("")
+    #     print("The system to be solved:")
+    #     for eq in equations:
+    #         print(eq)
+    #     print("")
+
+    # solution = guess_solve(equations, uov, verbose=verbose)
+    # success = check_attack_success(
+    #     equations, solution, matrices, uov, verbose=True)
+    # if success:
+    #     print("Attack successful!")
+    # else:
+        # print("Attack not successful :(")
+
+    invert_trapdoor(uov)
 
 
 if __name__ == '__main__':

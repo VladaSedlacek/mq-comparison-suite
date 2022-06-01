@@ -411,7 +411,7 @@ def nonzero_cols(v):
 
 def get_vectors_to_try(MM, i, head=0):
     M_slice = Matrix([M[i][head:] for M in MM])
-    return [vector([0] * head + list(v)) for v in M_slice.right_kernel()]
+    return [vector([0] * head + list(v)) for v in M_slice.right_kernel().basis()]
 
 
 def is_in_span(v, vectors_used):
@@ -505,7 +505,9 @@ def thomae_wolf(MM, quadratic=True):
             conditions.append([a + b for a, b in zip(above, below)])
 
         C = Matrix(K, conditions)
-        print(f"Solving for column {i}, current rank of C: {C.rank()}")
+        if verbose:
+            print(f"Solving for column {i}, current rank of C: {C.rank()}")
+            print(C.right_kernel(), "\n")
         if C.right_kernel().dimension() == 0:
             break
 
@@ -515,13 +517,14 @@ def thomae_wolf(MM, quadratic=True):
             S_new = copy(S)
             S_new[:, i] = S_col
             if S_new.rank() != n:
+                # S[:, i] = C.right_kernel()[-1]
                 continue
             else:
                 S = S_new
 
     print(f"\nS (of rank {S.rank()}):")
     print(S, "\n")
-    print_matrices(MM)
+    print_matrices(MM, pencilize=True)
     print("")
     print_matrices(bilinear_to_quadratic(
         transform_basis(MM, S)), pencilize=True)
@@ -577,9 +580,16 @@ def compare_approaches(MM, quadratic, tries, extra_tries, reverse, verbose=True,
     if verbose:
         print_details(MM, E, quadratic=quadratic)
     print_weight(MM, E, quadratic=quadratic)
+
+    print("=" * width + "\n")
+    print("With Thomae-Wolf strategy:\n")
+    S = thomae_wolf(MM, quadratic=quadratic)
+    if verbose:
+        print_details(MM, S, quadratic=quadratic)
+    print_weight(MM, S, quadratic=quadratic)
     print("=" * width)
 
-    return L
+    return S
 
 
 @ click.command()
@@ -607,21 +617,23 @@ def main(q, n, m, o2, seed, quadratic, tries, extra, reverse, attack, verbose):
     print(
         f"The dimensions of the resulting system: n={MM[0].nrows()}, m={len(MM)}")
 
-    if quadratic:
-        L = compare_approaches(
-            MM, quadratic=True, verbose=verbose, tries=tries, extra_tries=extra, reverse=reverse, width=width)
-    else:
-        L = compare_approaches(MM_bil, quadratic=False,
-                               verbose=verbose, tries=tries, extra_tries=extra, reverse=reverse, width=width)
-    if verbose:
-        print("=" * width + "\n")
-        print("Original quadratic system:")
-        print_matrices(MM, pencilize=True)
-        print_weight(MM, quadratic=True)
-        print("=" * width + "\n")
-        print("New quadratic system:")
-        print_details(MM, L, quadratic=True, pencilize=True)
-        print_weight(MM, L, quadratic=True)
+    # thomae_wolf(MM)
+    # combine_matrices(MM)
+    # if quadratic:
+    #     L = compare_approaches(
+    #         MM, quadratic=True, verbose=verbose, tries=tries, extra_tries=extra, reverse=reverse, width=width)
+    # else:
+    #     L = compare_approaches(MM_bil, quadratic=False,
+    #                            verbose=verbose, tries=tries, extra_tries=extra, reverse=reverse, width=width)
+    # if verbose:
+    #     print("=" * width + "\n")
+    #     print("Original quadratic system:")
+    #     print_matrices(MM, pencilize=True)
+    #     print_weight(MM, quadratic=True)
+    #     print("=" * width + "\n")
+    #     print("New quadratic system:")
+    #     print_details(MM, L, quadratic=True, pencilize=True)
+    #     print_weight(MM, L, quadratic=True)
 
 
 if __name__ == '__main__':
