@@ -810,11 +810,13 @@ def create_wdsat_config(wdsat_path, M, N):
 @ click.option('--xl_path', default=Path("..", "xl"), help='the path the XL solver: http://polycephaly.org/projects/xl', type=str)
 @ click.option('--crossbred_path', default=Path("..", "mqsolver"), help='the path the crossbred solver: https://github.com/kcning/mqsolver/', type=str)
 @ click.option('--mq_path', default=Path("..", "mq"), help='the path the MQ solver: https://gitlab.lip6.fr/almasty/mq', type=str)
+@ click.option('--libfes_path', default=Path("..", "libfes-lite", "build"), help='the path the libfes solver: https://github.com/cbouilla/libfes-lite', type=str)
 @ click.option('--wdsat_path', default=Path("..", "WDSat"), help='the path the WDSat solver: https://github.com/mtrimoska/WDSat', type=str)
 @ click.option('--cms_path', default=Path("..", "cryptominisat", "build"), help='the path the WDSat solver: https://github.com/mtrimoska/WDSat', type=str)
 @ click.option('--solve_xl', default=False, is_flag=True, help='try to solve the system using XL')
 @ click.option('--solve_crossbred', default=False, is_flag=True, help='try to solve the system using crossbred')
 @ click.option('--solve_mq', default=False, is_flag=True, help='try to solve the system using MQ')
+@ click.option('--solve_libfes', default=False, is_flag=True, help='try to solve the system using libfes')
 @ click.option('--solve_wdsat', default=False, is_flag=True, help='try to solve the system using WDSat')
 @ click.option('--solve_cms', default=False, is_flag=True, help='try to solve the system using CryptoMiniSat')
 @ click.option('--solve_only', default=False, is_flag=True, help='skip equation generation and only use a solver')
@@ -824,7 +826,8 @@ def create_wdsat_config(wdsat_path, M, N):
 @ click.option('-w', '--weil_descent', default=False, is_flag=True, help='use Weil descent when possible')
 @ click.option('-t', '--attack_type', default='differential', type=click.Choice(['differential', 'minrank', 'intersection'], case_sensitive=False), help='use either the rectangular MinRank attack or the intersection attack')
 @ click.option('-s', '--seed', default=0, help='the seed for randomness replication', type=int)
-def main(q, n, m, o2, xl_path, crossbred_path, mq_path, wdsat_path, cms_path, solve_xl, solve_crossbred, solve_mq, solve_wdsat, solve_cms, solve_only, inner_hybridation, verbose, reduce_dimension, weil_descent, attack_type, seed):
+def main(q, n, m, o2, xl_path, crossbred_path, mq_path, wdsat_path, cms_path, libfes_path, solve_xl, solve_crossbred, solve_mq, solve_wdsat, solve_cms, solve_libfes, solve_only, inner_hybridation, verbose, reduce_dimension, weil_descent, attack_type, seed):
+
     boolean = q % 2 == 0
     set_random_seed(seed)
     M, N = compute_system_size(q, m, n, o2, attack_type)
@@ -906,6 +909,17 @@ def main(q, n, m, o2, xl_path, crossbred_path, mq_path, wdsat_path, cms_path, so
             print("\nSolution found: {}".format(
                 get_solution_from_log(log_path, format='mq_weil', N=N, rainbow=rainbow)))
 
+    if solve_libfes:
+        print("\nStarting the libfes solver...")
+        mq_solve_command = "{} < {}".format(
+            str(Path(libfes_path, "benchmark", "demo")), str(mq_system_path)) + " | tee " + str(log_path)
+        os.system(mq_solve_command)
+        if attack_type != 'differential':
+            print("Solution parsing and interpretation not implemented yet")
+        else:
+            print("\nSolution found: {}".format(
+                get_solution_from_log(log_path, format='mq_weil', N=N, rainbow=rainbow)))
+
     if solve_wdsat:
         print("\nCompiling the WDSat solver...")
         create_wdsat_config(wdsat_path, rainbow.ext_deg *
@@ -938,7 +952,7 @@ def main(q, n, m, o2, xl_path, crossbred_path, mq_path, wdsat_path, cms_path, so
             print("\nFirst solution found: {}".format(
                 get_solution_from_log(log_path, format='cms', N=N, rainbow=rainbow)))
 
-    if not (solve_xl or solve_crossbred or solve_mq or solve_wdsat or solve_cms):
+    if not (solve_xl or solve_crossbred or solve_mq or solve_libfes or solve_wdsat or solve_cms):
         print("Please specify a solver.")
 
 
