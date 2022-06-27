@@ -563,9 +563,9 @@ Order : graded reverse lex order
 
         with open(file_path, 'w') as file:
             file.write("# Variables:\n")
-            file.write(variables + "\n\n")
+            file.write(variables + "\n#\n")
             file.write("# Guessed variables:\n")
-            file.write("# " + guessed + "\n\n")
+            file.write("# " + guessed + "\n#\n")
             file.write("# Equations:\n")
             for eq in equations:
                 file.write(str(eq) + "\n")
