@@ -781,7 +781,6 @@ def get_solution_from_log(log_path, format, N, rainbow=None):
     return None
 
 
-
 @ click.command()
 @ click.option('--q', default=16, help='the field order', type=int)
 @ click.option('--n', default=48, help='the number of variables', type=int)
@@ -848,8 +847,13 @@ def main(q, n, m, o2, solver, solve_only, inner_hybridation, verbose, reduce_dim
     elif solver == 'cms':
         equations_path = cnf_system_path
 
-    solve_command = f"python3 ./invoke_solver.py --equations_path {equations_path} --log_path {log_path} --solver {solver} --q {q} --m {M} --n {N}"
-    Popen(solve_command, shell=True).wait()
+    if solver == 'mq' and inner_hybridation != -1:
+        hybridation_cmd = f"--inner_hybridation {inner_hybridation}"
+    else:
+        hybridation_cmd = ""
+
+    solve_cmd = f"python3 ./invoke_solver.py --equations_path {equations_path} --log_path {log_path} --solver {solver} --q {q} --m {M} --n {N} {hybridation_cmd}"
+    Popen(solve_cmd, shell=True).wait()
 
     if solver == 'libfes':
         log_format = 'mq'
