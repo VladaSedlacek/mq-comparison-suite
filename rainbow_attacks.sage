@@ -782,6 +782,7 @@ def get_solution_from_log(log_path, format, N, rainbow=None):
 
 
 @ click.command()
+@ click.option('--solver', type=click.Choice(['xl', 'crossbred', 'mq', 'libfes', 'wdsat', 'cms'], case_sensitive=False), help='the external solver to be used')
 @ click.option('--q', default=16, help='the field order', type=int)
 @ click.option('--n', default=48, help='the number of variables', type=int)
 @ click.option('--m', default=32, help='the number of equations', type=int)
@@ -790,13 +791,9 @@ def get_solution_from_log(log_path, format, N, rainbow=None):
 @ click.option('-h', '--inner_hybridation', default="-1", help='the number of variable that are not guessed in MQ', type=int)
 @ click.option('-v', '--verbose', default=False, is_flag=True, help='control the output verbosity')
 @ click.option('-r', '--reduce_dimension', default=True, is_flag=True, help='reduce the dimension when possible')
-@ click.option('-w', '--weil_descent', default=False, is_flag=True, help='use Weil descent when possible')
-@ click.option('-t', '--attack_type', default='differential', type=click.Choice(['differential', 'minrank', 'intersection'], case_sensitive=False), help='use either the rectangular MinRank attack or the intersection attack')
-@ click.option('--solver', type=click.Choice(['xl', 'crossbred', 'mq', 'libfes', 'wdsat', 'cms'], case_sensitive=False), help='the external solver to be used')
+@ click.option('-t', '--attack_type', default='differential', type=click.Choice(['differential', 'minrank', 'intersection'], case_sensitive=False), help='choose attack on Rainbow')
 @ click.option('-s', '--seed', default=0, help='the seed for randomness replication', type=int)
-def main(q, n, m, o2, solver, solve_only, inner_hybridation, verbose, reduce_dimension, weil_descent, attack_type, seed):
-
-    boolean = q % 2 == 0
+def main(q, n, m, o2, solver, solve_only, inner_hybridation, verbose, reduce_dimension, attack_type, seed):
     set_random_seed(seed)
     M, N = compute_system_size(q, m, n, o2, attack_type)
     system_folder_path = 'systems'
@@ -808,8 +805,6 @@ def main(q, n, m, o2, solver, solve_only, inner_hybridation, verbose, reduce_dim
     mq_system_path = Path(system_folder_path, base_system_name + '.mq')
     wdsat_system_path = Path(system_folder_path, base_system_name + '.anf')
     cnf_system_path = Path(system_folder_path, base_system_name + '.cnf')
-    mq_compact_system_path = Path(
-        system_folder_path, base_system_name + '.mqc')
     setup_path = Path(system_folder_path, base_system_name + '.stp')
     support = True if attack_type == 'minrank' else False
 
@@ -819,7 +814,7 @@ def main(q, n, m, o2, solver, solve_only, inner_hybridation, verbose, reduce_dim
     if not solve_only:
         save_setup(rainbow, setup_path)
         SS, equations, weil_coeff_list, guessed_vars = mount_attack(
-            rainbow, attack_type, M, N, reduce_dimension=False, verbose=False)
+            rainbow, attack_type, M, N, reduce_dimension=False, verbose=verbose)
         if attack_type == 'differential':
             save_system(file_format='xl', file_path=xl_system_path,
                         rainbow=rainbow, SS=SS, verbose=verbose)
@@ -827,8 +822,6 @@ def main(q, n, m, o2, solver, solve_only, inner_hybridation, verbose, reduce_dim
                     rainbow=rainbow, SS=SS, equations=equations, weil_coeff_list=weil_coeff_list, verbose=verbose)
         save_system(file_format='mq', file_path=mq_system_path, rainbow=rainbow, equations=equations,
                     guessed_vars=guessed_vars, reduce_dimension=reduce_dimension, verbose=verbose)
-        save_system(file_format='mq_compact', file_path=mq_compact_system_path, rainbow=rainbow, equations=equations,
-                    weil_coeff_list=weil_coeff_list, guessed_vars=guessed_vars, reduce_dimension=reduce_dimension, verbose=verbose)
         save_system(file_format='wdsat', file_path=wdsat_system_path, rainbow=rainbow, equations=equations,
                     guessed_vars=guessed_vars, reduce_dimension=reduce_dimension, verbose=verbose)
         save_system(file_format='cnf', file_path=cnf_system_path, rainbow=rainbow, equations=equations,
@@ -847,19 +840,10 @@ def main(q, n, m, o2, solver, solve_only, inner_hybridation, verbose, reduce_dim
     elif solver == 'cms':
         equations_path = cnf_system_path
 
-    if solver == 'mq' and inner_hybridation != -1:
-        hybridation_cmd = f"--inner_hybridation {inner_hybridation}"
-    else:
-        hybridation_cmd = ""
-
+    hybridation_cmd = f"--inner_hybridation {inner_hybridation}" if solver == 'mq' and inner_hybridation != -1 else ""
     solve_cmd = f"python3 ./invoke_solver.py --equations_path {equations_path} --log_path {log_path} --solver {solver} --q {q} --m {M} --n {N} {hybridation_cmd}"
     Popen(solve_cmd, shell=True).wait()
-
-    if solver == 'libfes':
-        log_format = 'mq'
-    else:
-        log_format = 'solver'
-
+    log_format = 'mq' if solver == 'libfes' else 'solver'
     get_solution_from_log(log_path, format=log_format, N=N, rainbow=rainbow)
 
 
