@@ -751,7 +751,8 @@ def get_solution_from_log(log_path, format, N, rainbow=None):
                     parts = [sol[deg * i:deg * i + deg]
                              for i in range(len(sol) / deg)]
                     return vector([linear_combination(bits, zs) for bits in parts])
-            if format == 'mq_weil':
+            if format == 'mq':
+                # possibly includes Weil descent
                 if "solution found : " in line:
                     sol = [int(b) for b in line.split(
                         "solution found : ")[1][1:-2].split(", ")]
@@ -780,58 +781,25 @@ def get_solution_from_log(log_path, format, N, rainbow=None):
     return None
 
 
-def create_wdsat_config(wdsat_path, M, N):
-    with open(Path(wdsat_path, "src", "config.h"), 'w') as file:
-        file.write("""
-//enable the XG-ext module (must use anf as input)
-# define __XG_ENHANCED__
-
-//find all solutions instead of only one
-# define __FIND_ALL_SOLUTIONS__
-
-/** Rainbow : N={0} M={1} **/
-# ifdef __XG_ENHANCED__
-# define __MAX_ANF_ID__ {2} // make it +1
-# define __MAX_DEGREE__ 3 // make it +1
-# endif
-# define __MAX_ID__ {3}
-# define __MAX_BUFFER_SIZE__ 200000
-# define __MAX_EQ__ {5}
-# define __MAX_EQ_SIZE__ 4 //make it +1
-# define __MAX_XEQ__ {1}
-# define __MAX_XEQ_SIZE__ {4}""".format(N, M, N + 1, binomial(N, 2), N * (N + 1), binomial(M, 2)))
-
 
 @ click.command()
 @ click.option('--q', default=16, help='the field order', type=int)
 @ click.option('--n', default=48, help='the number of variables', type=int)
 @ click.option('--m', default=32, help='the number of equations', type=int)
 @ click.option('--o2', default=16, help='the oil subspace dimension', type=int)
-@ click.option('--xl_path', default=Path("..", "xl"), help='the path the XL solver: http://polycephaly.org/projects/xl', type=str)
-@ click.option('--crossbred_path', default=Path("..", "mqsolver"), help='the path the crossbred solver: https://github.com/kcning/mqsolver/', type=str)
-@ click.option('--mq_path', default=Path("..", "mq"), help='the path the MQ solver: https://gitlab.lip6.fr/almasty/mq', type=str)
-@ click.option('--libfes_path', default=Path("..", "libfes-lite", "build"), help='the path the libfes solver: https://github.com/cbouilla/libfes-lite', type=str)
-@ click.option('--wdsat_path', default=Path("..", "WDSat"), help='the path the WDSat solver: https://github.com/mtrimoska/WDSat', type=str)
-@ click.option('--cms_path', default=Path("..", "cryptominisat", "build"), help='the path the WDSat solver: https://github.com/mtrimoska/WDSat', type=str)
-@ click.option('--solve_xl', default=False, is_flag=True, help='try to solve the system using XL')
-@ click.option('--solve_crossbred', default=False, is_flag=True, help='try to solve the system using crossbred')
-@ click.option('--solve_mq', default=False, is_flag=True, help='try to solve the system using MQ')
-@ click.option('--solve_libfes', default=False, is_flag=True, help='try to solve the system using libfes')
-@ click.option('--solve_wdsat', default=False, is_flag=True, help='try to solve the system using WDSat')
-@ click.option('--solve_cms', default=False, is_flag=True, help='try to solve the system using CryptoMiniSat')
 @ click.option('--solve_only', default=False, is_flag=True, help='skip equation generation and only use a solver')
-@ click.option('-h', '--inner_hybridation', default="-1", help='the number of variable that are not guessed', type=int)
+@ click.option('-h', '--inner_hybridation', default="-1", help='the number of variable that are not guessed in MQ', type=int)
 @ click.option('-v', '--verbose', default=False, is_flag=True, help='control the output verbosity')
 @ click.option('-r', '--reduce_dimension', default=True, is_flag=True, help='reduce the dimension when possible')
 @ click.option('-w', '--weil_descent', default=False, is_flag=True, help='use Weil descent when possible')
 @ click.option('-t', '--attack_type', default='differential', type=click.Choice(['differential', 'minrank', 'intersection'], case_sensitive=False), help='use either the rectangular MinRank attack or the intersection attack')
+@ click.option('--solver', type=click.Choice(['xl', 'crossbred', 'mq', 'libfes', 'wdsat', 'cms'], case_sensitive=False), help='the external solver to be used')
 @ click.option('-s', '--seed', default=0, help='the seed for randomness replication', type=int)
-def main(q, n, m, o2, xl_path, crossbred_path, mq_path, wdsat_path, cms_path, libfes_path, solve_xl, solve_crossbred, solve_mq, solve_wdsat, solve_cms, solve_libfes, solve_only, inner_hybridation, verbose, reduce_dimension, weil_descent, attack_type, seed):
+def main(q, n, m, o2, solver, solve_only, inner_hybridation, verbose, reduce_dimension, weil_descent, attack_type, seed):
 
     boolean = q % 2 == 0
     set_random_seed(seed)
     M, N = compute_system_size(q, m, n, o2, attack_type)
-    current_path = Path("../algebraic-cryptanalysis")
     system_folder_path = 'systems'
     log_path = Path(system_folder_path, "log.txt")
     base_system_name = "rainbow_{}_seed_{}_q_{}_o2_{}_m_{}_n_{}_M_{}_N_{}".format(
@@ -869,91 +837,26 @@ def main(q, n, m, o2, xl_path, crossbred_path, mq_path, wdsat_path, cms_path, li
     else:
         print("Skipping the attack equations generation...")
 
-    if solve_xl:
-        assert attack_type == 'differential'
-        print("\nCompiling the XL solver...")
-        make_command = "make -C {} Q={} M={} N={} -Wno-unused-result -Wno-class-memaccess".format(
-            str(xl_path), str(q), str(M), str(N)) + " > " + str(log_path)
-        Popen(make_command, shell=True).wait()
-        print("\nStarting the XL solver...")
-        xl_solve_command = "{} --challenge {} --all".format(
-            str(Path(xl_path, "xl")), str(xl_system_path)) + " | tee -a " + str(log_path)
-        Popen(xl_solve_command, shell=True).wait()
-        print("\nSolution found: {}".format(
-            get_solution_from_log(log_path, format='xl', N=N)))
+    if solver == 'xl':
+        equations_path = xl_system_path
+    elif solver == 'crossbred':
+        equations_path = crossbred_system_path
+    elif solver == 'mq' or solver == 'libfes':
+        equations_path = mq_system_path
+    elif solver == 'wdsat':
+        equations_path = wdsat_system_path
+    elif solver == 'cms':
+        equations_path = cnf_system_path
 
-    if solve_crossbred:
-        print("\nStarting the crossbred solver...")
-        os.chdir(crossbred_path)
-        crossbred_solve_command = "./solve.py -d 3 -k 16 -t 20 -v -o {} {}".format(
-            str(Path(current_path, log_path)), str(Path(current_path, crossbred_system_path)))
-        Popen(crossbred_solve_command, shell=True).wait()
-        os.chdir(current_path)
-        if attack_type != 'differential':
-            print("Solution parsing and interpretation not implemented yet")
-        else:
-            pass
-            print("\nSolution found: {}".format(
-                get_solution_from_log(log_path, format='crossbred', N=N, rainbow=rainbow)))
+    solve_command = f"python3 ./invoke_solver.py --equations_path {equations_path} --log_path {log_path} --solver {solver} --q {q} --m {M} --n {N}"
+    Popen(solve_command, shell=True).wait()
 
-    if solve_mq:
-        print("\nStarting the MQ solver...")
-        inner_hybridation_arg = " --inner-hybridation " + \
-            str(inner_hybridation) if inner_hybridation != -1 else ""
-        mq_solve_command = "{}{} < {}".format(
-            str(Path(mq_path, "monica_vector")), inner_hybridation_arg, str(mq_system_path)) + " | tee " + str(log_path)
-        Popen(mq_solve_command, shell=True).wait()
-        if attack_type != 'differential':
-            print("Solution parsing and interpretation not implemented yet")
-        else:
-            print("\nSolution found: {}".format(
-                get_solution_from_log(log_path, format='mq_weil', N=N, rainbow=rainbow)))
+    if solver == 'libfes':
+        log_format = 'mq'
+    else:
+        log_format = 'solver'
 
-    if solve_libfes:
-        print("\nStarting the libfes solver...")
-        mq_solve_command = "{} < {}".format(
-            str(Path(libfes_path, "benchmark", "demo")), str(mq_system_path)) + " | tee " + str(log_path)
-        os.system(mq_solve_command)
-        if attack_type != 'differential':
-            print("Solution parsing and interpretation not implemented yet")
-        else:
-            print("\nSolution found: {}".format(
-                get_solution_from_log(log_path, format='mq_weil', N=N, rainbow=rainbow)))
-
-    if solve_wdsat:
-        print("\nCompiling the WDSat solver...")
-        create_wdsat_config(wdsat_path, rainbow.ext_deg *
-                            M, rainbow.ext_deg * N)
-        suppressor_flag = "" if not solve_only else "-n"
-        make_command = "make -C {0} {1} > {2}".format(
-            str(Path(wdsat_path, "src")), suppressor_flag, str(log_path))
-        Popen(make_command, shell=True).wait()
-        print("\nStarting the WDSat solver...")
-        wdsat_solve_command = "{} -i {}".format(
-            str(Path(wdsat_path, "wdsat_solver")), str(wdsat_system_path) +
-            " | tee -a " + str(log_path))
-        Popen(wdsat_solve_command, shell=True).wait()
-        if attack_type != 'differential':
-            print("Solution parsing and interpretation not implemented yet")
-        else:
-            print("\nFirst solution found: {}".format(
-                get_solution_from_log(log_path, format='wdsat', N=N, rainbow=rainbow)))
-
-    if solve_cms:
-        Popen(" > {}".format(str(log_path)), shell=True).wait()
-        print("\nStarting the CryptoMiniSat solver...")
-        cms_solve_command = "{} --verb 0 {}".format(
-            str(Path(cms_path, "cryptominisat5")), str(cnf_system_path) +
-            " | tee -a " + str(log_path))
-        Popen(cms_solve_command, shell=True).wait()
-        if attack_type != 'differential':
-            print("Solution parsing and interpretation not implemented yet")
-        else:
-            print("\nFirst solution found: {}".format(
-                get_solution_from_log(log_path, format='cms', N=N, rainbow=rainbow)))
-
-    if not (solve_xl or solve_crossbred or solve_mq or solve_libfes or solve_wdsat or solve_cms):
-        print("Please specify a solver.")
+    get_solution_from_log(log_path, format=log_format, N=N, rainbow=rainbow)
 
 
 if __name__ == '__main__':
