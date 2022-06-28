@@ -223,7 +223,7 @@ class Rainbow():
 
         return equations, guessed_vars
 
-    def differential_attack(self, debug=False):
+    def differential_attack(self, debug=False, verbose=False):
         '''Adapted from https://github.com/WardBeullens/BreakingRainbow'''
         q, m, n, o2 = self.q, self.m, self.n, self.o2
         global attempts
@@ -252,10 +252,11 @@ class Rainbow():
             V = self.F ^ n
             I = V.span(D_x_ker).intersection(self.O2)
             if I.dimension() == 0:
-                print("\tAttack would fail. Resampling x...")
+                if verbose:
+                    print("\tAttack would fail. Resampling x...")
                 return self.differential_attack()
-
-            print("\tIntersection has dimension:", I.dimension())
+            if verbose:
+                print("\tIntersection has dimension:", I.dimension())
             Sol = I.basis()[0]
 
             Sol = D_x_ker.transpose().solve_right(Sol)
@@ -266,8 +267,8 @@ class Rainbow():
 
             # scale to solution to have last coordinate zero, reducing dim
             Sol = Sol / Sol[-1]
-
-            print("\tGood D_x found after %d attempts." % attempts)
+            if verbose:
+                print("\tGood D_x found after %d attempts." % attempts)
 
             print("\tThe expected solution is:", Sol)
             print("\tIn hex format:", [elt_to_str(q, s) for s in Sol])
@@ -514,7 +515,7 @@ def delete_powers(eq):
 
 
 def save_system(file_format, file_path, rainbow, equations=[], guessed_vars=[], reduce_dimension=False, SS=[], weil_coeff_list=[], verbose=False):
-    if file_path.is_file():
+    if file_path.is_file() and verbose:
         print("The file {} already exists!".format(str(file_path)))
         return
 
@@ -640,11 +641,12 @@ Order : graded reverse lex order
 
     assert file_format in ['xl', 'crossbred',
                            'mq', 'mq_compact', 'wdsat', 'cnf']
-    print("Equation system written to: " + str(file_path))
+    if verbose:
+        print("Equation system written to: " + str(file_path))
 
 
-def save_setup(rainbow, setup_path):
-    if setup_path.is_file():
+def save_setup(rainbow, setup_path, verbose=false):
+    if setup_path.is_file() and verbose:
         print("The file {} already exists!".format(str(setup_path)))
         return
     with open(setup_path, 'w') as file:
@@ -712,17 +714,20 @@ def mount_attack(rainbow, attack_type, M, N, reduce_dimension=False, verbose=Fal
     guessed_vars = []
     weil_coeff_list = []
     if attack_type == 'differential':
-        print("Mounting the differential attack...")
+        if verbose:
+            print("Mounting the differential attack...")
         SS, equations, weil_coeff_list = rainbow.differential_attack(
-            debug=False)
+            debug=False, verbose=verbose)
         assert M == len(SS)
         assert N == SS[0].ncols() - 1
     elif attack_type == 'minrank':
-        print("Mounting the rectangular MinRank attack...")
+        if verbose:
+            print("Mounting the rectangular MinRank attack...")
         equations, guessed_vars = rainbow.rectangular_minrank_attack(
             reduce_dimension=reduce_dimension, verbose=verbose)
     elif attack_type == 'intersection':
-        print("Mounting the intersection attack...")
+        if verbose:
+            print("Mounting the intersection attack...")
         equations, _, _ = rainbow.intersection_attack()
     if rainbow.q % 2 == 0:
         equations = [delete_powers(eq) for eq in equations]
@@ -808,11 +813,12 @@ def main(q, n, m, o2, solver, solve_only, inner_hybridation, verbose, reduce_dim
     setup_path = Path(system_folder_path, base_system_name + '.stp')
     support = True if attack_type == 'minrank' else False
 
-    print("Generating Rainbow instance for seed={}, q={}, m={}, n={}, o2={}...".format(
-        seed, q, m, n, o2))
+    if verbose:
+        print("Generating Rainbow instance for seed={}, q={}, m={}, n={}, o2={}...".format(
+            seed, q, m, n, o2))
     rainbow = Rainbow(q, m, n, o2, support=support, seed=seed)
     if not solve_only:
-        save_setup(rainbow, setup_path)
+        save_setup(rainbow, setup_path, verbose=verbose)
         SS, equations, weil_coeff_list, guessed_vars = mount_attack(
             rainbow, attack_type, M, N, reduce_dimension=False, verbose=verbose)
         if attack_type == 'differential':
