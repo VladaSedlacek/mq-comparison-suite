@@ -343,7 +343,7 @@ class Rainbow():
                 assert linear_combination(
                     max_quadratic.monomials(), weil_coeffs) == eq
                 weil_coeff_list.append(weil_coeffs)
-        return SS, equations_final, weil_coeff_list
+        return SS, equations_final, weil_coeff_list, Sol
 
 
 # evaluate Multivariate map and Differential
@@ -716,7 +716,7 @@ def mount_attack(rainbow, attack_type, M, N, reduce_dimension=False, verbose=Fal
     if attack_type == 'differential':
         if verbose:
             print("Mounting the differential attack...")
-        SS, equations, weil_coeff_list = rainbow.differential_attack(
+        SS, equations, weil_coeff_list, solution = rainbow.differential_attack(
             debug=False, verbose=verbose)
         assert M == len(SS)
         assert N == SS[0].ncols() - 1
@@ -725,13 +725,17 @@ def mount_attack(rainbow, attack_type, M, N, reduce_dimension=False, verbose=Fal
             print("Mounting the rectangular MinRank attack...")
         equations, guessed_vars = rainbow.rectangular_minrank_attack(
             reduce_dimension=reduce_dimension, verbose=verbose)
+        solution = vector([])
+        # not implemeted yet
     elif attack_type == 'intersection':
         if verbose:
             print("Mounting the intersection attack...")
         equations, _, _ = rainbow.intersection_attack()
+        solution = vector([])
+        # not implemeted yet
     if rainbow.q % 2 == 0:
         equations = [delete_powers(eq) for eq in equations]
-    return SS, equations, weil_coeff_list, guessed_vars
+    return SS, equations, weil_coeff_list, guessed_vars, solution
 
 
 def get_solution_from_log(log_path, format, N, rainbow=None):
@@ -820,7 +824,7 @@ def main(q, n, m, o2, solver, solve_only, inner_hybridation, verbose, reduce_dim
     rainbow = Rainbow(q, m, n, o2, support=support, seed=seed)
     if not solve_only:
         save_setup(rainbow, setup_path, verbose=verbose)
-        SS, equations, weil_coeff_list, guessed_vars = mount_attack(
+        SS, equations, weil_coeff_list, guessed_vars, solution = mount_attack(
             rainbow, attack_type, M, N, reduce_dimension=False, verbose=verbose)
         if attack_type == 'differential':
             save_system(file_format='xl', file_path=xl_system_path,
@@ -851,9 +855,19 @@ def main(q, n, m, o2, solver, solve_only, inner_hybridation, verbose, reduce_dim
     solve_cmd = f"python3 ./invoke_solver.py --equations_path {equations_path} --log_path {log_path} --solver {solver} --q {q} --m {M} --n {N} {hybridation_cmd}"
     Popen(solve_cmd, shell=True).wait()
     log_format = 'mq' if solver == 'libfes' else solver
-    solution = get_solution_from_log(
+
+    solution_found = get_solution_from_log(
         log_path, format=log_format, N=N, rainbow=rainbow)
-    print(f"\nFirst solution found: {solution}")
+    print(f"\nFirst solution found: {solution_found}\n")
+
+    if attack_type == 'differential':
+        solution_expected = solution[1:-1]
+        success = solution_found == solution_expected
+        if success:
+            print("Attack successful!")
+        else:
+            print("Attack NOT successful. :(")
+        return success
 
 
 if __name__ == '__main__':
