@@ -735,6 +735,7 @@ def mount_attack(rainbow, attack_type, M, N, reduce_dimension=False, verbose=Fal
 
 
 def get_solution_from_log(log_path, format, N, rainbow=None):
+    assert format in ['xl', 'crossbred', 'mq', 'wdsat', 'cms']
     with open(log_path, 'r') as file:
         if rainbow != None:
             z = rainbow.F.gens()[0]
@@ -849,8 +850,10 @@ def main(q, n, m, o2, solver, solve_only, inner_hybridation, verbose, reduce_dim
     hybridation_cmd = f"--inner_hybridation {inner_hybridation}" if solver == 'mq' and inner_hybridation != -1 else ""
     solve_cmd = f"python3 ./invoke_solver.py --equations_path {equations_path} --log_path {log_path} --solver {solver} --q {q} --m {M} --n {N} {hybridation_cmd}"
     Popen(solve_cmd, shell=True).wait()
-    log_format = 'mq' if solver == 'libfes' else 'solver'
-    get_solution_from_log(log_path, format=log_format, N=N, rainbow=rainbow)
+    log_format = 'mq' if solver == 'libfes' else solver
+    solution = get_solution_from_log(
+        log_path, format=log_format, N=N, rainbow=rainbow)
+    print(f"\nFirst solution found: {solution}")
 
 
 if __name__ == '__main__':
