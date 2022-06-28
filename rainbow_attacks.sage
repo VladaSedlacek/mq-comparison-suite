@@ -270,8 +270,8 @@ class Rainbow():
             if verbose:
                 print("\tGood D_x found after %d attempts." % attempts)
 
-            print("\tThe expected solution is:", Sol)
-            print("\tIn hex format:", [elt_to_str(q, s) for s in Sol])
+                print("\tThe expected solution is:", Sol)
+                print("\tIn hex format:", [elt_to_str(q, s) for s in Sol])
 
         # Compose smaller system D_x(o)= 0 and P(o) = 0
         SS = [D_x_ker * M * D_x_ker.transpose() for M in self.PP]
