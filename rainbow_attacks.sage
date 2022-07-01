@@ -262,7 +262,8 @@ class Rainbow():
             Sol = D_x_ker.transpose().solve_right(Sol)
 
             if Sol[-1] == 0:
-                print("\tLast entry is zero, resampling x...")
+                if verbose:
+                    print("\tLast entry is zero, resampling x...")
                 return self.differential_attack()
 
             # scale to solution to have last coordinate zero, reducing dim
