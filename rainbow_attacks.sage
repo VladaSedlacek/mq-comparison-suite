@@ -798,12 +798,13 @@ def get_solution_from_log(log_path, format, N, rainbow=None):
 @ click.option('--m', default=32, help='the number of equations', type=int)
 @ click.option('--o2', default=16, help='the oil subspace dimension', type=int)
 @ click.option('--solve_only', default=False, is_flag=True, help='skip equation generation and only use a solver')
+@ click.option('--no_solve', default=False, is_flag=True, help='only generate equations without solving them')
 @ click.option('-h', '--inner_hybridation', default="-1", help='the number of variable that are not guessed in MQ', type=int)
 @ click.option('-v', '--verbose', default=False, is_flag=True, help='control the output verbosity')
 @ click.option('-r', '--reduce_dimension', default=True, is_flag=True, help='reduce the dimension when possible')
 @ click.option('-t', '--attack_type', default='differential', type=click.Choice(['differential', 'minrank', 'intersection'], case_sensitive=False), help='choose attack on Rainbow')
 @ click.option('-s', '--seed', default=0, help='the seed for randomness replication', type=int)
-def main(q, n, m, o2, solver, solve_only, inner_hybridation, verbose, reduce_dimension, attack_type, seed):
+def main(q, n, m, o2, solver, solve_only, no_solve, inner_hybridation, verbose, reduce_dimension, attack_type, seed):
     set_random_seed(seed)
     M, N = compute_system_size(q, m, n, o2, attack_type)
     system_folder_path = 'systems'
@@ -850,6 +851,9 @@ def main(q, n, m, o2, solver, solve_only, inner_hybridation, verbose, reduce_dim
         equations_path = wdsat_system_path
     elif solver == 'cms':
         equations_path = cnf_system_path
+
+    if no_solve:
+        exit()
 
     hybridation_cmd = f"--inner_hybridation {inner_hybridation}" if solver == 'mq' and inner_hybridation != -1 else ""
     solve_cmd = f"python3 ./invoke_solver.py --equations_path {equations_path} --log_path {log_path} --solver {solver} --q {q} --m {M} --n {N} {hybridation_cmd}"
