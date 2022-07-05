@@ -895,10 +895,11 @@ def main(q, n, m, o2, solver, solve_only, no_solve, inner_hybridation, verbose, 
         print(f"{'Expected solution: ' : <25} {solution_expected}\n")
         success = solution_found == solution_expected
         if success:
-            print("Attack successful!")
+            print("Attack successful!\n")
         else:
-            print("Attack NOT successful. :(")
-        return success
+            print("Attack NOT successful. :(\n")
+        if not success:
+            exit(1)
 
 
 if __name__ == '__main__':
