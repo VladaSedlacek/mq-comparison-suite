@@ -18,12 +18,12 @@ def main(o2_lb, o2_ub, runs):
     o2_range = range(o2_lb, o2_ub)
     log_path = Path("comparison_log.txt")
     with open(log_path, 'w') as f:
-        for (i, solver) in enumerate(solvers):
-            for seed in range(runs):
-                for q in q_range:
-                    for o2 in o2_range:
-                        m = 2 * o2
-                        n = 3 * o2
+        for seed in range(runs):
+            for q in q_range:
+                for o2 in o2_range:
+                    m = 2 * o2
+                    n = 3 * o2
+                    for (i, solver) in enumerate(solvers):
                         solve_command = f"time sage rainbow_attacks.sage --seed {seed} --q {q} --o2 {o2} --m {m} --n {n} --solver {solver}"
                         if i > 0:
                             solve_command += " --solve_only"
