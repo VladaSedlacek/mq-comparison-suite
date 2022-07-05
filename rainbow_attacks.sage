@@ -646,7 +646,7 @@ Order : graded reverse lex order
         print("Equation system written to: " + str(file_path))
 
 
-def save_setup(rainbow, setup_path, verbose=false):
+def save_setup(rainbow, setup_path, verbose=False):
     if setup_path.is_file() and verbose:
         print("The file {} already exists!".format(str(setup_path)))
         return
