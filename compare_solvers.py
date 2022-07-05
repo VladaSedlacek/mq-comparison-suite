@@ -21,7 +21,11 @@ def main(o2_lb, o2_ub, runs):
                         solve_command += " --solve_only"
                     print("\n\n" + "*" * 100)
                     print("Executing command:", solve_command)
-                    Popen(solve_command, shell=True).wait()
+                    try:
+                        Popen(solve_command, shell=True).wait()
+                    except Exception as e:
+                        print(e)
+                        continue
 
 
 if __name__ == '__main__':
