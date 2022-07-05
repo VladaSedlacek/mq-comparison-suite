@@ -1,2 +1,3 @@
 *.sage.py
+.vscode
 systems/
