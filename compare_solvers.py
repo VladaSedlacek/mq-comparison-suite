@@ -11,9 +11,9 @@ def secondsToStr(t):
                [(t*1000,), 1000, 60, 60])
 
 
-def print_and_log(f, msg):
+def print_and_log(f, msg, sep="\n"):
     print(msg)
-    f.write(msg + "\n\n")
+    f.write(msg + sep)
 
 
 @ click.command()
@@ -46,9 +46,10 @@ def main(o2_lb, o2_ub, runs, verbose):
                             code = call(solve_command +
                                         " | grep 'Attack successful!'", shell=True)
                             time_taken = time.time() - start_time
-                            print_and_log(file,  f"RESULT: {result[code]}")
                             print_and_log(
-                                file, f"Time: {secondsToStr(time_taken)}")
+                                file,  f"Result: {result[code]}")
+                            print_and_log(
+                                file, f"Time: {secondsToStr(time_taken)}", sep="")
                         except Exception as e:
                             print_and_log(file, str(e))
                             continue
