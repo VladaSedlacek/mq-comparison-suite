@@ -657,6 +657,26 @@ def save_setup(rainbow, setup_path, verbose=False):
         file.write("# W:" + str(rainbow.W) + "\n\n")
 
 
+def save_solution(solution, solution_path, verbose=False):
+    if solution_path.is_file() and verbose:
+        print("The file {} already exists!".format(str(solution_path)))
+        return
+    with open(solution_path, 'w') as file:
+        for s in solution:
+            file.write(str(s) + "\n")
+
+
+def load_solution(solution_path, q):
+    try:
+        F = GF(q)
+        with open(solution_path, 'r') as file:
+            lines = file.readlines()
+            solution = [F(s) for s in lines]
+            return vector(solution)
+    except Exception as e:
+        print("An error ocurred during loading the solution: ", e)
+
+
 def print_nist_comparisons():
     # Rainbow notation mapping:
     # v1 + o2 + o1 -> n
@@ -818,6 +838,7 @@ def main(q, n, m, o2, solver, solve_only, no_solve, inner_hybridation, verbose, 
     wdsat_system_path = Path(system_folder_path, base_system_name + '.anf')
     cnf_system_path = Path(system_folder_path, base_system_name + '.cnf')
     setup_path = Path(system_folder_path, base_system_name + '.stp')
+    solution_path = Path(system_folder_path, base_system_name + '.sol')
     support = True if attack_type == 'minrank' else False
 
     if verbose:
@@ -828,6 +849,7 @@ def main(q, n, m, o2, solver, solve_only, no_solve, inner_hybridation, verbose, 
         save_setup(rainbow, setup_path, verbose=verbose)
         SS, equations, weil_coeff_list, guessed_vars, solution = mount_attack(
             rainbow, attack_type, M, N, reduce_dimension=False, verbose=verbose)
+        save_solution(solution, solution_path)
         if attack_type == 'differential':
             save_system(file_format='xl', file_path=xl_system_path,
                         rainbow=rainbow, SS=SS, verbose=verbose)
@@ -841,6 +863,7 @@ def main(q, n, m, o2, solver, solve_only, no_solve, inner_hybridation, verbose, 
                     guessed_vars=guessed_vars, reduce_dimension=reduce_dimension, verbose=verbose)
     else:
         print("Skipping the attack equations generation...")
+        solution = load_solution(solution_path, q)
 
     if solver == 'xl':
         equations_path = xl_system_path
@@ -865,10 +888,11 @@ def main(q, n, m, o2, solver, solve_only, no_solve, inner_hybridation, verbose, 
 
     solution_found = get_solution_from_log(
         log_path, format=log_format, N=N, rainbow=rainbow)
-    print(f"\nFirst solution found: {solution_found}\n")
+    print(f"\n{'First solution found: ' : <25} {solution_found} ")
 
     if attack_type == 'differential':
         solution_expected = solution[1:-1]
+        print(f"{'Expected solution: ' : <25} {solution_expected}\n")
         success = solution_found == solution_expected
         if success:
             print("Attack successful!")
