@@ -898,8 +898,7 @@ def main(q, n, m, o2, solver, solve_only, no_solve, inner_hybridation, verbose, 
             print("Attack successful!\n")
         else:
             print("Attack NOT successful. :(\n")
-        if not success:
-            exit(1)
+        return success
 
 
 if __name__ == '__main__':
