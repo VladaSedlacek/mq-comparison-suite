@@ -852,6 +852,8 @@ def main(q, n, m, o2, solver, solve_only, no_solve, inner_hybridation, verbose, 
         equations_path = wdsat_system_path
     elif solver == 'cms':
         equations_path = cnf_system_path
+    else:
+        no_solve = True
 
     if no_solve:
         exit()
