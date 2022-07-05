@@ -1,6 +1,14 @@
+from functools import reduce
 from pathlib import Path
 from subprocess import call
 import click
+import time
+
+
+def secondsToStr(t):
+    return "%d:%02d:%02d.%03d" % \
+        reduce(lambda ll, b: divmod(ll[0], b) + ll[1:],
+               [(t*1000,), 1000, 60, 60])
 
 
 def print_and_log(f, msg):
@@ -34,9 +42,13 @@ def main(o2_lb, o2_ub, runs, verbose):
                         msg = f"\n\n{'*' * 100}\nExecuting command: {solve_command}\n"
                         print_and_log(file, msg)
                         try:
+                            start_time = time.time()
                             code = call(solve_command +
                                         " | grep 'Attack successful!'", shell=True)
+                            time_taken = time.time() - start_time
                             print_and_log(file,  f"RESULT: {result[code]}")
+                            print_and_log(
+                                file, f"Time: {secondsToStr(time_taken)}")
                         except Exception as e:
                             print_and_log(file, str(e))
                             continue
