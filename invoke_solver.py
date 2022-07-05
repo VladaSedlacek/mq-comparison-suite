@@ -33,12 +33,12 @@ def create_wdsat_config(wdsat_path, M, N):
 @ click.option('--m', help='number of equations - needed for XL and WDSAT compilation', type=int)
 @ click.option('--n', help='number of variables - needed for XL and WDSAT compilation', type=int)
 @ click.option('-l', '--log_path', default=Path(".", "log.txt"), help='the path to the output log', type=str)
-@ click.option('--xl_path', default=Path("..", "xl"), help='the path the XL solver: http://polycephaly.org/projects/xl', type=str)
-@ click.option('--crossbred_path', default=Path("..", "mqsolver"), help='the path the crossbred solver: https://github.com/kcning/mqsolver/', type=str)
-@ click.option('--mq_path', default=Path("..", "mq"), help='the path the MQ solver: https://gitlab.lip6.fr/almasty/mq', type=str)
-@ click.option('--libfes_path', default=Path("..", "libfes-lite", "build"), help='the path the libfes solver: https://github.com/cbouilla/libfes-lite', type=str)
-@ click.option('--wdsat_path', default=Path("..", "WDSat"), help='the path the WDSat solver: https://github.com/mtrimoska/WDSat', type=str)
-@ click.option('--cms_path', default=Path("..", "cryptominisat", "build"), help='the path the WDSat solver: https://github.com/mtrimoska/WDSat', type=str)
+@ click.option('--xl_path', default=Path("..", "xl"), help='the path the XL solver folder: http://polycephaly.org/projects/xl', type=str)
+@ click.option('--crossbred_path', default=Path("..", "mqsolver"), help='the path the crossbred solver folder: https://github.com/kcning/mqsolver/', type=str)
+@ click.option('--mq_path', default=Path("..", "mq"), help='the path the MQ solver folder: https://gitlab.lip6.fr/almasty/mq', type=str)
+@ click.option('--libfes_path', default=Path("..", "libfes-lite", "build"), help='the path the libfes solver folder: https://github.com/cbouilla/libfes-lite', type=str)
+@ click.option('--wdsat_path', default=Path("..", "WDSat"), help='the path the WDSat solver folder: https://github.com/mtrimoska/WDSat', type=str)
+@ click.option('--cms_path', default=Path("..", "cryptominisat", "build"), help='the path the CMS solver folder: https://github.com/mtrimoska/WDSat', type=str)
 @ click.option('-h', '--inner_hybridation', default="-1", help='the number of variable that are not guessed in MQ', type=int)
 def main(equations_path, log_path, q, m, n, xl_path, crossbred_path, mq_path, libfes_path, wdsat_path, cms_path, solver, inner_hybridation):
     if not solver:
