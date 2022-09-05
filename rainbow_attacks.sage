@@ -311,8 +311,8 @@ class Rainbow():
                 NewSol = xt + 1 / alpha.sqrt() * YSol
             if NewSol[-1] != 0:
                 NewSol = NewSol / NewSol[-1]
-            assert NewSol == Sol
-            assert Eval(SS_orig, NewSol) == vector(m * [0])
+            # assert NewSol == Sol
+            # assert Eval(SS_orig, NewSol) == vector(m * [0])
 
             # Perform the Weil descent
             z = self.F.gens()[0]
