@@ -62,7 +62,7 @@ def main(equations_path, log_path, q, m, n, xl_path, crossbred_path, mq_path, li
         if compiled:
             print("\nThe XL solver is already compiled.")
         else:
-            make_command = "make -C {} Q={} M={} N={} -Wno-unused-result -Wno-class-memaccess".format(
+            make_command = "make -C {0} clean && make -C {0} Q={1} M={2} N={3} -Wno-unused-result -Wno-class-memaccess".format(
                 str(xl_path), str(q), str(m), str(n)) + " > " + str(log_path)
             print("\nCompiling the XL solver...")
             Popen(make_command, shell=True).wait()
