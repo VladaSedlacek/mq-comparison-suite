@@ -1,6 +1,7 @@
 from pathlib import Path
 from subprocess import Popen
 import click
+import json
 import os
 
 
@@ -47,11 +48,27 @@ def main(equations_path, log_path, q, m, n, xl_path, crossbred_path, mq_path, li
 
     current_path = Path().cwd()
 
+    def check_params(path, q, m, n):
+        if path.exists():
+            with open(path, 'r') as f:
+                params = json.load(f)
+                if params['q'] == q and params['m'] == m and params['n'] == n:
+                    return True
+        return False
+
     if solver == 'xl':
-        print("\nCompiling the XL solver...")
-        make_command = "make -C {} Q={} M={} N={} -Wno-unused-result -Wno-class-memaccess".format(
-            str(xl_path), str(q), str(m), str(n)) + " > " + str(log_path)
-        Popen(make_command, shell=True).wait()
+        xl_status_path = Path("xl_status.json")
+        compiled = check_params(xl_status_path, q, m, n)
+        if compiled:
+            print("\nThe XL solver is already compiled.")
+        else:
+            make_command = "make -C {} Q={} M={} N={} -Wno-unused-result -Wno-class-memaccess".format(
+                str(xl_path), str(q), str(m), str(n)) + " > " + str(log_path)
+            print("\nCompiling the XL solver...")
+            Popen(make_command, shell=True).wait()
+            with open(xl_status_path, 'w') as f:
+                params = {'q': q, 'm': m, 'n': n}
+                json.dump(params, f)
         print("\nStarting the XL solver...")
         xl_solve_command = "{} --challenge {} --all".format(
             str(Path(xl_path, "xl")), str(equations_path)) + " | tee -a " + str(log_path)

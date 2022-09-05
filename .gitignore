@@ -2,3 +2,4 @@
 .vscode
 systems/
 comparison_log.txt
+*.json
