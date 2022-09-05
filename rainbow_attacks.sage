@@ -819,8 +819,8 @@ def get_solution_from_log(log_path, format, N, rainbow=None):
 @ click.command()
 @ click.option('--solver', type=click.Choice(['xl', 'crossbred', 'mq', 'libfes', 'wdsat', 'cms'], case_sensitive=False), help='the external solver to be used')
 @ click.option('--q', default=16, help='the field order', type=int)
-@ click.option('--n', default=48, help='the number of variables', type=int)
-@ click.option('--m', default=32, help='the number of equations', type=int)
+@ click.option('--n', default=0, help='the number of variables', type=int)
+@ click.option('--m', default=0, help='the number of equations', type=int)
 @ click.option('--o2', default=16, help='the oil subspace dimension', type=int)
 @ click.option('--solve_only', default=False, is_flag=True, help='skip equation generation and only use a solver')
 @ click.option('--no_solve', default=False, is_flag=True, help='only generate equations without solving them')
@@ -830,6 +830,10 @@ def get_solution_from_log(log_path, format, N, rainbow=None):
 @ click.option('-t', '--attack_type', default='differential', type=click.Choice(['differential', 'minrank', 'intersection'], case_sensitive=False), help='choose attack on Rainbow')
 @ click.option('-s', '--seed', default=0, help='the seed for randomness replication', type=int)
 def main(q, n, m, o2, solver, solve_only, no_solve, inner_hybridation, verbose, reduce_dimension, attack_type, seed):
+    if m == 0:
+        m = 2*o2
+    if n == 0:
+        n = 3*o2
     set_random_seed(seed)
     M, N = compute_system_size(q, m, n, o2, attack_type)
     system_folder_path = 'systems'
