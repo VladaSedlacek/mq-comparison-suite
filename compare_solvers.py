@@ -18,14 +18,14 @@ def print_and_log(f, msg, sep="\n"):
 
 @ click.command()
 @ click.option('--o2_lb', default=6, help='lower bound for o2', type=int)
-@ click.option('--o2_ub', default=10, help='upper bound for o2', type=int)
+@ click.option('--o2_ub', default=20, help='upper bound for o2', type=int)
 @ click.option('--runs', default=2, help='number of instances for each parameter set', type=int)
 @ click.option('-v', '--verbose', default=False, is_flag=True, help='control the output verbosity')
 def main(o2_lb, o2_ub, runs, verbose):
     result = ["success", "failure"]
     solvers = ['xl', 'crossbred', 'mq', 'libfes', 'wdsat', 'cms']
-    q_range = [16, 2, 4, 8]
-    o2_range = range(o2_lb, o2_ub)
+    q_range = [2, 16]
+    o2_range = range(o2_lb, o2_ub, 2)
     log_path = Path("comparison_log.txt")
     with open(log_path, 'w') as file:
         for seed in range(runs):
