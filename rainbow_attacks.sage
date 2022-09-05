@@ -374,6 +374,10 @@ def elt_to_str(q, a):
     return str(a)
 
 
+def str_to_elt(q, s):
+    return GF(q).fetch_int(int(s, q))
+
+
 def four_bits_to_str(bit_list):
     return str(hex(int(''.join(map(str, bit_list)).encode(), 2)))[2:]
 
@@ -772,7 +776,7 @@ def get_solution_from_log(log_path, format, N, rainbow=None):
             if format == 'xl':
                 if "  is sol" in line:
                     sol = line.split("  is sol")[0].split(" ")
-                    return ['{:x}'.format(int(c, 16)) for c in sol]
+                    return vector([str_to_elt(rainbow.q, c) for c in sol])
             if format == 'crossbred':
                 if "solution found: " in line:
                     found = True
