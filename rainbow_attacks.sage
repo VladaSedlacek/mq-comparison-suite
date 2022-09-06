@@ -615,7 +615,7 @@ Order : graded reverse lex order
         N = len(var_set)
         with open(file_path, 'w') as file:
             file.write("p cnf {} {}\n".format(
-                N + binomial(N, 2) + 1, M + binomial(N, 2) + 1))
+                N + binomial(N, 2) + 1, M + 3 * binomial(N, 2) + 1))
             # introduce the constant variable
             file.write("{} 0\n".format(N + binomial(N, 2) + 1))
             # convert ANDs to ORs by introducing new variables
@@ -624,17 +624,21 @@ Order : graded reverse lex order
                 for j in range(i + 1, len(var_list)):
                     prod_index += 1
                     var_prod_list.append(var_list[i] * var_list[j])
-                    file.write(
-                        "-{} -{} {} 0\n".format(i + 1, j + 1, N + prod_index))
+                    file.write("{} -{} 0\n".format(i + 1, N + prod_index))
+                    file.write("{} -{} 0\n".format(j + 1, N + prod_index))
+                    file.write("-{} -{} {} 0\n".format(i +
+                               1, j + 1, N + prod_index))
             for eq in equations:
                 const_present = False
                 cnf_line = "x "
                 for mon in eq.monomials():
+                    # add linear monomials
                     if mon in var_list:
                         cnf_line += "{} ".format(var_list.index(mon) + 1)
+                    # add quadratic monomials
                     elif mon in var_prod_list:
                         cnf_line += "{} ".format(
-                            var_prod_list.index(mon) + 1)
+                            N + var_prod_list.index(mon) + 1)
                     else:
                         assert mon == 1
                         const_present = True
