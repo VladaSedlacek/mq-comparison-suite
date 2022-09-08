@@ -13,12 +13,14 @@ def secondsToStr(t):
                [(t*1000,), 1000, 60, 60])
 
 
-def print_and_log(log_paths, msg, printing=True):
-    if printing:
-        print(msg)
+def print_and_log(log_paths, to_log, to_print=None):
+    if to_print == None:
+        to_print = to_log
+    if not to_print == "":
+        print(to_print)
     for path in log_paths:
         with open(path, 'a') as f:
-            f.write(msg + "\n")
+            f.write(to_log + "\n")
 
 
 @ click.command()
@@ -28,7 +30,14 @@ def print_and_log(log_paths, msg, printing=True):
 @ click.option('-v', '--verbose', default=False, is_flag=True, help='control the log verbosity')
 @ click.option('-t', '--table', default=True, is_flag=True, help='display the results as a table')
 def main(o2_lb, o2_ub, runs, verbose, table):
-    result = ["success", "failure"]
+
+    # Colors (from https://stackoverflow.com/questions/43583847/python-pretty-table-with-color-output)
+    red = "\033[0;31;40m"
+    green = "\033[0;32;40m"
+    reset = "\033[0m"
+    colors = [green, red]
+
+    results = ["success", "failure"]
     solvers = ['xl', 'crossbred', 'mq', 'libfes', 'wdsat', 'cms']
     q_range = [2, 16]
     o2_range = range(o2_lb, o2_ub, 2)
@@ -39,6 +48,7 @@ def main(o2_lb, o2_ub, runs, verbose, table):
         T = PrettyTable()
         T.field_names = ["Solver", "Result", "Time"]
         T.align = "c"
+        T_color = T.copy()
     star_length = 105
     stars = '*' * star_length
     left_pad = ' ' * int((star_length - 70)/2)
@@ -71,15 +81,17 @@ def main(o2_lb, o2_ub, runs, verbose, table):
                         print_and_log(log_paths, str(e))
                         continue
                     # if table is True, both stdout and the brief log will be only in table-like format
-                    print_and_log(log_paths[table:], f"Solver: {solver}", printing=printing)
-                    print_and_log(log_paths[table:], f"Result: {result[code]}", printing=printing)
-                    print_and_log(log_paths[table:], f"Time:   {time_seconds}", printing=printing)
-                    print_and_log(log_paths[table:], stars, printing=printing)
+                    print_and_log(log_paths[table:], f"Solver: {solver}", to_print="")
+                    print_and_log(log_paths[table:], f"Result: {results[code]}", to_print="")
+                    print_and_log(log_paths[table:], f"Time:   {time_seconds}", to_print="")
+                    print_and_log(log_paths[table:], stars, to_print="")
                     if table:
-                        T.add_row([solver, result[code], time_seconds])
+                        T_color.add_row([solver, colors[code]+results[code]+reset, time_seconds])
+                        T.add_row([solver, results[code], time_seconds])
                 if table:
-                    print_and_log(log_paths[:1], T.get_string())
+                    print_and_log(log_paths[:1], T.get_string(), to_print=T_color.get_string())
                     T.clear_rows()
+                    # T_color.clear
 
 
 if __name__ == '__main__':
