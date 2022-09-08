@@ -874,7 +874,8 @@ def main(q, n, m, o2, solver, solve_only, no_solve, inner_hybridation, verbose, 
         save_system(file_format='cnf', file_path=cnf_system_path, rainbow=rainbow, equations=equations,
                     guessed_vars=guessed_vars, reduce_dimension=reduce_dimension, verbose=verbose)
     else:
-        print("Skipping the attack equations generation...")
+        if verbose:
+            print("Skipping the attack equations generation...")
         solution = load_solution(solution_path, q)
 
     if solver == 'xl':
