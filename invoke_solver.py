@@ -59,7 +59,7 @@ def main(equations_path, log_path, q, m, n, xl_path, crossbred_path, mq_path, li
     if solver == 'xl':
         xl_status_path = Path("xl_status.json")
         compiled = check_params(xl_status_path, q, m, n)
-        if compiled:
+        if compiled and Path(xl_path, "xl").exists():
             print("\nThe XL solver is already compiled.")
         else:
             make_command = "make -C {0} clean && make -C {0} Q={1} M={2} N={3} -Wno-unused-result -Wno-class-memaccess".format(
