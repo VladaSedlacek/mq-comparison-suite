@@ -1,5 +1,5 @@
 *.sage.py
 .vscode
 systems/
-comparison_log.txt
+*.txt
 *.json
