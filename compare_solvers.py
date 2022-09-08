@@ -33,10 +33,12 @@ def main(o2_lb, o2_ub, runs, verbose):
                 for o2 in o2_range:
                     m = 2 * o2
                     n = 3 * o2
-                    for (i, solver) in enumerate(solvers):
-                        solve_command = f"sage rainbow_attacks.sage --seed {seed} --q {q} --o2 {o2} --m {m} --n {n} --solver {solver}"
-                        if i > 0:
-                            solve_command += " --solve_only"
+                    generate_command = f"sage rainbow_attacks.sage --seed {seed} --q {q} --o2 {o2} --m {m} --n {n}"
+                    print_and_log(
+                        file, f"\n\n{'*' * 100}\nGenerating equations for seed={seed}, q={q}, o2={o2}, m={m}, n={n}...\n")
+                    call(generate_command, shell=True)
+                    for solver in solvers:
+                        solve_command = f"sage rainbow_attacks.sage --seed {seed} --q {q} --o2 {o2} --m {m} --n {n} --solver {solver} --solve_only"
                         if verbose:
                             solve_command += " | tee -a " + str(log_path)
                         msg = f"\n\n{'*' * 100}\nExecuting command: {solve_command}\n"
