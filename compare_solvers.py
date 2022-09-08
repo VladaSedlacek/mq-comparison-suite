@@ -33,8 +33,10 @@ def main(o2_lb, o2_ub, runs, verbose):
     log_path_2 = Path("comparison_log_verbose.txt")
     log_paths = [log_path_1, log_path_2]
     star_length = 105
+    stars = '*' * star_length
+    left_pad = ' ' * int((star_length - 70)/2)
     print_and_log(
-        log_paths, f"{'*' * star_length}\nStarting solver comparison. See the results in {log_path_1} and {log_path_2}.")
+        log_paths, f"{stars}\nStarting solver comparison. See the results in {log_path_1} and {log_path_2}.")
     print_and_log(
         log_paths, f"Current datetime: {datetime.datetime.now().isoformat(' ', 'seconds')}")
     for seed in range(runs):
@@ -42,26 +44,30 @@ def main(o2_lb, o2_ub, runs, verbose):
             for o2 in o2_range:
                 m = 2 * o2
                 n = 3 * o2
-                generate_command = f"sage rainbow_attacks.sage --seed {seed} --q {q} --o2 {o2} --m {m} --n {n}"
+                gen_cmd = f"sage rainbow_attacks.sage --seed {seed} --q {q} --o2 {o2} --m {m} --n {n}"
+                gen_msg = f"Generating equations for seed = {seed}, q = {q}, o2 = {o2}, m = {m}, n = {n}..."
                 print_and_log(
-                    log_paths, f"\n\n\n{'*' * star_length}\nGenerating equations for seed={seed}, q={q}, o2={o2}, m={m}, n={n}...")
-                call(generate_command, shell=True)
+                    log_paths, f"\n\n{stars}\n{left_pad}{gen_msg}\n{stars}")
+                call(gen_cmd, shell=True)
                 for solver in solvers:
-                    solve_command = f"sage rainbow_attacks.sage --seed {seed} --q {q} --o2 {o2} --m {m} --n {n} --solver {solver} --solve_only"
-                    msg = f"\n{'*' * star_length}\nExecuting: {solve_command}\n"
-                    print_and_log(log_paths, msg)
-                    solve_command += f" 2>> {str(log_path_2)}"
+                    solve_cmd = f"sage rainbow_attacks.sage --seed {seed} --q {q} --o2 {o2} --m {m} --n {n} --solver {solver} --solve_only"
+                    solver_brief = f"Solver: {solver}"
+                    print_and_log(log_paths, solver_brief)
                     if verbose:
-                        solve_command += f" | tee -a {str(log_path_2)}"
+                        solver_verbose = f"\n{stars}\nExecuting: {solve_cmd}\n"
+                        print_and_log([log_paths[:1]], solver_verbose)
+                        solve_cmd += f" 2 >> {str(log_path_2)} | tee -a {str(log_path_2)}"
+                    else:
+                        solve_cmd += f" 2>> {str(log_path_2)}"
                     try:
                         start_time = time.time()
                         code = call(
-                            solve_command + " | grep 'Attack successful!' --quiet", shell=True)
+                            solve_cmd + " | grep 'Attack successful!' --quiet", shell=True)
                         time_taken = time.time() - start_time
                         print_and_log(
                             log_paths, f"Result: {result[code]}")
                         print_and_log(
-                            log_paths, f"Time:   {secondsToStr(time_taken)}", sep="")
+                            log_paths, f"Time:   {secondsToStr(time_taken)}\n{stars}")
                     except Exception as e:
                         print_and_log(log_paths, str(e))
                         continue
