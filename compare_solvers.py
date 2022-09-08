@@ -2,6 +2,7 @@ from functools import reduce
 from pathlib import Path
 from subprocess import call
 import click
+import datetime
 import time
 
 
@@ -33,6 +34,8 @@ def main(o2_lb, o2_ub, runs, verbose):
     log_paths = [log_path_1, log_path_2]
     print_and_log(
         log_paths, f"Starting solver comparison, the results will be found in {log_path_1} and {log_path_2}.")
+    print_and_log(
+        log_paths, f"Current datetime: {datetime.datetime.now().isoformat(' ', 'seconds')}")
     for seed in range(runs):
         for q in q_range:
             for o2 in o2_range:
