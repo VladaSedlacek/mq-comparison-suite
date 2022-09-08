@@ -32,8 +32,9 @@ def main(o2_lb, o2_ub, runs, verbose):
     log_path_1 = Path("comparison_log_brief.txt")
     log_path_2 = Path("comparison_log_verbose.txt")
     log_paths = [log_path_1, log_path_2]
+    star_length = 105
     print_and_log(
-        log_paths, f"Starting solver comparison, the results will be found in {log_path_1} and {log_path_2}.")
+        log_paths, f"{'*' * star_length}\nStarting solver comparison. See the results in {log_path_1} and {log_path_2}.")
     print_and_log(
         log_paths, f"Current datetime: {datetime.datetime.now().isoformat(' ', 'seconds')}")
     for seed in range(runs):
@@ -43,11 +44,11 @@ def main(o2_lb, o2_ub, runs, verbose):
                 n = 3 * o2
                 generate_command = f"sage rainbow_attacks.sage --seed {seed} --q {q} --o2 {o2} --m {m} --n {n}"
                 print_and_log(
-                    log_paths, f"\n\n\n{'*' * 110}\nGenerating equations for seed={seed}, q={q}, o2={o2}, m={m}, n={n}...")
+                    log_paths, f"\n\n\n{'*' * star_length}\nGenerating equations for seed={seed}, q={q}, o2={o2}, m={m}, n={n}...")
                 call(generate_command, shell=True)
                 for solver in solvers:
                     solve_command = f"sage rainbow_attacks.sage --seed {seed} --q {q} --o2 {o2} --m {m} --n {n} --solver {solver} --solve_only"
-                    msg = f"\n{'*' * 110}\nExecuting: {solve_command}\n"
+                    msg = f"\n{'*' * star_length}\nExecuting: {solve_command}\n"
                     print_and_log(log_paths, msg)
                     solve_command += f" 2>> {str(log_path_2)}"
                     if verbose:
