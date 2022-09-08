@@ -683,6 +683,7 @@ def load_solution(solution_path, q):
             return vector(solution)
     except Exception as e:
         print("An error ocurred during loading the solution: ", e)
+        exit()
 
 
 def print_nist_comparisons():

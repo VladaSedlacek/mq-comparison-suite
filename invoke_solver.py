@@ -46,6 +46,10 @@ def main(equations_path, log_path, q, m, n, xl_path, crossbred_path, mq_path, li
         print("Please specify a solver.")
         exit()
 
+    if not Path(equations_path).exists():
+        print("Please specify an existing equation file.")
+        exit()
+
     current_path = Path().cwd()
 
     def check_params(path, q, m, n):
