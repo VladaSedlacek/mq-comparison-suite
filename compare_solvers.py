@@ -16,13 +16,20 @@ def secondsToStr(t):
 
 
 @ click.command()
-@ click.option('--o2_lb', default=6, help='lower bound for o2', type=int)
-@ click.option('--o2_ub', default=20, help='upper bound for o2', type=int)
-@ click.option('--runs', default=2, help='number of instances for each parameter set', type=int)
+@ click.option('--o2_min', default=6, help='lower bound for o2', type=int)
+@ click.option('--o2_max', default=20, help='upper bound for o2', type=int)
+@ click.option('--iterations', default=2, help='number of iterations for each parameter set', type=int)
 @ click.option('--log_path_brief', default=Path("comparison_log_brief.txt"), help='the path to the brief log')
 @ click.option('--log_path_verbose', default=Path("comparison_log_verbose.txt"), help='the path to the verbose log')
-def main(o2_lb, o2_ub, runs, log_path_brief, log_path_verbose):
+def main(o2_min, o2_max, iterations, log_path_brief, log_path_verbose):
 
+    # Set up main parameters
+    solvers = ['xl', 'crossbred', 'mq', 'libfes', 'wdsat', 'cms']
+    q_range = [2, 16]
+    o2_range = range(o2_min, o2_max + 1, 2)
+    results = ["success", "failure"]
+
+    # Set up logging
     def print_and_log(to_log, to_print=None, include_brief=False):
         if to_print == None:
             to_print = to_log
@@ -34,21 +41,22 @@ def main(o2_lb, o2_ub, runs, log_path_brief, log_path_verbose):
             with open(path, 'a') as f:
                 f.write(to_log + "\n")
 
-    # Colors (from https://stackoverflow.com/questions/43583847/python-pretty-table-with-color-output)
+    # Set up formatting
+    star_length = 105
+    stars = '*' * star_length
+    left_pad = ' ' * int((star_length - 72)/2)
+
+    # Set up tables
+    T = PrettyTable()
+    res_col_name = f"Successes (out of {iterations})"
+    T.field_names = ["Solver", f"{res_col_name}", "Average time", "Standard deviation of time"]
+    T.align = "c"
+
+    # Use colors (from https://stackoverflow.com/questions/43583847/python-pretty-table-with-color-output)
     red = "\033[0;31;40m"
     green = "\033[0;32;40m"
     reset = "\033[0m"
     colors = [green, red]
-
-    results = ["success", "failure"]
-    solvers = ['xl', 'crossbred', 'mq', 'libfes', 'wdsat', 'cms']
-    # solvers = ['mq', 'libfes', 'wdsat', 'cms']
-    q_range = [2, 16]
-    o2_range = range(o2_lb, o2_ub, 2)
-    T = PrettyTable()
-    res_col_name = f"Successes (out of {runs})"
-    T.field_names = ["Solver", f"{res_col_name}", "Average time", "Standard deviation of time"]
-    T.align = "c"
 
     # Sort the tables by results and times
     def sort_key(r):
@@ -59,13 +67,12 @@ def main(o2_lb, o2_ub, runs, log_path_brief, log_path_verbose):
                 if color in res:
                     res = res.split(color)[1]
         return -int(res), time
+
     T.sortby = res_col_name
     T.sort_key = sort_key
     T_color = T.copy()
 
-    star_length = 105
-    stars = '*' * star_length
-    left_pad = ' ' * int((star_length - 72)/2)
+    # Start the comparison
     print_and_log(
         f"{stars}\nStarting solver comparison, check {log_path_verbose} for the detailed results.", include_brief=True)
     print_and_log(f"Current datetime: {datetime.datetime.now().isoformat(' ', 'seconds')}", include_brief=True)
@@ -73,10 +80,12 @@ def main(o2_lb, o2_ub, runs, log_path_brief, log_path_verbose):
         for o2 in o2_range:
             m = 2 * o2
             n = 3 * o2
-            gen_msg = f"Generating equations for q = {q: 2}, o2 = {o2: 2}, m = {m: 2}, n = {n: 2}; {runs: 2} iterations..."
+            gen_msg = f"Generating equations for q = {q: 2}, o2 = {o2: 2}, m = {m: 2}, n = {n: 2}; {iterations: 2} iterations..."
             print_and_log(f"\n\n{stars}\n{left_pad}{gen_msg}\n{stars}", include_brief=True)
             solver_stats = {solver: {"successes": 0, "times": []} for solver in solvers}
-            for seed in range(runs):
+
+            # Go through all iterations for the given parameters
+            for seed in range(iterations):
                 gen_cmd = f"sage rainbow_attacks.sage --seed {seed} --q {q} --o2 {o2} --m {m} --n {n}"
                 call(gen_cmd, shell=True)
                 for solver in solvers:
@@ -90,21 +99,22 @@ def main(o2_lb, o2_ub, runs, log_path_brief, log_path_verbose):
                     except Exception as e:
                         print_and_log(str(e))
                         continue
+
+                    # Save the iteration results
                     solver_stats[solver]["successes"] += (1-code)
                     solver_stats[solver]["times"].append(time_taken)
-
                     print_and_log(f"Solver: {solver}", to_print="")
                     print_and_log(f"Result: {results[code]}", to_print="")
                     print_and_log(f"Time:   {secondsToStr(time_taken)}", to_print="")
                     print_and_log(stars, to_print="")
 
+            # Save the aggregated results
             for solver in solvers:
                 successes = str(solver_stats[solver]["successes"])
                 mean = secondsToStr(statistics.mean(solver_stats[solver]["times"]))
                 stdev = secondsToStr(statistics.stdev(solver_stats[solver]["times"]))
-
                 T.add_row([solver, successes, mean, stdev])
-                T_color.add_row([solver, colors[successes != str(runs)] + successes + reset, mean, stdev])
+                T_color.add_row([solver, colors[successes != str(iterations)] + successes + reset, mean, stdev])
 
             print_and_log(T.get_string(), to_print=T_color.get_string(), include_brief=True)
             T.clear_rows()
