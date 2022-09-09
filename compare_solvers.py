@@ -92,7 +92,7 @@ def main(o2_min, o2_max, iterations, log_path_brief, log_path_verbose):
 
                     # Compile the solver for each parameter set if needed
                     if seed == 0 and solver in ["xl", "wdsat"]:
-                        compile_cmd = f"python3 compile_solver.py --solver {solver} --q {q} --m {m} --n {n} >> {log_path_verbose} 2>&1"
+                        compile_cmd = f"python3 compile_solver.py --solver {solver} --q {q} --m {m-1} --n {n-m-2} >> {log_path_verbose} 2>&1"
                         call(compile_cmd, shell=True)
 
                     #  Measure the solving time and result

@@ -56,7 +56,7 @@ def main(equations_path, log_path, q, m, n, xl_path, crossbred_path, mq_path, li
         if precompiled and Path(xl_path, "xl").exists():
             print("\nThe XL solver is already compiled.")
         else:
-            make_cmd = f"python3 compile_solver.py --solver xl --q {q} --m {m} --n {n} --xl_path {xl_path}"
+            make_cmd = f"python3 compile_solver.py --solver xl --q {q} --m {M} --n {N} --xl_path {xl_path}"
             Popen(make_cmd, shell=True).wait()
         print("\nStarting the XL solver...")
         xl_solve_cmd = "{} --challenge {} --all".format(
@@ -89,7 +89,7 @@ def main(equations_path, log_path, q, m, n, xl_path, crossbred_path, mq_path, li
         if precompiled and Path(wdsat_path, "wdsat_solver").exists():
             print("\nThe WDSat solver is already compiled.")
         else:
-            make_cmd = f"python3 compile_solver.py --solver wdsat --q {q} --m {m} --n {n} --wdsat_path {wdsat_path}"
+            make_cmd = f"python3 compile_solver.py --solver wdsat --q {q} --m {M} --n {N} --wdsat_path {wdsat_path}"
             Popen(make_cmd, shell=True).wait()
         print("\nStarting the WDSat solver...")
         wdsat_solve_cmd = "{} -i {}".format(

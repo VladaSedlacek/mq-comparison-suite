@@ -26,11 +26,11 @@ def create_wdsat_config(wdsat_path, M, N):
 # define __MAX_XEQ_SIZE__ {4}""".format(N, M, N + 1, int(N*(N-1)/2), N * (N + 1), int(M*(M-1)/2)))
 
 
-def check_params(status_path, q, m, n):
+def check_params(status_path, q, M, N):
     if status_path.exists():
         with open(status_path, 'r') as f:
             params = json.load(f)
-            if params['q'] == q and params['m'] == m and params['n'] == n:
+            if params['q'] == q and params['M'] == M and params['N'] == N:
                 return True
     return False
 
@@ -47,17 +47,20 @@ def main(solver, q, m, n, xl_path, wdsat_path,):
         print("Please specify a solver.")
         exit()
 
+    M = m
+    N = n
+
     if solver == 'xl':
         xl_status_path = Path("xl_status.json")
-        compiled = check_params(xl_status_path, q, m, n)
+        compiled = check_params(xl_status_path, q, M, N)
         if compiled and Path(xl_path, "xl").exists():
             print("\nThe XL solver is already compiled.")
         else:
-            make_cmd = f"make -C {str(xl_path)} clean && make -C {str(xl_path)} Q={q} M={m} N={n} -Wno-unused-result -Wno-class-memaccess"
+            make_cmd = f"make -C {str(xl_path)} clean && make -C {str(xl_path)} Q={q} M={M} N={N} -Wno-unused-result -Wno-class-memaccess"
             print("\nCompiling the XL solver...")
             Popen(make_cmd, shell=True).wait()
             with open(xl_status_path, 'w') as f:
-                params = {'q': q, 'm': m, 'n': n}
+                params = {'q': q, 'M': M, 'N': N}
                 json.dump(params, f)
 
     if solver == 'wdsat':
@@ -70,11 +73,10 @@ def main(solver, q, m, n, xl_path, wdsat_path,):
             suppressor_flag = ""
             src_path = str(Path(wdsat_path, "src"))
             make_cmd = f"make -C {src_path} {suppressor_flag}"
-            print(make_cmd)
             print("\nCompiling the WDSat solver...")
             Popen(make_cmd, shell=True).wait()
             with open(wdsat_status_path, 'w') as f:
-                params = {'q': q, 'm': m, 'n': n}
+                params = {'q': q, 'M': M, 'N': N}
                 json.dump(params, f)
 
 
