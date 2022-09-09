@@ -5,6 +5,7 @@ from subprocess import call
 from prettytable import PrettyTable
 import click
 import datetime
+import statistics
 import time
 
 
@@ -47,17 +48,20 @@ def main(o2_lb, o2_ub, runs, verbose, table):
     log_paths = [log_path_1, log_path_2]
     if table:
         T = PrettyTable()
-        T.field_names = ["Solver", "Result", "Time"]
+        res_col_name = f"Successes (out of {runs})"
+        T.field_names = ["Solver", f"{res_col_name}", "Average time", "Standard deviation of time"]
         T.align = "c"
-        # Sort the tables by results and times
 
+        # Sort the tables by results and times
         def sort_key(r):
             res, time = itemgetter(2, 3)(r)
-            if "success" in res:
-                return 0, time
-            else:
-                return 1, time
-        T.sortby = "Result"
+            if reset in res:
+                res = res.split(reset)[0]
+                for color in colors:
+                    if color in res:
+                        res = res.split(color)[1]
+            return -int(res), time
+        T.sortby = res_col_name
         T.sort_key = sort_key
         T_color = T.copy()
 
@@ -66,14 +70,15 @@ def main(o2_lb, o2_ub, runs, verbose, table):
     left_pad = ' ' * int((star_length - 70)/2)
     print_and_log(log_paths, f"{stars}\nStarting solver comparison. See the results in {log_path_1} and {log_path_2}.")
     print_and_log(log_paths, f"Current datetime: {datetime.datetime.now().isoformat(' ', 'seconds')}")
-    for seed in range(runs):
-        for q in q_range:
-            for o2 in o2_range:
-                m = 2 * o2
-                n = 3 * o2
+    for q in q_range:
+        for o2 in o2_range:
+            m = 2 * o2
+            n = 3 * o2
+            gen_msg = f"Generating equations for q = {q}, o2 = {o2}, m = {m}, n = {n}; {runs} iterations..."
+            print_and_log(log_paths, f"\n\n{stars}\n{left_pad}{gen_msg}\n{stars}")
+            solver_stats = {solver: {"successes": 0, "times": []} for solver in solvers}
+            for seed in range(runs):
                 gen_cmd = f"sage rainbow_attacks.sage --seed {seed} --q {q} --o2 {o2} --m {m} --n {n}"
-                gen_msg = f"Generating equations for seed = {seed}, q = {q}, o2 = {o2}, m = {m}, n = {n}..."
-                print_and_log(log_paths, f"\n\n{stars}\n{left_pad}{gen_msg}\n{stars}")
                 call(gen_cmd, shell=True)
                 for solver in solvers:
                     solve_cmd = f"sage rainbow_attacks.sage --seed {seed} --q {q} --o2 {o2} --m {m} --n {n} --solver {solver} --solve_only"
@@ -87,22 +92,30 @@ def main(o2_lb, o2_ub, runs, verbose, table):
                         start_time = time.time()
                         code = call(solve_cmd + " | grep 'Attack successful!' --quiet", shell=True)
                         time_taken = time.time() - start_time
-                        time_seconds = secondsToStr(time_taken)
                     except Exception as e:
                         print_and_log(log_paths, str(e))
                         continue
+                    solver_stats[solver]["successes"] += (1-code)
+                    solver_stats[solver]["times"].append(time_taken)
+
                     # if table is True, both stdout and the brief log will be only in table-like format
                     print_and_log(log_paths[table:], f"Solver: {solver}", to_print="")
                     print_and_log(log_paths[table:], f"Result: {results[code]}", to_print="")
-                    print_and_log(log_paths[table:], f"Time:   {time_seconds}", to_print="")
+                    print_and_log(log_paths[table:], f"Time:   {secondsToStr(time_taken)}", to_print="")
                     print_and_log(log_paths[table:], stars, to_print="")
-                    if table:
-                        T_color.add_row([solver, colors[code]+results[code]+reset, time_seconds])
-                        T.add_row([solver, results[code], time_seconds])
+
+            for solver in solvers:
+                successes = str(solver_stats[solver]["successes"])
+                mean = secondsToStr(statistics.mean(solver_stats[solver]["times"]))
+                stdev = secondsToStr(statistics.stdev(solver_stats[solver]["times"]))
+
                 if table:
-                    print_and_log(log_paths[:1], T.get_string(), to_print=T_color.get_string())
-                    T.clear_rows()
-                    T_color.clear_rows()
+                    T.add_row([solver, successes, mean, stdev])
+                    T_color.add_row([solver, colors[successes != str(runs)] + successes + reset, mean, stdev])
+            if table:
+                print_and_log(log_paths[:1], T.get_string(), to_print=T_color.get_string())
+                T.clear_rows()
+                T_color.clear_rows()
 
 
 if __name__ == '__main__':
