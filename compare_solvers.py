@@ -91,7 +91,7 @@ def main(o2_lb, o2_ub, runs, verbose, table):
                 if table:
                     print_and_log(log_paths[:1], T.get_string(), to_print=T_color.get_string())
                     T.clear_rows()
-                    # T_color.clear
+                    T_color.clear_rows()
 
 
 if __name__ == '__main__':
