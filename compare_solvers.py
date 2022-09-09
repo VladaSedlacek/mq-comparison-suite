@@ -65,7 +65,7 @@ def main(o2_lb, o2_ub, runs, log_path_brief, log_path_verbose):
 
     star_length = 105
     stars = '*' * star_length
-    left_pad = ' ' * int((star_length - 70)/2)
+    left_pad = ' ' * int((star_length - 72)/2)
     print_and_log(
         f"{stars}\nStarting solver comparison, check {log_path_verbose} for the detailed results.", include_brief=True)
     print_and_log(f"Current datetime: {datetime.datetime.now().isoformat(' ', 'seconds')}", include_brief=True)
@@ -73,7 +73,7 @@ def main(o2_lb, o2_ub, runs, log_path_brief, log_path_verbose):
         for o2 in o2_range:
             m = 2 * o2
             n = 3 * o2
-            gen_msg = f"Generating equations for q = {q}, o2 = {o2}, m = {m}, n = {n}; {runs} iterations..."
+            gen_msg = f"Generating equations for q = {q: 2}, o2 = {o2: 2}, m = {m: 2}, n = {n: 2}; {runs: 2} iterations..."
             print_and_log(f"\n\n{stars}\n{left_pad}{gen_msg}\n{stars}", include_brief=True)
             solver_stats = {solver: {"successes": 0, "times": []} for solver in solvers}
             for seed in range(runs):
