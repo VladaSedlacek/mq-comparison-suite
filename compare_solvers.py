@@ -64,7 +64,6 @@ def main(o2_lb, o2_ub, runs, verbose, table):
     star_length = 105
     stars = '*' * star_length
     left_pad = ' ' * int((star_length - 70)/2)
-    printing = not table
     print_and_log(log_paths, f"{stars}\nStarting solver comparison. See the results in {log_path_1} and {log_path_2}.")
     print_and_log(log_paths, f"Current datetime: {datetime.datetime.now().isoformat(' ', 'seconds')}")
     for seed in range(runs):
