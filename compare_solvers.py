@@ -1,4 +1,5 @@
 from functools import reduce
+from operator import itemgetter
 from pathlib import Path
 from subprocess import call
 from prettytable import PrettyTable
@@ -48,7 +49,18 @@ def main(o2_lb, o2_ub, runs, verbose, table):
         T = PrettyTable()
         T.field_names = ["Solver", "Result", "Time"]
         T.align = "c"
+        # Sort the tables by results and times
+
+        def sort_key(r):
+            res, time = itemgetter(2, 3)(r)
+            if "success" in res:
+                return 0, time
+            else:
+                return 1, time
+        T.sortby = "Result"
+        T.sort_key = sort_key
         T_color = T.copy()
+
     star_length = 105
     stars = '*' * star_length
     left_pad = ' ' * int((star_length - 70)/2)
