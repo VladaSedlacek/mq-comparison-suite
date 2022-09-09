@@ -61,7 +61,7 @@ def main(equations_path, log_path, q, m, n, xl_path, crossbred_path, mq_path, li
             Popen(make_cmd, shell=True).wait()
         print("\nStarting the XL solver...")
         xl_solve_cmd = "{} --challenge {} --all".format(
-            str(Path(xl_path, "xl")), str(equations_path)) + " | tee -a " + str(log_path)
+            str(Path(xl_path, "xl")), str(equations_path)) + " | tee " + str(log_path)
         Popen(xl_solve_cmd, shell=True).wait()
 
     if solver == 'crossbred':
@@ -95,7 +95,7 @@ def main(equations_path, log_path, q, m, n, xl_path, crossbred_path, mq_path, li
         print("\nStarting the WDSat solver...")
         wdsat_solve_cmd = "{} -i {}".format(
             str(Path(wdsat_path, "wdsat_solver")), str(equations_path) +
-            " | tee -a " + str(log_path))
+            " | tee " + str(log_path))
         Popen(wdsat_solve_cmd, shell=True).wait()
 
     if solver == 'cms':
@@ -103,7 +103,7 @@ def main(equations_path, log_path, q, m, n, xl_path, crossbred_path, mq_path, li
         print("\nStarting the CryptoMiniSat solver...")
         cms_solve_cmd = "{} --verb 0 {}".format(
             str(Path(cms_path, "cryptominisat5")), str(equations_path) +
-            " | tee -a " + str(log_path))
+            " | tee " + str(log_path))
         Popen(cms_solve_cmd, shell=True).wait()
 
 
