@@ -1,7 +1,7 @@
 from functools import reduce
 from operator import itemgetter
 from pathlib import Path
-from subprocess import call
+from subprocess import call, Popen
 from prettytable import PrettyTable
 import click
 import datetime
@@ -89,7 +89,14 @@ def main(o2_min, o2_max, iterations, log_path_brief, log_path_verbose):
                 gen_cmd = f"sage rainbow_attacks.sage --seed {seed} --q {q} --o2 {o2} --m {m} --n {n}"
                 call(gen_cmd, shell=True)
                 for solver in solvers:
-                    solve_cmd = f"sage rainbow_attacks.sage --seed {seed} --q {q} --o2 {o2} --m {m} --n {n} --solver {solver} --solve_only"
+
+                    # Compile the solver for each parameter set if needed
+                    if seed == 0 and solver in ["xl", "wdsat"]:
+                        compile_cmd = f"python3 compile_solver.py --solver {solver} --q {q} --m {m} --n {n} >> {log_path_verbose} 2>&1"
+                        call(compile_cmd, shell=True)
+
+                    #  Measure the solving time and result
+                    solve_cmd = f"sage rainbow_attacks.sage --seed {seed} --q {q} --o2 {o2} --m {m} --n {n} --solver {solver} --solve_only --precompiled"
                     print_and_log(f"\n{stars}\nExecuting: {solve_cmd}\n", to_print="")
                     solve_cmd += f" 2>> {log_path_verbose} | tee -a {str(log_path_verbose)}"
                     try:

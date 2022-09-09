@@ -834,7 +834,8 @@ def get_solution_from_log(log_path, format, N, rainbow=None):
 @ click.option('-r', '--reduce_dimension', default=True, is_flag=True, help='reduce the dimension when possible')
 @ click.option('-t', '--attack_type', default='differential', type=click.Choice(['differential', 'minrank', 'intersection'], case_sensitive=False), help='choose attack on Rainbow')
 @ click.option('-s', '--seed', default=0, help='the seed for randomness replication', type=int)
-def main(q, n, m, o2, solver, solve_only, no_solve, inner_hybridation, verbose, reduce_dimension, attack_type, seed):
+@ click.option('--precompiled', default=False, is_flag=True, help='indicates if all relevant solvers are already compiled w.r.t. the parameters')
+def main(q, n, m, o2, solver, solve_only, no_solve, inner_hybridation, verbose, reduce_dimension, attack_type, seed, precompiled):
     if m == 0:
         m = 2*o2
     if n == 0:
@@ -897,6 +898,8 @@ def main(q, n, m, o2, solver, solve_only, no_solve, inner_hybridation, verbose, 
 
     hybridation_cmd = f"--inner_hybridation {inner_hybridation}" if solver == 'mq' and inner_hybridation != -1 else ""
     solve_cmd = f"python3 ./invoke_solver.py --equations_path {equations_path} --log_path {log_path} --solver {solver} --q {q} --m {M} --n {N} {hybridation_cmd}"
+    if precompiled:
+        solve_cmd += "--precompiled"
     Popen(solve_cmd, shell=True).wait()
     log_format = 'mq' if solver == 'libfes' else solver
 
