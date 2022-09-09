@@ -16,8 +16,8 @@ def secondsToStr(t):
 
 
 @ click.command()
-@ click.option('--o2_min', default=6, help='lower bound for o2', type=int)
-@ click.option('--o2_max', default=20, help='upper bound for o2', type=int)
+@ click.option('--o2_min', default=10, help='lower bound for o2', type=int)
+@ click.option('--o2_max', default=16, help='upper bound for o2', type=int)
 @ click.option('--iterations', default=2, help='number of iterations for each parameter set', type=int)
 @ click.option('--log_path_brief', default=Path("comparison_log_brief.txt"), help='the path to the brief log')
 @ click.option('--log_path_verbose', default=Path("comparison_log_verbose.txt"), help='the path to the verbose log')
