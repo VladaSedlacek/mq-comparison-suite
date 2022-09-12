@@ -648,8 +648,24 @@ Order : graded reverse lex order
                 cnf_line += "0\n"
                 file.write(cnf_line)
 
+    elif file_format == 'jv':
+        var_set = set().union(*[eq.variables() for eq in equations if eq != 0])
+        M = len(equations)
+        N = len(var_set)
+        with open(file_path, 'w') as file:
+            for eq in equations:
+                eq_repr = []
+                for var_tuple, coeff in eq.dict().items():
+                    if coeff == 1:
+                        # create an integer whose binary representation corresponds to variables present in the monomial; divide by 2 to disregard the last variable, which should not be present
+                        mon_repr = ZZ(''.join([str(k) for k in var_tuple]), 2)
+                        assert mon_repr % 2 == 0
+                        eq_repr.append(mon_repr / 2)
+                for mon_repr in sorted(eq_repr, reverse=True):
+                    file.write(str(mon_repr) + "\n")
+                file.write(str(-1) + "\n")
     assert file_format in ['xl', 'crossbred',
-                           'mq', 'mq_compact', 'wdsat', 'cnf']
+                           'mq', 'mq_compact', 'wdsat', 'cnf', 'jv']
     if verbose:
         print("Equation system written to: " + str(file_path))
 
@@ -851,6 +867,7 @@ def main(q, n, m, o2, solver, solve_only, no_solve, inner_hybridation, verbose, 
     mq_system_path = Path(system_folder_path, base_system_name + '.mq')
     wdsat_system_path = Path(system_folder_path, base_system_name + '.anf')
     cnf_system_path = Path(system_folder_path, base_system_name + '.cnf')
+    jv_system_path = Path(system_folder_path, base_system_name + '.jv')
     setup_path = Path(system_folder_path, base_system_name + '.stp')
     solution_path = Path(system_folder_path, base_system_name + '.sol')
     support = True if attack_type == 'minrank' else False
@@ -874,6 +891,8 @@ def main(q, n, m, o2, solver, solve_only, no_solve, inner_hybridation, verbose, 
         save_system(file_format='wdsat', file_path=wdsat_system_path, rainbow=rainbow, equations=equations,
                     guessed_vars=guessed_vars, reduce_dimension=reduce_dimension, verbose=verbose)
         save_system(file_format='cnf', file_path=cnf_system_path, rainbow=rainbow, equations=equations,
+                    guessed_vars=guessed_vars, reduce_dimension=reduce_dimension, verbose=verbose)
+        save_system(file_format='jv', file_path=jv_system_path, rainbow=rainbow, equations=equations,
                     guessed_vars=guessed_vars, reduce_dimension=reduce_dimension, verbose=verbose)
     else:
         if verbose:
