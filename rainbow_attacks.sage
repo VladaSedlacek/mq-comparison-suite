@@ -664,8 +664,30 @@ Order : graded reverse lex order
                 for mon_repr in sorted(eq_repr, reverse=True):
                     file.write(str(mon_repr) + "\n")
                 file.write(str(-1) + "\n")
+
+    elif file_format == 'magma':
+        q = rainbow.q
+        var_set = set().union(*[eq.variables() for eq in equations])
+        var_list = [str(var) for var in sorted(var_set)[:: -1]]
+        with open(file_path, 'w') as file:
+            file.write(f"F := GaloisField({q});\n")
+            file.write(f"R<{', '.join(var_list)}> := PolynomialRing(F, {len(var_list)});\n")
+            file.write(f"I := ideal<R |\n")
+            # add field equations
+            for v in var_list:
+                file.write(f"{v}^{q} - {v},\n")
+            # add system equations
+            for i, eq in enumerate(equations):
+                file.write(f"{eq}")
+                if i != len(equations) - 1:
+                    file.write(",\n")
+                else:
+                    file.write("\n")
+            file.write(f">;\n")
+            file.write("Variety(I);")
+
     assert file_format in ['xl', 'crossbred',
-                           'mq', 'mq_compact', 'wdsat', 'cnf', 'jv']
+                           'mq', 'mq_compact', 'wdsat', 'cnf', 'jv', 'magma']
     if verbose:
         print("Equation system written to: " + str(file_path))
 
@@ -868,6 +890,7 @@ def main(q, n, m, o2, solver, solve_only, no_solve, inner_hybridation, verbose, 
     wdsat_system_path = Path(system_folder_path, base_system_name + '.anf')
     cnf_system_path = Path(system_folder_path, base_system_name + '.cnf')
     jv_system_path = Path(system_folder_path, base_system_name + '.jv')
+    magma_system_path = Path(system_folder_path, base_system_name + '.magma')
     setup_path = Path(system_folder_path, base_system_name + '.stp')
     solution_path = Path(system_folder_path, base_system_name + '.sol')
     support = True if attack_type == 'minrank' else False
@@ -893,6 +916,8 @@ def main(q, n, m, o2, solver, solve_only, no_solve, inner_hybridation, verbose, 
         save_system(file_format='cnf', file_path=cnf_system_path, rainbow=rainbow, equations=equations,
                     guessed_vars=guessed_vars, reduce_dimension=reduce_dimension, verbose=verbose)
         save_system(file_format='jv', file_path=jv_system_path, rainbow=rainbow, equations=equations,
+                    guessed_vars=guessed_vars, reduce_dimension=reduce_dimension, verbose=verbose)
+        save_system(file_format='magma', file_path=magma_system_path, rainbow=rainbow, equations=equations,
                     guessed_vars=guessed_vars, reduce_dimension=reduce_dimension, verbose=verbose)
     else:
         if verbose:
