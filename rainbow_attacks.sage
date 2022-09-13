@@ -807,7 +807,7 @@ def mount_attack(rainbow, attack_type, M, N, reduce_dimension=False, verbose=Fal
 
 
 def get_solution_from_log(log_path, format, N, rainbow=None):
-    assert format in ['xl', 'crossbred', 'mq', 'wdsat', 'cms']
+    assert format in ['xl', 'crossbred', 'mq', 'wdsat', 'cms', 'magma']
     with open(log_path, 'r') as file:
         if rainbow != None:
             z = rainbow.F.gens()[0]
@@ -856,11 +856,17 @@ def get_solution_from_log(log_path, format, N, rainbow=None):
                     parts = [sol[deg * i:deg * i + deg]
                              for i in range(len(sol) / deg)]
                     return vector([linear_combination(bits, zs) for bits in parts])
+            if format == 'magma':
+                if line[:3] == "[ <" and line[-4:] == "> ]\n":
+                    sol = vector([rainbow.F(x) for x in line[3:-4] if x not in [',', ' ']])
+                    parts = [sol[deg * i:deg * i + deg]
+                             for i in range(len(sol) / deg)]
+                    return vector([linear_combination(bits, zs) for bits in parts])
     return None
 
 
 @ click.command()
-@ click.option('--solver', type=click.Choice(['xl', 'crossbred', 'mq', 'libfes', 'wdsat', 'cms'], case_sensitive=False), help='the external solver to be used')
+@ click.option('--solver', type=click.Choice(['xl', 'crossbred', 'mq', 'libfes', 'wdsat', 'cms', 'magma'], case_sensitive=False), help='the external solver to be used')
 @ click.option('--q', default=16, help='the field order', type=int)
 @ click.option('--n', default=0, help='the number of variables', type=int)
 @ click.option('--m', default=0, help='the number of equations', type=int)
@@ -934,6 +940,8 @@ def main(q, n, m, o2, solver, solve_only, no_solve, inner_hybridation, verbose, 
         equations_path = wdsat_system_path
     elif solver == 'cms':
         equations_path = cnf_system_path
+    elif solver == 'magma':
+        equations_path = magma_system_path
     else:
         no_solve = True
 

@@ -27,7 +27,7 @@ def create_wdsat_config(wdsat_path, M, N):
 
 
 @ click.command()
-@ click.option('--solver', type=click.Choice(['xl', 'crossbred', 'mq', 'libfes', 'wdsat', 'cms'], case_sensitive=False), help='the external solver to be used')
+@ click.option('--solver', type=click.Choice(['xl', 'crossbred', 'mq', 'libfes', 'wdsat', 'cms', 'magma'], case_sensitive=False), help='the external solver to be used')
 @ click.option('-e', '--equations_path', help='the path to the equation system', type=str)
 @ click.option('--q', help='field characteristic - needed for XL compilation', type=int)
 @ click.option('--m', help='number of equations - needed for XL and WDSAT compilation', type=int)
@@ -39,9 +39,10 @@ def create_wdsat_config(wdsat_path, M, N):
 @ click.option('--libfes_path', default=Path("..", "libfes-lite", "build"), help='the path the libfes solver folder: https://github.com/cbouilla/libfes-lite', type=str)
 @ click.option('--wdsat_path', default=Path("..", "WDSat"), help='the path the WDSat solver folder: https://github.com/mtrimoska/WDSat', type=str)
 @ click.option('--cms_path', default=Path("..", "cryptominisat", "build"), help='the path the CMS solver folder: https://github.com/mtrimoska/WDSat', type=str)
+@ click.option('--magma_path', default=Path("magma"), help='the path the Magma binary: https://magma.maths.usyd.edu.au/', type=str)
 @ click.option('-h', '--inner_hybridation', default="-1", help='the number of variable that are not guessed in MQ', type=int)
 @ click.option('--precompiled', default=False, is_flag=True, help='indicates if all relevant solvers are already compiled w.r.t. the parameters')
-def main(equations_path, log_path, q, m, n, xl_path, crossbred_path, mq_path, libfes_path, wdsat_path, cms_path, solver, inner_hybridation, precompiled):
+def main(equations_path, log_path, q, m, n, xl_path, crossbred_path, mq_path, libfes_path, wdsat_path, cms_path, magma_path, solver, inner_hybridation, precompiled):
     if not solver:
         print("Please specify a solver.")
         exit()
@@ -104,6 +105,12 @@ def main(equations_path, log_path, q, m, n, xl_path, crossbred_path, mq_path, li
             str(Path(cms_path, "cryptominisat5")), str(equations_path) +
             " | tee " + str(log_path))
         Popen(cms_solve_cmd, shell=True).wait()
+
+    if solver == 'magma':
+        Popen(" > {}".format(str(log_path)), shell=True).wait()
+        print("\nStarting Magma...")
+        magma_solve_cmd = f"{magma_path} < {equations_path} | tee {log_path}"
+        Popen(magma_solve_cmd, shell=True).wait()
 
 
 if __name__ == '__main__':
