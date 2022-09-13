@@ -822,6 +822,7 @@ def get_solution_from_log(log_path, format, N, rainbow=None):
             zs = [z ^ i for i in range(deg)]
         variables = []
         found = False
+        sol_str = ""
         for line in file.readlines():
             if format == 'xl':
                 if "  is sol" in line:
@@ -864,11 +865,17 @@ def get_solution_from_log(log_path, format, N, rainbow=None):
                              for i in range(len(sol) / deg)]
                     return vector([linear_combination(bits, zs) for bits in parts])
             if format == 'magma':
-                if line[:3] == "[ <" and line[-4:] == "> ]\n":
-                    sol = vector([rainbow.F(x) for x in line[3:-4] if x not in [',', ' ']])
-                    parts = [sol[deg * i:deg * i + deg]
-                             for i in range(len(sol) / deg)]
-                    return vector([linear_combination(bits, zs) for bits in parts])
+                # find solutions even across multiple lines and take the first one
+                if line[:3] == "[ <":
+                    found = True
+                if found:
+                    sol_str += line
+                    if ">" in line:
+                        end = sol_str.index(">")
+                        sol = vector([rainbow.F(x) for x in sol_str[3:end] if x not in [',', ' ', '\n']])
+                        parts = [sol[deg * i:deg * i + deg]
+                                 for i in range(len(sol) / deg)]
+                        return vector([linear_combination(bits, zs) for bits in parts])
     return None
 
 
