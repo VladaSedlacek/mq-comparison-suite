@@ -667,11 +667,16 @@ Order : graded reverse lex order
 
     elif file_format == 'magma':
         q = rainbow.q
+        if q == 2:
+            # for optimized performance
+            ring_type = "BooleanPolynomialRing("
+        else:
+            ring_type = "PolynomialRing(F, "
         var_set = set().union(*[eq.variables() for eq in equations])
         var_list = [str(var) for var in sorted(var_set)[:: -1]]
         with open(file_path, 'w') as file:
             file.write(f"F := GaloisField({q});\n")
-            file.write(f"R<{', '.join(var_list)}> := PolynomialRing(F, {len(var_list)});\n")
+            file.write(f"R<{', '.join(var_list)}> := {ring_type}{len(var_list)}, \"grevlex\");\n")
             file.write(f"I := ideal<R |\n")
             # add field equations
             for v in var_list:
@@ -684,6 +689,8 @@ Order : graded reverse lex order
                 else:
                     file.write("\n")
             file.write(f">;\n")
+            # use the F4 algorithm
+            file.write("GroebnerBasis(I: Faugere:=true);\n")
             file.write("Variety(I);")
 
     assert file_format in ['xl', 'crossbred',
