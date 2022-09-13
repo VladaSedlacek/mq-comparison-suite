@@ -24,7 +24,7 @@ def secondsToStr(t):
 def main(o2_min, o2_max, iterations, log_path_brief, log_path_verbose):
 
     # Set up main parameters
-    solvers = ['xl', 'crossbred', 'mq', 'libfes', 'wdsat', 'cms']
+    solvers = ['xl', 'crossbred', 'mq', 'libfes', 'wdsat', 'cms', 'magma']
     q_range = [2, 16]
     o2_range = range(o2_min, o2_max + 1, 2)
     results = ["success", "failure"]
