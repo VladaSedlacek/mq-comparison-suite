@@ -1,11 +1,12 @@
 from functools import reduce
 from operator import itemgetter
 from pathlib import Path
-from subprocess import call, Popen
 from prettytable import PrettyTable
 import click
 import datetime
+import psutil
 import statistics
+import subprocess
 import time
 
 
@@ -13,6 +14,24 @@ def secondsToStr(t):
     return "%d:%02d:%02d.%03d" % \
         reduce(lambda ll, b: divmod(ll[0], b) + ll[1:],
                [(t*1000,), 1000, 60, 60])
+
+
+def get_total_resident_memory(proc, verbose=False):
+    proc_ps = psutil.Process(proc.pid)
+    while proc.poll() is None:
+        try:
+            rss = proc_ps.memory_info().rss
+            for child in proc_ps.children(recursive=True):
+                rss += child.memory_info().rss
+            if verbose:
+                print(f"{child.name()}: {child.memory_info().rss / 1000000} MB")
+        except psutil.NoSuchProcess:
+            pass
+        try:
+            proc.wait(1)
+        except subprocess.TimeoutExpired:
+            pass
+    return rss
 
 
 @ click.command()
@@ -49,7 +68,8 @@ def main(o2_min, o2_max, iterations, log_path_brief, log_path_verbose):
     # Set up tables
     T = PrettyTable()
     res_col_name = f"Successes (out of {iterations})"
-    T.field_names = ["Solver", f"{res_col_name}", "Average time", "Standard deviation of time"]
+    T.field_names = ["Solver", f"{res_col_name}",
+                     "Avg time (s)", "Stdev of time (s)", "Avg resident memory (MB)"]
     T.align = "c"
 
     # Use colors (from https://stackoverflow.com/questions/43583847/python-pretty-table-with-color-output)
@@ -82,27 +102,29 @@ def main(o2_min, o2_max, iterations, log_path_brief, log_path_verbose):
             n = 3 * o2
             gen_msg = f"Generating equations for q = {q: 2}, o2 = {o2: 2}, m = {m: 2}, n = {n: 2}; {iterations: 2} iterations..."
             print_and_log(f"\n\n{stars}\n{left_pad}{gen_msg}\n{stars}", include_brief=True)
-            solver_stats = {solver: {"successes": 0, "times": []} for solver in solvers}
+            solver_stats = {solver: {"successes": 0, "times": [], "memories": []} for solver in solvers}
 
             # Go through all iterations for the given parameters
             for seed in range(iterations):
                 gen_cmd = f"sage rainbow_attacks.sage --seed {seed} --q {q} --o2 {o2} --m {m} --n {n}"
-                call(gen_cmd, shell=True)
+                subprocess.call(gen_cmd, shell=True)
                 for solver in solvers:
 
                     # Compile the solver for each parameter set if needed
                     if seed == 0 and solver in ["xl", "wdsat"]:
                         compile_cmd = f"python3 compile_solver.py --solver {solver} --q {q} --m {m-1} --n {n-m-2} >> {log_path_verbose} 2>&1"
-                        call(compile_cmd, shell=True)
+                        subprocess.call(compile_cmd, shell=True)
 
-                    #  Measure the solving time and result
-                    solve_cmd = f"sage rainbow_attacks.sage --seed {seed} --q {q} --o2 {o2} --m {m} --n {n} --solver {solver} --solve_only --precompiled"
+                    solve_cmd = f"sage rainbow_attacks.sage --seed {seed} --q {q} --o2 {o2} --m {m} --n {n} --solver {solver} --solve_only --precompiled 2>> {log_path_verbose} | tee -a {str(log_path_verbose)} "
                     print_and_log(f"\n{stars}\nExecuting: {solve_cmd}\n", to_print="")
-                    solve_cmd += f" 2>> {log_path_verbose} | tee -a {str(log_path_verbose)}"
+
+                    # Measure the time and memory usage of the active process and all its subprocesses
                     try:
+                        proc = subprocess.Popen(solve_cmd + " | grep 'Attack successful!' --quiet", shell=True)
                         start_time = time.time()
-                        code = call(solve_cmd + " | grep 'Attack successful!' --quiet", shell=True)
+                        rss = get_total_resident_memory(proc)
                         time_taken = time.time() - start_time
+                        code = proc.poll()
                     except Exception as e:
                         print_and_log(str(e))
                         continue
@@ -110,22 +132,30 @@ def main(o2_min, o2_max, iterations, log_path_brief, log_path_verbose):
                     # Save the iteration results
                     solver_stats[solver]["successes"] += (1-code)
                     solver_stats[solver]["times"].append(time_taken)
+                    solver_stats[solver]["memories"].append(rss)
                     print_and_log(f"Solver: {solver}", to_print="")
                     print_and_log(f"Result: {results[code]}", to_print="")
                     print_and_log(f"Time:   {secondsToStr(time_taken)}", to_print="")
+                    print_and_log(f"Memory: {( rss / 1000000):.2f} MB", to_print="")
                     print_and_log(stars, to_print="")
 
             # Save the aggregated results
             for solver in solvers:
                 successes = str(solver_stats[solver]["successes"])
-                mean = secondsToStr(statistics.mean(solver_stats[solver]["times"]))
-                stdev = secondsToStr(statistics.stdev(solver_stats[solver]["times"]))
-                T.add_row([solver, successes, mean, stdev])
-                T_color.add_row([solver, colors[successes != str(iterations)] + successes + reset, mean, stdev])
+                mean_time = secondsToStr(statistics.mean(solver_stats[solver]["times"]))
+                stdev_time = secondsToStr(statistics.stdev(solver_stats[solver]["times"]))
+                mean_memory = statistics.mean(solver_stats[solver]["memories"])
+                mean_memory = f"{(mean_memory / 1000000):.2f}"
+                T.add_row([solver, successes, mean_time, stdev_time, mean_memory])
+                T_color.add_row([solver, colors[successes != str(iterations)] +
+                                successes + reset, mean_time, stdev_time, mean_memory])
 
             print_and_log(T.get_string(), to_print=T_color.get_string(), include_brief=True)
             T.clear_rows()
             T_color.clear_rows()
+
+            print(
+                f"Current memory usage of this process: {psutil.Process().memory_info().rss / 1000000:.2f} MB")
 
 
 if __name__ == '__main__':
