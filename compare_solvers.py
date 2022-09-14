@@ -16,13 +16,14 @@ def secondsToStr(t):
                [(t*1000,), 1000, 60, 60])
 
 
-def get_total_resident_memory(proc, verbose=False):
+def get_total_resident_memory(proc, count_python=True, verbose=False):
     proc_ps = psutil.Process(proc.pid)
     while proc.poll() is None:
         try:
             rss = proc_ps.memory_info().rss
             for child in proc_ps.children(recursive=True):
-                rss += child.memory_info().rss
+                if count_python or child.name() not in ["python", "python3"]:
+                    rss += child.memory_info().rss
             if verbose:
                 print(f"{child.name()}: {child.memory_info().rss / 1000000} MB")
         except psutil.NoSuchProcess:
@@ -122,7 +123,7 @@ def main(o2_min, o2_max, iterations, log_path_brief, log_path_verbose):
                     try:
                         proc = subprocess.Popen(solve_cmd + " | grep 'Attack successful!' --quiet", shell=True)
                         start_time = time.time()
-                        rss = get_total_resident_memory(proc)
+                        rss = get_total_resident_memory(proc, count_python=False)
                         time_taken = time.time() - start_time
                         code = proc.poll()
                     except Exception as e:
