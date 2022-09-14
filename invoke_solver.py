@@ -76,8 +76,13 @@ def main(equations_path, log_path, q, m, n, xl_path, crossbred_path, mq_path, li
         print("\nStarting the MQ solver...")
         inner_hybridation_arg = " --inner-hybridation " + \
             str(inner_hybridation) if inner_hybridation != -1 else ""
+        # Use the non-vectorized version for less than 8 variables
+        if n <= 8:
+            binary = "monica"
+        else:
+            binary = "monica_vector"
         mq_solve_cmd = "{}{} < {}".format(
-            str(Path(mq_path, "monica_vector")), inner_hybridation_arg, str(equations_path)) + " | tee " + str(log_path)
+            str(Path(mq_path, f"{binary}")), inner_hybridation_arg, str(equations_path)) + " | tee " + str(log_path)
         Popen(mq_solve_cmd, shell=True).wait()
 
     if solver == 'libfes':
