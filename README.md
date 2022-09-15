@@ -1,1 +1,24 @@
-# algebraic-cryptanalysis
+# MQ Comparison Suite
+
+This project aims to provide a simple unified interface for state-of-the-art solvers for the multivariate quadratic ([MQ](https://eprint.iacr.org/2005/393)) problem, and to facilitate comparing their practical performance.
+
+Currently, the following solver implementations are supported:
+* [cryptominisat](https://github.com/msoos/cryptominisat) (SAT solver for crypto problems)
+* [libfes](https://github.com/cbouilla/libfes-lite) (fast exhaustive search)
+* [magma](https://magma.maths.usyd.edu.au) (using the F4 algorithm for Groebner bases, closed source)
+* [mq](https://gitlab.lip6.fr/almasty/mq) (simple deterministic algorithm)
+* [mqsolver](https://github.com/kcning/mqsolver) (crossbred GPU)
+* [wdsat](https://github.com/mtrimoska/WDSat) (SAT solver for systems coming from Weil descent)
+* [XL](http://polycephaly.org/projects/xl)
+
+Scripts:
+* `rainbow_attacks.sage` generates an instance of the [Rainbow](https://www.pqcrainbow.org/) cryptosystem, mounts the [differential attack](https://eprint.iacr.org/2022/214) and saves the resulting system in different formats for further usage.
+   * example to just generate systems: `sage rainbow_attacks.sage --seed 0 --q 2 --o2 6 --no_solve`
+   * example to also start solving: `sage rainbow_attacks.sage --seed 0 --q 2 --o2 6 --solver cms`
+   * see `sage rainbow_attacks.sage --help` for more
+* `invoke_solver.py` calls a solver on a provided equation file. It is called internally by `rainbow_attacks.sage`, but can also be used for custom equation systems.
+   * example: `python3 invoke_solver.py --solver xl --q 2 --m 11 --n 4 -e my_equation_system`
+   * see `python3 invoke_solver.py --help` for usage
+* `compile_solver.py` takes care of solver which need to be precompiled in advance. It is called internally by other scripts.
+* `compare_solvers.py` is the top layer wrapper which performs a comprehensive comparison of all the solvers and logs the results.
+    * example: plain `sage compare_solvers.py` works
