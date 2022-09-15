@@ -1,3 +1,5 @@
+#!/usr/bin/env sage
+
 from itertools import product
 from pathlib import Path
 from subprocess import Popen
