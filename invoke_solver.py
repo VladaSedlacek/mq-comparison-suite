@@ -77,7 +77,8 @@ def main(equations_path, log_path, q, m, n, xl_path, crossbred_path, mq_path, li
         inner_hybridation_arg = " --inner-hybridation " + \
             str(inner_hybridation) if inner_hybridation != -1 else ""
         # Use the non-vectorized version for less than 8 variables
-        if n <= 8:
+        if 3 <= n and n <= 8:
+            # the first ineqality seems to prevent and infinite loop
             binary = "monica"
         else:
             binary = "monica_vector"
