@@ -6,6 +6,7 @@ from pathlib import Path
 from prettytable import PrettyTable
 import click
 import datetime
+import json
 import psutil
 import statistics
 import subprocess
@@ -49,9 +50,15 @@ def main(o2_min, o2_max, iterations, log_path_brief, log_path_verbose):
     solvers = ['xl', 'crossbred', 'mq', 'libfes', 'wdsat', 'cms', 'magma']
     q_range = [2, 16]
     o2_range = range(o2_min, o2_max + 1, 2)
-    results = ["success", "failure"]
+    outcomes = ["success", "failure"]
 
     # Set up logging
+    json_path = Path("comparison.json")
+    with open(json_path, "w") as j:
+        results = dict.fromkeys(["q=" + str(q) for q in q_range],
+                                dict.fromkeys(["o2=" + str(o2) for o2 in o2_range], dict.fromkeys(solvers, None)))
+        json.dump(results, j)
+
     def print_and_log(to_log, to_print=None, include_brief=False):
         if to_print == None:
             to_print = to_log
@@ -105,7 +112,8 @@ def main(o2_min, o2_max, iterations, log_path_brief, log_path_verbose):
             n = 3 * o2
             gen_msg = f"Generating equations for q = {q: 2}, o2 = {o2: 2}, m = {m: 2}, n = {n: 2}; {iterations: 2} iterations..."
             print_and_log(f"\n\n{stars}\n{left_pad}{gen_msg}\n{stars}", include_brief=True)
-            solver_stats = {solver: {"successes": 0, "times": [], "memories": []} for solver in solvers}
+            solver_stats = {solver: {"successes": 0, "times": [], "memories": [],
+                                     "mean_time": None, "stdev_time": None, "mean_memory": None} for solver in solvers}
 
             # Go through all iterations for the given parameters
             for seed in range(iterations):
@@ -137,7 +145,7 @@ def main(o2_min, o2_max, iterations, log_path_brief, log_path_verbose):
                     solver_stats[solver]["times"].append(time_taken)
                     solver_stats[solver]["memories"].append(rss)
                     print_and_log(f"Solver: {solver}", to_print="")
-                    print_and_log(f"Result: {results[code]}", to_print="")
+                    print_and_log(f"Result: {outcomes[code]}", to_print="")
                     print_and_log(f"Time:   {secondsToStr(time_taken)}", to_print="")
                     print_and_log(f"Memory: {( rss / 1000000):.2f} MB", to_print="")
                     print_and_log(stars, to_print="")
@@ -146,13 +154,26 @@ def main(o2_min, o2_max, iterations, log_path_brief, log_path_verbose):
             for solver in solvers:
                 successes = str(solver_stats[solver]["successes"])
                 mean_time = secondsToStr(statistics.mean(solver_stats[solver]["times"]))
+                solver_stats[solver]["mean_time"] = mean_time
                 stdev_time = secondsToStr(statistics.stdev(solver_stats[solver]["times"]))
+                solver_stats[solver]["stdev_time"] = stdev_time
                 mean_memory = statistics.mean(solver_stats[solver]["memories"])
                 mean_memory = f"{(mean_memory / 1000000):.2f}"
+                solver_stats[solver]["mean_memory"] = mean_memory
+                del solver_stats[solver]['times']
+                del solver_stats[solver]['memories']
                 T.add_row([solver, successes, mean_time, stdev_time, mean_memory])
                 T_color.add_row([solver, colors[successes != str(iterations)] +
                                 successes + reset, mean_time, stdev_time, mean_memory])
 
+                # Update the JSON with results
+                with open(json_path) as j:
+                    results = json.load(j)
+                    results[f"q={q}"][f"o2={o2}"][solver] = solver_stats[solver]
+                with open(json_path, 'w') as j:
+                    json.dump(results, j)
+
+            # Show the result table
             print_and_log(T.get_string(), to_print=T_color.get_string(), include_brief=True)
             T.clear_rows()
             T_color.clear_rows()
