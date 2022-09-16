@@ -31,9 +31,12 @@ def create_wdsat_config(wdsat_path, M, N):
 def check_params(status_path, q, M, N):
     if status_path.exists():
         with open(status_path, 'r') as f:
-            params = json.load(f)
-            if params['q'] == q and params['M'] == M and params['N'] == N:
-                return True
+            try:
+                params = json.load(f)
+                if params['q'] == q and params['M'] == M and params['N'] == N:
+                    return True
+            except (KeyError, json.decoder.JSONDecodeError):
+                pass
     return False
 
 
@@ -67,6 +70,8 @@ def main(solver, q, m, n, cb_orig_path, wdsat_path, xl_path):
             suppressor_flag = "-Wno-unused-result -Wno-format -Wno-shift-count-overflow"
             src = Path(cb_orig_path, "LinBlockLanczos.c")
             binary = Path(cb_orig_path, "LinBlockLanczos")
+            if binary.exists():
+                binary.unlink()
             trunc_var = get_trunc_var(M, N)
             params = f"-DNBVARS={N} -DTRUNC_VAR={trunc_var} -DPRINTVARS={N} -DNBPOLS={M}"
             gcc_cmd = f"gcc {params} -Ofast -march=native {suppressor_flag} -o {binary} {src}"
@@ -75,6 +80,8 @@ def main(solver, q, m, n, cb_orig_path, wdsat_path, xl_path):
 
             src = Path(cb_orig_path, "CheckCandidates.c")
             binary = Path(cb_orig_path, "CheckCandidates")
+            if binary.exists():
+                binary.unlink()
             gcc_cmd = f"gcc {params} -o {binary} {src}"
             print("\nCompiling the crossbred (original) solver (checking)...")
             Popen(gcc_cmd, shell=True).wait()
@@ -92,7 +99,7 @@ def main(solver, q, m, n, cb_orig_path, wdsat_path, xl_path):
             create_wdsat_config(wdsat_path, m, n)
             suppressor_flag = ""
             src_path = str(Path(wdsat_path, "src"))
-            make_cmd = f"make -C {src_path} {suppressor_flag}"
+            make_cmd = f"make -C {src_path} clean && make -C {src_path} {suppressor_flag}"
             print("\nCompiling the WDSat solver...")
             Popen(make_cmd, shell=True).wait()
             with open(wdsat_status_path, 'w') as f:
