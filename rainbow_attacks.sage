@@ -528,13 +528,7 @@ def save_system(file_format, file_path, rainbow, equations=[], guessed_vars=[], 
 
     equations = [eq for eq in equations if eq != 0]
 
-    if file_format == 'xl':
-        '''The format for the block Wiedemann XL solver of Niederhagen: http://polycephaly.org/projects/xl'''
-        with open(file_path, 'w') as f:
-            for s in SS:
-                f.write(UD_to_string(rainbow.q, s))
-
-    elif file_format == 'cb_gpu':
+    if file_format == 'cb_gpu':
         '''The format for the GPU F2 crossbred solver of Niederhagen, Ning and Yang: https://github.com/kcning/mqsolver/'''
         N = SS[0].ncols() - 1
         Nw = N * rainbow.ext_deg
@@ -551,63 +545,22 @@ Order : graded reverse lex order
             for weil_coeffs in weil_coeff_list:
                 f.write(" ".join([str(wc) for wc in weil_coeffs]) + " ; \n")
 
-    elif file_format == 'mq_compact':
-        with open(file_path, 'w') as f:
-            f.write(weil_coeff_list_to_string(
-                weil_coeff_list, rainbow.ext_deg))
-
-    elif file_format == 'mq':
-        var_set = set().union(*[eq.variables() for eq in equations])
-        var_list = [str(var) for var in sorted(var_set)[:: -1]]
-        variables = ', '.join(var_list)
-        max_var_index = rainbow.n
-        if reduce_dimension:
-            max_var_index -= rainbow.o2 - 1
-        if guessed_vars == []:
-            guessed = ""
-        else:
-            guessed = ', '.join(["{0}={1}".format(var, value) for var, value in zip(
-                rainbow.yy[max_var_index:], guessed_vars)])
-
-        with open(file_path, 'w') as f:
-            f.write("# Variables:\n")
-            f.write(variables + "\n#\n")
-            f.write("# Guessed variables:\n")
-            f.write("# " + guessed + "\n#\n")
-            f.write("# Equations:\n")
-            for eq in equations:
-                f.write(str(eq) + "\n")
-        if verbose:
-            print("Number of equations:", len(equations))
-            print("Number of monomials:", len(
-                count_monomials(equations)))
-
-    elif file_format == 'wdsat':
+    elif file_format == 'cb_orig':
         var_set = set().union(*[eq.variables() for eq in equations if eq != 0])
-        var_list = sorted(var_set)[:: -1]
-        var_prod_dict = {v1 * v2: sorted([i + 1, j + 1]) for i, v1 in enumerate(
-            var_list) for j, v2 in enumerate(var_list) if v1 != v2}
         M = len(equations)
         N = len(var_set)
         with open(file_path, 'w') as f:
-            f.write("p anf {} {}\n".format(N, M))
             for eq in equations:
-                const_present = False
-                anf_line = "x "
-                for mon in eq.monomials():
-                    if mon in var_list:
-                        anf_line += "{} ".format(var_list.index(mon) + 1)
-                    elif mon in var_prod_dict.keys():
-                        anf_line += ".2 {} {} ".format(
-                            var_prod_dict[mon][0], var_prod_dict[mon][1])
-                    else:
-                        assert mon == 1
-                        const_present = True
-                if not const_present:
-                    # the right hand side of the equation must correspond to True
-                    anf_line += "T "
-                anf_line += "0\n"
-                f.write(anf_line)
+                eq_repr = []
+                for var_tuple, coeff in eq.dict().items():
+                    if coeff == 1:
+                        # create an integer whose binary representation corresponds to variables present in the monomial; divide by 2 to disregard the last variable, which should not be present
+                        mon_repr = ZZ(''.join([str(k) for k in var_tuple]), 2)
+                        assert mon_repr % 2 == 0
+                        eq_repr.append(mon_repr / 2)
+                for mon_repr in sorted(eq_repr, reverse=True):
+                    f.write(str(mon_repr) + "\n")
+                f.write(str(-1) + "\n")
 
     elif file_format == 'cnf':
         var_set = set().union(*[eq.variables() for eq in equations if eq != 0])
@@ -650,23 +603,6 @@ Order : graded reverse lex order
                 cnf_line += "0\n"
                 f.write(cnf_line)
 
-    elif file_format == 'cb_orig':
-        var_set = set().union(*[eq.variables() for eq in equations if eq != 0])
-        M = len(equations)
-        N = len(var_set)
-        with open(file_path, 'w') as f:
-            for eq in equations:
-                eq_repr = []
-                for var_tuple, coeff in eq.dict().items():
-                    if coeff == 1:
-                        # create an integer whose binary representation corresponds to variables present in the monomial; divide by 2 to disregard the last variable, which should not be present
-                        mon_repr = ZZ(''.join([str(k) for k in var_tuple]), 2)
-                        assert mon_repr % 2 == 0
-                        eq_repr.append(mon_repr / 2)
-                for mon_repr in sorted(eq_repr, reverse=True):
-                    f.write(str(mon_repr) + "\n")
-                f.write(str(-1) + "\n")
-
     elif file_format == 'magma':
         q = rainbow.q
         if q == 2:
@@ -695,8 +631,71 @@ Order : graded reverse lex order
             f.write("GroebnerBasis(I: Faugere:=true);\n")
             f.write("Variety(I);")
 
-    assert file_format in ['xl', 'cb_gpu',
-                           'mq', 'mq_compact', 'wdsat', 'cnf', 'cb_orig', 'magma']
+    elif file_format == 'mq':
+        var_set = set().union(*[eq.variables() for eq in equations])
+        var_list = [str(var) for var in sorted(var_set)[:: -1]]
+        variables = ', '.join(var_list)
+        max_var_index = rainbow.n
+        if reduce_dimension:
+            max_var_index -= rainbow.o2 - 1
+        if guessed_vars == []:
+            guessed = ""
+        else:
+            guessed = ', '.join(["{0}={1}".format(var, value) for var, value in zip(
+                rainbow.yy[max_var_index:], guessed_vars)])
+
+        with open(file_path, 'w') as f:
+            f.write("# Variables:\n")
+            f.write(variables + "\n#\n")
+            f.write("# Guessed variables:\n")
+            f.write("# " + guessed + "\n#\n")
+            f.write("# Equations:\n")
+            for eq in equations:
+                f.write(str(eq) + "\n")
+        if verbose:
+            print("Number of equations:", len(equations))
+            print("Number of monomials:", len(
+                count_monomials(equations)))
+
+    elif file_format == 'mq_compact':
+        with open(file_path, 'w') as f:
+            f.write(weil_coeff_list_to_string(
+                weil_coeff_list, rainbow.ext_deg))
+
+    elif file_format == 'wdsat':
+        var_set = set().union(*[eq.variables() for eq in equations if eq != 0])
+        var_list = sorted(var_set)[:: -1]
+        var_prod_dict = {v1 * v2: sorted([i + 1, j + 1]) for i, v1 in enumerate(
+            var_list) for j, v2 in enumerate(var_list) if v1 != v2}
+        M = len(equations)
+        N = len(var_set)
+        with open(file_path, 'w') as f:
+            f.write("p anf {} {}\n".format(N, M))
+            for eq in equations:
+                const_present = False
+                anf_line = "x "
+                for mon in eq.monomials():
+                    if mon in var_list:
+                        anf_line += "{} ".format(var_list.index(mon) + 1)
+                    elif mon in var_prod_dict.keys():
+                        anf_line += ".2 {} {} ".format(
+                            var_prod_dict[mon][0], var_prod_dict[mon][1])
+                    else:
+                        assert mon == 1
+                        const_present = True
+                if not const_present:
+                    # the right hand side of the equation must correspond to True
+                    anf_line += "T "
+                anf_line += "0\n"
+                f.write(anf_line)
+
+    elif file_format == 'xl':
+        '''The format for the block Wiedemann XL solver of Niederhagen: http://polycephaly.org/projects/xl'''
+        with open(file_path, 'w') as f:
+            for s in SS:
+                f.write(UD_to_string(rainbow.q, s))
+
+    assert file_format in ['cb_gpu', 'cb_orig', 'cnf', 'magma', 'mq', 'mq_compact', 'wdsat', 'xl']
     if verbose:
         print("Equation system written to: " + str(file_path))
 
@@ -816,7 +815,7 @@ def mount_attack(rainbow, attack_type, M, N, reduce_dimension=False, verbose=Fal
 
 
 def get_solution_from_log(log_path, format, N, rainbow=None):
-    assert format in ['xl', 'crossbred', 'mq', 'wdsat', 'cms', 'magma']
+    assert format in ['cms', 'crossbred', 'magma', 'mq', 'wdsat', 'xl']
     with open(log_path, 'r') as f:
         if rainbow != None:
             z = rainbow.F.gens()[0]
@@ -826,36 +825,6 @@ def get_solution_from_log(log_path, format, N, rainbow=None):
         found = False
         sol_str = ""
         for line in f.readlines():
-            if format == 'xl':
-                if "  is sol" in line:
-                    sol = line.split("  is sol")[0].split(" ")
-                    return vector([str_to_elt(rainbow.q, c) for c in sol])
-            if format == 'crossbred':
-                if "solution found: " in line:
-                    found = True
-                    continue
-                if found:
-                    sol = [ZZ(c) for c in line.strip().strip('][').split(',')]
-                    parts = [sol[deg * i:deg * i + deg]
-                             for i in range(len(sol) / deg)]
-                    return vector([linear_combination(bits, zs) for bits in parts])
-            if format == 'mq':
-                # possibly includes Weil descent
-                if "solution found : " in line:
-                    sol = [int(b) for b in line.split(
-                        "solution found : ")[1][1:-2].split(", ")]
-                    parts = [sol[deg * i:deg * i + deg]
-                             for i in range(len(sol) / deg)]
-                    return vector([linear_combination(bits, zs) for bits in parts])
-            if format == 'wdsat':
-                line = line.strip()
-                if line == "":
-                    continue
-                if re.match('^[0-1]*$', line):
-                    sol = [ZZ(b) for b in list(line)]
-                    parts = [sol[deg * i:deg * i + deg]
-                             for i in range(len(sol) / deg)]
-                    return vector([linear_combination(bits, zs) for bits in parts])
             if format == 'cms':
                 Nw = N * deg
                 if line[0] == 'v':
@@ -866,6 +835,17 @@ def get_solution_from_log(log_path, format, N, rainbow=None):
                     parts = [sol[deg * i:deg * i + deg]
                              for i in range(len(sol) / deg)]
                     return vector([linear_combination(bits, zs) for bits in parts])
+
+            if format == 'crossbred':
+                if "solution found: " in line:
+                    found = True
+                    continue
+                if found:
+                    sol = [ZZ(c) for c in line.strip().strip('][').split(',')]
+                    parts = [sol[deg * i:deg * i + deg]
+                             for i in range(len(sol) / deg)]
+                    return vector([linear_combination(bits, zs) for bits in parts])
+
             if format == 'magma':
                 # find solutions even across multiple lines and take the first one
                 if line[:3] == "[ <":
@@ -878,6 +858,30 @@ def get_solution_from_log(log_path, format, N, rainbow=None):
                         parts = [sol[deg * i:deg * i + deg]
                                  for i in range(len(sol) / deg)]
                         return vector([linear_combination(bits, zs) for bits in parts])
+
+            if format == 'mq':
+                # possibly includes Weil descent
+                if "solution found : " in line:
+                    sol = [int(b) for b in line.split(
+                        "solution found : ")[1][1:-2].split(", ")]
+                    parts = [sol[deg * i:deg * i + deg]
+                             for i in range(len(sol) / deg)]
+                    return vector([linear_combination(bits, zs) for bits in parts])
+
+            if format == 'wdsat':
+                line = line.strip()
+                if line == "":
+                    continue
+                if re.match('^[0-1]*$', line):
+                    sol = [ZZ(b) for b in list(line)]
+                    parts = [sol[deg * i:deg * i + deg]
+                             for i in range(len(sol) / deg)]
+                    return vector([linear_combination(bits, zs) for bits in parts])
+
+            if format == 'xl':
+                if "  is sol" in line:
+                    sol = line.split("  is sol")[0].split(" ")
+                    return vector([str_to_elt(rainbow.q, c) for c in sol])
     return None
 
 
@@ -906,13 +910,13 @@ def main(q, n, m, o2, solver, solve_only, no_solve, inner_hybridation, verbose, 
     log_path = Path(system_folder_path, "log.txt")
     base_system_name = "rainbow_{}_seed_{}_q_{}_o2_{}_m_{}_n_{}_M_{}_N_{}".format(
         attack_type, seed, q, o2, m, n, M, N)
-    xl_system_path = Path(system_folder_path, base_system_name + '.xl')
     cb_gpu_system_path = Path(system_folder_path, base_system_name + '.cb_gpu')
-    mq_system_path = Path(system_folder_path, base_system_name + '.mq')
-    wdsat_system_path = Path(system_folder_path, base_system_name + '.anf')
-    cnf_system_path = Path(system_folder_path, base_system_name + '.cnf')
     cb_orig_system_path = Path(system_folder_path, base_system_name + '.cb_orig')
+    cnf_system_path = Path(system_folder_path, base_system_name + '.cnf')
     magma_system_path = Path(system_folder_path, base_system_name + '.magma')
+    mq_system_path = Path(system_folder_path, base_system_name + '.mq')
+    xl_system_path = Path(system_folder_path, base_system_name + '.xl')
+    wdsat_system_path = Path(system_folder_path, base_system_name + '.anf')
     setup_path = Path(system_folder_path, base_system_name + '.stp')
     solution_path = Path(system_folder_path, base_system_name + '.sol')
     support = True if attack_type == 'minrank' else False
@@ -929,11 +933,11 @@ def main(q, n, m, o2, solver, solve_only, no_solve, inner_hybridation, verbose, 
         if attack_type == 'differential':
             save_system(file_format='xl', file_path=xl_system_path,
                         rainbow=rainbow, SS=SS, verbose=verbose)
-        save_system(file_format='cnf', file_path=cnf_system_path, rainbow=rainbow, equations=equations,
-                    guessed_vars=guessed_vars, reduce_dimension=reduce_dimension, verbose=verbose)
         save_system(file_format='cb_gpu', file_path=cb_gpu_system_path,
                     rainbow=rainbow, SS=SS, equations=equations, weil_coeff_list=weil_coeff_list, verbose=verbose)
         save_system(file_format='cb_orig', file_path=cb_orig_system_path, rainbow=rainbow, equations=equations,
+                    guessed_vars=guessed_vars, reduce_dimension=reduce_dimension, verbose=verbose)
+        save_system(file_format='cnf', file_path=cnf_system_path, rainbow=rainbow, equations=equations,
                     guessed_vars=guessed_vars, reduce_dimension=reduce_dimension, verbose=verbose)
         save_system(file_format='magma', file_path=magma_system_path, rainbow=rainbow, equations=equations,
                     guessed_vars=guessed_vars, reduce_dimension=reduce_dimension, verbose=verbose)
@@ -972,10 +976,10 @@ def main(q, n, m, o2, solver, solve_only, no_solve, inner_hybridation, verbose, 
         solve_cmd += "--precompiled"
     Popen(solve_cmd, shell=True).wait()
 
-    if solver == 'libfes':
-        log_format = 'mq'
-    elif solver in ['cb_orig', 'cb_gpu']:
+    if solver in ['cb_orig', 'cb_gpu']:
         log_format = 'crossbred'
+    elif solver == 'libfes':
+        log_format = 'mq'
     else:
         log_format = solver
 
