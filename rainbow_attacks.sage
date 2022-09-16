@@ -889,11 +889,11 @@ def get_solution_from_log(log_path, format, N, rainbow=None):
 @ click.option('--o2', default=16, help='the oil subspace dimension', type=int)
 @ click.option('--solve_only', default=False, is_flag=True, help='skip equation generation and only use a solver')
 @ click.option('--no_solve', default=False, is_flag=True, help='only generate equations without solving them')
-@ click.option('-h', '--inner_hybridation', default="-1", help='the number of variable that are not guessed in MQ', type=int)
-@ click.option('-v', '--verbose', default=False, is_flag=True, help='control the output verbosity')
-@ click.option('-r', '--reduce_dimension', default=True, is_flag=True, help='reduce the dimension when possible')
-@ click.option('-t', '--attack_type', default='differential', type=click.Choice(['differential', 'minrank', 'intersection'], case_sensitive=False), help='choose attack on Rainbow')
-@ click.option('-s', '--seed', default=0, help='the seed for randomness replication', type=int)
+@ click.option('--inner_hybridation', '-h', default="-1", help='the number of variable that are not guessed in MQ', type=int)
+@ click.option('--verbose', '-v', default=False, is_flag=True, help='control the output verbosity')
+@ click.option('--reduce_dimension', '-r', default=True, is_flag=True, help='reduce the dimension when possible')
+@ click.option('--attack_type', '-t', default='differential', type=click.Choice(['differential', 'minrank', 'intersection'], case_sensitive=False), help='choose attack on Rainbow')
+@ click.option('--seed', '-s', default=0, help='the seed for randomness replication', type=int)
 @ click.option('--precompiled', default=False, is_flag=True, help='indicates if all relevant solvers are already compiled w.r.t. the parameters')
 def main(q, n, m, o2, solver, solve_only, no_solve, inner_hybridation, verbose, reduce_dimension, attack_type, seed, precompiled):
     if m == 0:
