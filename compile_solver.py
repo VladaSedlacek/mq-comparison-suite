@@ -42,28 +42,15 @@ def check_params(status_path, q, M, N):
 @ click.option('--q', help='field characteristic - needed for XL compilation', type=int)
 @ click.option('--m', help='number of equations - needed for XL and WDSAT compilation', type=int)
 @ click.option('--n', help='number of variables - needed for XL and WDSAT compilation', type=int)
-@ click.option('--xl_path', default=Path("..", "xl"), help='the path the XL solver folder: http://polycephaly.org/projects/xl', type=str)
 @ click.option('--wdsat_path', default=Path("..", "WDSat"), help='the path the WDSat solver folder: https://github.com/mtrimoska/WDSat', type=str)
-def main(solver, q, m, n, xl_path, wdsat_path,):
+@ click.option('--xl_path', default=Path("..", "xl"), help='the path the XL solver folder: http://polycephaly.org/projects/xl', type=str)
+def main(solver, q, m, n, wdsat_path, xl_path):
     if not solver:
         print("Please specify a solver.")
         exit()
 
     M = m
     N = n
-
-    if solver == 'xl':
-        xl_status_path = Path("xl_status.json")
-        compiled = check_params(xl_status_path, q, M, N)
-        if compiled and Path(xl_path, "xl").exists():
-            print("\nThe XL solver is already compiled.")
-        else:
-            make_cmd = f"make -C {str(xl_path)} clean && make -C {str(xl_path)} Q={q} M={M} N={N} -Wno-unused-result -Wno-class-memaccess"
-            print("\nCompiling the XL solver...")
-            Popen(make_cmd, shell=True).wait()
-            with open(xl_status_path, 'w') as f:
-                params = {'q': q, 'M': M, 'N': N}
-                json.dump(params, f)
 
     if solver == 'wdsat':
         wdsat_status_path = Path("wdsat_status.json")
@@ -78,6 +65,19 @@ def main(solver, q, m, n, xl_path, wdsat_path,):
             print("\nCompiling the WDSat solver...")
             Popen(make_cmd, shell=True).wait()
             with open(wdsat_status_path, 'w') as f:
+                params = {'q': q, 'M': M, 'N': N}
+                json.dump(params, f)
+
+    if solver == 'xl':
+        xl_status_path = Path("xl_status.json")
+        compiled = check_params(xl_status_path, q, M, N)
+        if compiled and Path(xl_path, "xl").exists():
+            print("\nThe XL solver is already compiled.")
+        else:
+            make_cmd = f"make -C {str(xl_path)} clean && make -C {str(xl_path)} Q={q} M={M} N={N} -Wno-unused-result -Wno-class-memaccess"
+            print("\nCompiling the XL solver...")
+            Popen(make_cmd, shell=True).wait()
+            with open(xl_status_path, 'w') as f:
                 params = {'q': q, 'M': M, 'N': N}
                 json.dump(params, f)
 

@@ -882,7 +882,7 @@ def get_solution_from_log(log_path, format, N, rainbow=None):
 
 
 @ click.command()
-@ click.option('--solver', type=click.Choice(['xl', 'crossbred', 'mq', 'libfes', 'wdsat', 'cms', 'magma'], case_sensitive=False), help='the external solver to be used')
+@ click.option('--solver', type=click.Choice(['cms', 'crossbred', 'libfes', 'magma', 'mq', 'wdsat', 'xl'], case_sensitive=False), help='the external solver to be used')
 @ click.option('--q', default=16, help='the field order', type=int)
 @ click.option('--n', default=0, help='the number of variables', type=int)
 @ click.option('--m', default=0, help='the number of equations', type=int)
@@ -929,35 +929,35 @@ def main(q, n, m, o2, solver, solve_only, no_solve, inner_hybridation, verbose, 
         if attack_type == 'differential':
             save_system(file_format='xl', file_path=xl_system_path,
                         rainbow=rainbow, SS=SS, verbose=verbose)
-        save_system(file_format='crossbred', file_path=crossbred_system_path,
-                    rainbow=rainbow, SS=SS, equations=equations, weil_coeff_list=weil_coeff_list, verbose=verbose)
-        save_system(file_format='mq', file_path=mq_system_path, rainbow=rainbow, equations=equations,
-                    guessed_vars=guessed_vars, reduce_dimension=reduce_dimension, verbose=verbose)
-        save_system(file_format='wdsat', file_path=wdsat_system_path, rainbow=rainbow, equations=equations,
-                    guessed_vars=guessed_vars, reduce_dimension=reduce_dimension, verbose=verbose)
         save_system(file_format='cnf', file_path=cnf_system_path, rainbow=rainbow, equations=equations,
                     guessed_vars=guessed_vars, reduce_dimension=reduce_dimension, verbose=verbose)
+        save_system(file_format='crossbred', file_path=crossbred_system_path,
+                    rainbow=rainbow, SS=SS, equations=equations, weil_coeff_list=weil_coeff_list, verbose=verbose)
         save_system(file_format='jv', file_path=jv_system_path, rainbow=rainbow, equations=equations,
                     guessed_vars=guessed_vars, reduce_dimension=reduce_dimension, verbose=verbose)
         save_system(file_format='magma', file_path=magma_system_path, rainbow=rainbow, equations=equations,
+                    guessed_vars=guessed_vars, reduce_dimension=reduce_dimension, verbose=verbose)
+        save_system(file_format='mq', file_path=mq_system_path, rainbow=rainbow, equations=equations,
+                    guessed_vars=guessed_vars, reduce_dimension=reduce_dimension, verbose=verbose)
+        save_system(file_format='wdsat', file_path=wdsat_system_path, rainbow=rainbow, equations=equations,
                     guessed_vars=guessed_vars, reduce_dimension=reduce_dimension, verbose=verbose)
     else:
         if verbose:
             print("Skipping the attack equations generation...")
         solution = load_solution(solution_path, q)
 
-    if solver == 'xl':
-        equations_path = xl_system_path
+    if solver == 'cms':
+        equations_path = cnf_system_path
     elif solver == 'crossbred':
         equations_path = crossbred_system_path
+    elif solver == 'magma':
+        equations_path = magma_system_path
     elif solver == 'mq' or solver == 'libfes':
         equations_path = mq_system_path
     elif solver == 'wdsat':
         equations_path = wdsat_system_path
-    elif solver == 'cms':
-        equations_path = cnf_system_path
-    elif solver == 'magma':
-        equations_path = magma_system_path
+    elif solver == 'xl':
+        equations_path = xl_system_path
     else:
         no_solve = True
 
