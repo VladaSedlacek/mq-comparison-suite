@@ -534,7 +534,7 @@ def save_system(file_format, file_path, rainbow, equations=[], guessed_vars=[], 
             for s in SS:
                 f.write(UD_to_string(rainbow.q, s))
 
-    elif file_format == 'crossbred':
+    elif file_format == 'cb_gpu':
         '''The format for the GPU F2 crossbred solver of Niederhagen, Ning and Yang: https://github.com/kcning/mqsolver/'''
         N = SS[0].ncols() - 1
         Nw = N * rainbow.ext_deg
@@ -650,7 +650,7 @@ Order : graded reverse lex order
                 cnf_line += "0\n"
                 f.write(cnf_line)
 
-    elif file_format == 'jv':
+    elif file_format == 'cb_orig':
         var_set = set().union(*[eq.variables() for eq in equations if eq != 0])
         M = len(equations)
         N = len(var_set)
@@ -695,8 +695,8 @@ Order : graded reverse lex order
             f.write("GroebnerBasis(I: Faugere:=true);\n")
             f.write("Variety(I);")
 
-    assert file_format in ['xl', 'crossbred',
-                           'mq', 'mq_compact', 'wdsat', 'cnf', 'jv', 'magma']
+    assert file_format in ['xl', 'cb_gpu',
+                           'mq', 'mq_compact', 'wdsat', 'cnf', 'cb_orig', 'magma']
     if verbose:
         print("Equation system written to: " + str(file_path))
 
@@ -882,7 +882,7 @@ def get_solution_from_log(log_path, format, N, rainbow=None):
 
 
 @ click.command()
-@ click.option('--solver', type=click.Choice(['cb_orig', 'cms', 'crossbred', 'libfes', 'magma', 'mq', 'wdsat', 'xl'], case_sensitive=False), help='the external solver to be used')
+@ click.option('--solver', type=click.Choice(['cb_orig', 'cb_gpu', 'cms', 'libfes', 'magma', 'mq', 'wdsat', 'xl'], case_sensitive=False), help='the external solver to be used')
 @ click.option('--q', default=16, help='the field order', type=int)
 @ click.option('--n', default=0, help='the number of variables', type=int)
 @ click.option('--m', default=0, help='the number of equations', type=int)
@@ -907,11 +907,11 @@ def main(q, n, m, o2, solver, solve_only, no_solve, inner_hybridation, verbose, 
     base_system_name = "rainbow_{}_seed_{}_q_{}_o2_{}_m_{}_n_{}_M_{}_N_{}".format(
         attack_type, seed, q, o2, m, n, M, N)
     xl_system_path = Path(system_folder_path, base_system_name + '.xl')
-    crossbred_system_path = Path(system_folder_path, base_system_name + '.cb')
+    cb_gpu_system_path = Path(system_folder_path, base_system_name + '.cb_gpu')
     mq_system_path = Path(system_folder_path, base_system_name + '.mq')
     wdsat_system_path = Path(system_folder_path, base_system_name + '.anf')
     cnf_system_path = Path(system_folder_path, base_system_name + '.cnf')
-    jv_system_path = Path(system_folder_path, base_system_name + '.jv')
+    cb_orig_system_path = Path(system_folder_path, base_system_name + '.cb_orig')
     magma_system_path = Path(system_folder_path, base_system_name + '.magma')
     setup_path = Path(system_folder_path, base_system_name + '.stp')
     solution_path = Path(system_folder_path, base_system_name + '.sol')
@@ -931,9 +931,9 @@ def main(q, n, m, o2, solver, solve_only, no_solve, inner_hybridation, verbose, 
                         rainbow=rainbow, SS=SS, verbose=verbose)
         save_system(file_format='cnf', file_path=cnf_system_path, rainbow=rainbow, equations=equations,
                     guessed_vars=guessed_vars, reduce_dimension=reduce_dimension, verbose=verbose)
-        save_system(file_format='crossbred', file_path=crossbred_system_path,
+        save_system(file_format='cb_gpu', file_path=cb_gpu_system_path,
                     rainbow=rainbow, SS=SS, equations=equations, weil_coeff_list=weil_coeff_list, verbose=verbose)
-        save_system(file_format='jv', file_path=jv_system_path, rainbow=rainbow, equations=equations,
+        save_system(file_format='cb_orig', file_path=cb_orig_system_path, rainbow=rainbow, equations=equations,
                     guessed_vars=guessed_vars, reduce_dimension=reduce_dimension, verbose=verbose)
         save_system(file_format='magma', file_path=magma_system_path, rainbow=rainbow, equations=equations,
                     guessed_vars=guessed_vars, reduce_dimension=reduce_dimension, verbose=verbose)
@@ -946,12 +946,12 @@ def main(q, n, m, o2, solver, solve_only, no_solve, inner_hybridation, verbose, 
             print("Skipping the attack equations generation...")
         solution = load_solution(solution_path, q)
 
-    if solver == 'cms':
-        equations_path = cnf_system_path
-    elif solver == 'crossbred':
-        equations_path = crossbred_system_path
+    if solver == 'cb_gpu':
+        equations_path = cb_gpu_system_path
     elif solver == 'cb_orig':
-        equations_path = jv_system_path
+        equations_path = cb_orig_system_path
+    elif solver == 'cms':
+        equations_path = cnf_system_path
     elif solver == 'magma':
         equations_path = magma_system_path
     elif solver == 'mq' or solver == 'libfes':
@@ -974,7 +974,7 @@ def main(q, n, m, o2, solver, solve_only, no_solve, inner_hybridation, verbose, 
 
     if solver == 'libfes':
         log_format = 'mq'
-    elif solver == 'cb_orig':
+    elif solver in ['cb_orig', 'cb_gpu']:
         log_format = 'crossbred'
     else:
         log_format = solver
