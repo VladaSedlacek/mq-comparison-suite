@@ -43,10 +43,11 @@ def get_total_resident_memory(proc, count_python=True, verbose=False):
 @ click.option('--iterations', default=2, help='number of iterations for each parameter set', type=int)
 @ click.option('--log_path_brief', default=Path("comparison_log_brief.txt"), help='the path to the brief log')
 @ click.option('--log_path_verbose', default=Path("comparison_log_verbose.txt"), help='the path to the verbose log')
-def main(o2_min, o2_max, iterations, log_path_brief, log_path_verbose):
+@ click.option('--to_skip', '-s', type=click.Choice(['cms', 'crossbred', 'libfes', 'magma', 'mq', 'wdsat', 'xl'], case_sensitive=False), multiple=True, help='the solvers to be skipped', default=[])
+def main(o2_min, o2_max, iterations, log_path_brief, log_path_verbose, to_skip):
 
     # Set up main parameters
-    solvers = ['cms', 'crossbred', 'libfes', 'magma', 'mq', 'wdsat', 'xl']
+    solvers = [s for s in ['cms', 'crossbred', 'libfes', 'magma', 'mq', 'wdsat', 'xl'] if s not in set(to_skip)]
     q_range = [2, 16]
     o2_range = range(o2_min, o2_max + 1, 2)
     outcomes = ["success", "failure"]

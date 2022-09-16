@@ -11,6 +11,8 @@ Currently, the following solver implementations are supported:
 * [wdsat](https://github.com/mtrimoska/WDSat) (SAT solver for systems coming from Weil descent)
 * [XL](http://polycephaly.org/projects/xl)
 
+The solvers need to be installed externally (though none of them are required).
+
 Note that magma supports all finite fields, XL supports $\mathbb{F}_2, \mathbb{F}_{16}$ and $\mathbb{F}_{31}$, while the other solvers support only $\mathbb{F}_2$. However, using the Weil descent, we can turn any system of $m$ equations with $n$ variables over $\mathbb{F}_{2^r}$ into a system of $rm$ equations with $rn$ variables over $\mathbb{F}_2$. This is done by default where needed to allow comparisons.
 
 Scripts:
@@ -23,4 +25,5 @@ Scripts:
    * see `python3 invoke_solver.py --help` for usage
 * `compile_solver.py` takes care of solver which need to be precompiled in advance. It is called internally by other scripts.
 * `compare_solvers.py` is the top layer wrapper which performs a comprehensive comparison of all the solvers and logs the results.
-    * example: plain `sage compare_solvers.py` works
+    * example: `sage compare_solvers.py -s magma` runs the comparison of all solvers except for magma
+ 
