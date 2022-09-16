@@ -154,18 +154,19 @@ def main(o2_min, o2_max, iterations, log_path_brief, log_path_verbose):
             # Save the aggregated results
             for solver in solvers:
                 successes = str(solver_stats[solver]["successes"])
+                solver_stats[solver]["successes"] = f"{successes} of {iterations}"
                 mean_time = seconds_to_str(statistics.mean(solver_stats[solver]["times"]))
                 solver_stats[solver]["mean_time"] = mean_time
-                stdev_time = seconds_to_str(statistics.stdev(solver_stats[solver]["times"]))
+                stdev_time = statistics.stdev(solver_stats[solver]["times"])
                 solver_stats[solver]["stdev_time"] = stdev_time
                 mean_memory = statistics.mean(solver_stats[solver]["memories"])
                 mean_memory = f"{(mean_memory / 1000000):.2f}"
                 solver_stats[solver]["mean_memory"] = mean_memory
                 del solver_stats[solver]['times']
                 del solver_stats[solver]['memories']
-                T.add_row([solver, successes, mean_time, stdev_time, mean_memory])
+                T.add_row([solver, successes, mean_time, seconds_to_str(stdev_time), mean_memory])
                 T_color.add_row([solver, colors[successes != str(iterations)] +
-                                successes + reset, mean_time, stdev_time, mean_memory])
+                                successes + reset, mean_time, seconds_to_str(stdev_time), mean_memory])
 
                 # Update the JSON with results
                 with open(json_path) as j:
