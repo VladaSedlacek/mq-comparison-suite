@@ -725,7 +725,7 @@ def load_solution(solution_path, q):
     try:
         F = GF(q)
         with open(solution_path, 'r') as f:
-            lines = file.readlines()
+            lines = f.readlines()
             solution = [F(s) for s in lines]
             return vector(solution)
     except Exception as e:
@@ -825,7 +825,7 @@ def get_solution_from_log(log_path, format, N, rainbow=None):
         variables = []
         found = False
         sol_str = ""
-        for line in file.readlines():
+        for line in f.readlines():
             if format == 'xl':
                 if "  is sol" in line:
                     sol = line.split("  is sol")[0].split(" ")
