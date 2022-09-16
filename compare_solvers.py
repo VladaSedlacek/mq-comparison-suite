@@ -13,7 +13,7 @@ import subprocess
 import time
 
 
-def secondsToStr(t):
+def seconds_to_str(t):
     return "%d:%02d:%02d.%03d" % \
         reduce(lambda ll, b: divmod(ll[0], b) + ll[1:],
                [(t*1000,), 1000, 60, 60])
@@ -147,16 +147,16 @@ def main(o2_min, o2_max, iterations, log_path_brief, log_path_verbose):
                     solver_stats[solver]["memories"].append(rss)
                     print_and_log(f"Solver: {solver}", to_print="")
                     print_and_log(f"Result: {outcomes[code]}", to_print="")
-                    print_and_log(f"Time:   {secondsToStr(time_taken)}", to_print="")
+                    print_and_log(f"Time:   {seconds_to_str(time_taken)}", to_print="")
                     print_and_log(f"Memory: {( rss / 1000000):.2f} MB", to_print="")
                     print_and_log(stars, to_print="")
 
             # Save the aggregated results
             for solver in solvers:
                 successes = str(solver_stats[solver]["successes"])
-                mean_time = secondsToStr(statistics.mean(solver_stats[solver]["times"]))
+                mean_time = seconds_to_str(statistics.mean(solver_stats[solver]["times"]))
                 solver_stats[solver]["mean_time"] = mean_time
-                stdev_time = secondsToStr(statistics.stdev(solver_stats[solver]["times"]))
+                stdev_time = seconds_to_str(statistics.stdev(solver_stats[solver]["times"]))
                 solver_stats[solver]["stdev_time"] = stdev_time
                 mean_memory = statistics.mean(solver_stats[solver]["memories"])
                 mean_memory = f"{(mean_memory / 1000000):.2f}"

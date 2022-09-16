@@ -530,16 +530,16 @@ def save_system(file_format, file_path, rainbow, equations=[], guessed_vars=[], 
 
     if file_format == 'xl':
         '''The format for the block Wiedemann XL solver of Niederhagen: http://polycephaly.org/projects/xl'''
-        with open(file_path, 'w') as file:
+        with open(file_path, 'w') as f:
             for s in SS:
-                file.write(UD_to_string(rainbow.q, s))
+                f.write(UD_to_string(rainbow.q, s))
 
     elif file_format == 'crossbred':
         '''The format for the GPU F2 crossbred solver of Niederhagen, Ning and Yang: https://github.com/kcning/mqsolver/'''
         N = SS[0].ncols() - 1
         Nw = N * rainbow.ext_deg
-        with open(file_path, 'w') as file:
-            file.write(
+        with open(file_path, 'w') as f:
+            f.write(
                 """Galois Field : GF({})
 Number of variables (n) : {}
 Number of polynomials (m) : {}
@@ -549,11 +549,11 @@ Order : graded reverse lex order
 *********************\n""".format(radical(rainbow.q), Nw, len(weil_coeff_list), rainbow.seed))
             # when q==2, this should yield the same representation as for XL
             for weil_coeffs in weil_coeff_list:
-                file.write(" ".join([str(wc) for wc in weil_coeffs]) + " ; \n")
+                f.write(" ".join([str(wc) for wc in weil_coeffs]) + " ; \n")
 
     elif file_format == 'mq_compact':
-        with open(file_path, 'w') as file:
-            file.write(weil_coeff_list_to_string(
+        with open(file_path, 'w') as f:
+            f.write(weil_coeff_list_to_string(
                 weil_coeff_list, rainbow.ext_deg))
 
     elif file_format == 'mq':
@@ -569,14 +569,14 @@ Order : graded reverse lex order
             guessed = ', '.join(["{0}={1}".format(var, value) for var, value in zip(
                 rainbow.yy[max_var_index:], guessed_vars)])
 
-        with open(file_path, 'w') as file:
-            file.write("# Variables:\n")
-            file.write(variables + "\n#\n")
-            file.write("# Guessed variables:\n")
-            file.write("# " + guessed + "\n#\n")
-            file.write("# Equations:\n")
+        with open(file_path, 'w') as f:
+            f.write("# Variables:\n")
+            f.write(variables + "\n#\n")
+            f.write("# Guessed variables:\n")
+            f.write("# " + guessed + "\n#\n")
+            f.write("# Equations:\n")
             for eq in equations:
-                file.write(str(eq) + "\n")
+                f.write(str(eq) + "\n")
         if verbose:
             print("Number of equations:", len(equations))
             print("Number of monomials:", len(
@@ -589,8 +589,8 @@ Order : graded reverse lex order
             var_list) for j, v2 in enumerate(var_list) if v1 != v2}
         M = len(equations)
         N = len(var_set)
-        with open(file_path, 'w') as file:
-            file.write("p anf {} {}\n".format(N, M))
+        with open(file_path, 'w') as f:
+            f.write("p anf {} {}\n".format(N, M))
             for eq in equations:
                 const_present = False
                 anf_line = "x "
@@ -607,7 +607,7 @@ Order : graded reverse lex order
                     # the right hand side of the equation must correspond to True
                     anf_line += "T "
                 anf_line += "0\n"
-                file.write(anf_line)
+                f.write(anf_line)
 
     elif file_format == 'cnf':
         var_set = set().union(*[eq.variables() for eq in equations if eq != 0])
@@ -615,21 +615,21 @@ Order : graded reverse lex order
         var_prod_list = []
         M = len(equations)
         N = len(var_set)
-        with open(file_path, 'w') as file:
-            file.write("p cnf {} {}\n".format(
+        with open(file_path, 'w') as f:
+            f.write("p cnf {} {}\n".format(
                 N + binomial(N, 2) + 1, M + 3 * binomial(N, 2) + 1))
             # introduce the constant variable
-            file.write("{} 0\n".format(N + binomial(N, 2) + 1))
+            f.write("{} 0\n".format(N + binomial(N, 2) + 1))
             # convert ANDs to ORs by introducing new variables
             prod_index = 0
             for i, _ in enumerate(var_list):
                 for j in range(i + 1, len(var_list)):
                     prod_index += 1
                     var_prod_list.append(var_list[i] * var_list[j])
-                    file.write("{} -{} 0\n".format(i + 1, N + prod_index))
-                    file.write("{} -{} 0\n".format(j + 1, N + prod_index))
-                    file.write("-{} -{} {} 0\n".format(i +
-                               1, j + 1, N + prod_index))
+                    f.write("{} -{} 0\n".format(i + 1, N + prod_index))
+                    f.write("{} -{} 0\n".format(j + 1, N + prod_index))
+                    f.write("-{} -{} {} 0\n".format(i +
+                                                    1, j + 1, N + prod_index))
             for eq in equations:
                 const_present = False
                 cnf_line = "x "
@@ -648,13 +648,13 @@ Order : graded reverse lex order
                     # the right hand side of the equation must correspond to True
                     cnf_line += "{} ".format(str(N + binomial(N, 2) + 1))
                 cnf_line += "0\n"
-                file.write(cnf_line)
+                f.write(cnf_line)
 
     elif file_format == 'jv':
         var_set = set().union(*[eq.variables() for eq in equations if eq != 0])
         M = len(equations)
         N = len(var_set)
-        with open(file_path, 'w') as file:
+        with open(file_path, 'w') as f:
             for eq in equations:
                 eq_repr = []
                 for var_tuple, coeff in eq.dict().items():
@@ -664,8 +664,8 @@ Order : graded reverse lex order
                         assert mon_repr % 2 == 0
                         eq_repr.append(mon_repr / 2)
                 for mon_repr in sorted(eq_repr, reverse=True):
-                    file.write(str(mon_repr) + "\n")
-                file.write(str(-1) + "\n")
+                    f.write(str(mon_repr) + "\n")
+                f.write(str(-1) + "\n")
 
     elif file_format == 'magma':
         q = rainbow.q
@@ -676,24 +676,24 @@ Order : graded reverse lex order
             ring_type = "PolynomialRing(F, "
         var_set = set().union(*[eq.variables() for eq in equations])
         var_list = [str(var) for var in sorted(var_set)[:: -1]]
-        with open(file_path, 'w') as file:
-            file.write(f"F := GaloisField({q});\n")
-            file.write(f"R<{', '.join(var_list)}> := {ring_type}{len(var_list)}, \"grevlex\");\n")
-            file.write(f"I := ideal<R |\n")
+        with open(file_path, 'w') as f:
+            f.write(f"F := GaloisField({q});\n")
+            f.write(f"R<{', '.join(var_list)}> := {ring_type}{len(var_list)}, \"grevlex\");\n")
+            f.write(f"I := ideal<R |\n")
             # add field equations
             for v in var_list:
-                file.write(f"{v}^{q} - {v},\n")
+                f.write(f"{v}^{q} - {v},\n")
             # add system equations
             for i, eq in enumerate(equations):
-                file.write(f"{eq}")
+                f.write(f"{eq}")
                 if i != len(equations) - 1:
-                    file.write(",\n")
+                    f.write(",\n")
                 else:
-                    file.write("\n")
-            file.write(f">;\n")
+                    f.write("\n")
+            f.write(f">;\n")
             # use the F4 algorithm
-            file.write("GroebnerBasis(I: Faugere:=true);\n")
-            file.write("Variety(I);")
+            f.write("GroebnerBasis(I: Faugere:=true);\n")
+            f.write("Variety(I);")
 
     assert file_format in ['xl', 'crossbred',
                            'mq', 'mq_compact', 'wdsat', 'cnf', 'jv', 'magma']
@@ -705,26 +705,26 @@ def save_setup(rainbow, setup_path, verbose=False):
     if setup_path.is_file() and verbose:
         print("The file {} already exists!".format(str(setup_path)))
         return
-    with open(setup_path, 'w') as file:
-        file.write("# seed:" + str(rainbow.seed) + "\n")
-        file.write("# O1:" + str(rainbow.O1) + "\n\n")
-        file.write("# O2:" + str(rainbow.O2) + "\n\n")
-        file.write("# W:" + str(rainbow.W) + "\n\n")
+    with open(setup_path, 'w') as f:
+        f.write("# seed:" + str(rainbow.seed) + "\n")
+        f.write("# O1:" + str(rainbow.O1) + "\n\n")
+        f.write("# O2:" + str(rainbow.O2) + "\n\n")
+        f.write("# W:" + str(rainbow.W) + "\n\n")
 
 
 def save_solution(solution, solution_path, verbose=False):
     if solution_path.is_file() and verbose:
         print("The file {} already exists!".format(str(solution_path)))
         return
-    with open(solution_path, 'w') as file:
+    with open(solution_path, 'w') as f:
         for s in solution:
-            file.write(str(s) + "\n")
+            f.write(str(s) + "\n")
 
 
 def load_solution(solution_path, q):
     try:
         F = GF(q)
-        with open(solution_path, 'r') as file:
+        with open(solution_path, 'r') as f:
             lines = file.readlines()
             solution = [F(s) for s in lines]
             return vector(solution)
@@ -817,7 +817,7 @@ def mount_attack(rainbow, attack_type, M, N, reduce_dimension=False, verbose=Fal
 
 def get_solution_from_log(log_path, format, N, rainbow=None):
     assert format in ['xl', 'crossbred', 'mq', 'wdsat', 'cms', 'magma']
-    with open(log_path, 'r') as file:
+    with open(log_path, 'r') as f:
         if rainbow != None:
             z = rainbow.F.gens()[0]
             deg = rainbow.ext_deg

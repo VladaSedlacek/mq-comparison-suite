@@ -6,28 +6,6 @@ import click
 import os
 
 
-def create_wdsat_config(wdsat_path, M, N):
-    with open(Path(wdsat_path, "src", "config.h"), 'w') as file:
-        file.write("""
-//enable the XG-ext module (must use anf as input)
-# define __XG_ENHANCED__
-
-//find all solutions instead of only one
-# define __FIND_ALL_SOLUTIONS__
-
-/** Rainbow : N={0} M={1} **/
-# ifdef __XG_ENHANCED__
-# define __MAX_ANF_ID__ {2} // make it +1
-# define __MAX_DEGREE__ 3 // make it +1
-# endif
-# define __MAX_ID__ {3}
-# define __MAX_BUFFER_SIZE__ 200000
-# define __MAX_EQ__ {5}
-# define __MAX_EQ_SIZE__ 4 //make it +1
-# define __MAX_XEQ__ {1}
-# define __MAX_XEQ_SIZE__ {4}""".format(N, M, N + 1, int(N*(N-1)/2), N * (N + 1), int(M*(M-1)/2)))
-
-
 @ click.command()
 @ click.option('--solver', type=click.Choice(['xl', 'crossbred', 'mq', 'libfes', 'wdsat', 'cms', 'magma'], case_sensitive=False), help='the external solver to be used')
 @ click.option('-e', '--equations_path', help='the path to the equation system', type=str)

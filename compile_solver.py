@@ -7,8 +7,8 @@ import json
 
 
 def create_wdsat_config(wdsat_path, M, N):
-    with open(Path(wdsat_path, "src", "config.h"), 'w') as file:
-        file.write("""
+    with open(Path(wdsat_path, "src", "config.h"), 'w') as f:
+        f.write("""
 //enable the XG-ext module (must use anf as input)
 # define __XG_ENHANCED__
 
