@@ -13,10 +13,9 @@ import subprocess
 import time
 
 
-def seconds_to_str(t):
-    return "%d:%02d:%02d.%03d" % \
-        reduce(lambda ll, b: divmod(ll[0], b) + ll[1:],
-               [(t*1000,), 1000, 60, 60])
+def sec_to_str(t):
+    units = reduce(lambda ll, b: divmod(ll[0], b) + ll[1:], [(t*1000,), 1000, 60, 60])
+    return "{:01.0f}:{:02.0f}:{:02.0f}.{:02.0f}".format(*units[:-1], *[x/10 for x in units[-1:]])
 
 
 def get_total_resident_memory(proc, count_python=True, verbose=False):
@@ -147,26 +146,27 @@ def main(o2_min, o2_max, iterations, log_path_brief, log_path_verbose):
                     solver_stats[solver]["memories"].append(rss)
                     print_and_log(f"Solver: {solver}", to_print="")
                     print_and_log(f"Result: {outcomes[code]}", to_print="")
-                    print_and_log(f"Time:   {seconds_to_str(time_taken)}", to_print="")
-                    print_and_log(f"Memory: {( rss / 1000000):.2f} MB", to_print="")
+                    print_and_log(f"Time:   {sec_to_str(time_taken)}", to_print="")
+                    print_and_log(f"Memory: {( rss / 1000000): .2f} MB", to_print="")
                     print_and_log(stars, to_print="")
 
             # Save the aggregated results
             for solver in solvers:
                 successes = str(solver_stats[solver]["successes"])
                 solver_stats[solver]["successes"] = f"{successes} of {iterations}"
-                mean_time = seconds_to_str(statistics.mean(solver_stats[solver]["times"]))
-                solver_stats[solver]["mean_time"] = mean_time
-                stdev_time = statistics.stdev(solver_stats[solver]["times"])
+                mean_time = statistics.mean(solver_stats[solver]["times"])
+                solver_stats[solver]["mean_time"] = round(mean_time, 2)
+                stdev_time = round(statistics.stdev(solver_stats[solver]["times"]), 2)
                 solver_stats[solver]["stdev_time"] = stdev_time
                 mean_memory = statistics.mean(solver_stats[solver]["memories"])
-                mean_memory = f"{(mean_memory / 1000000):.2f}"
+                mean_memory = round(mean_memory / 1000000, 2)
                 solver_stats[solver]["mean_memory"] = mean_memory
                 del solver_stats[solver]['times']
                 del solver_stats[solver]['memories']
-                T.add_row([solver, successes, mean_time, seconds_to_str(stdev_time), mean_memory])
-                T_color.add_row([solver, colors[successes != str(iterations)] +
-                                successes + reset, mean_time, seconds_to_str(stdev_time), mean_memory])
+
+                T.add_row([solver, successes, sec_to_str(mean_time), stdev_time, f"{mean_memory:.1f}"])
+                colored_successes = colors[successes != str(iterations)] + successes + reset
+                T_color.add_row([solver, colored_successes, sec_to_str(mean_time), stdev_time, f"{mean_memory: .1f}"])
 
                 # Update the JSON with results
                 with open(json_path) as j:
