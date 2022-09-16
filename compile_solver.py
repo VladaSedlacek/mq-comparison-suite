@@ -37,20 +37,50 @@ def check_params(status_path, q, M, N):
     return False
 
 
+def get_trunc_var(M, N):
+    # preliminary naive version
+    return round(3 * N / 4)
+
+
 @ click.command()
-@ click.option('--solver', type=click.Choice(['xl', 'wdsat'], case_sensitive=False), help='the external solver to be compiled')
+@ click.option('--solver', type=click.Choice(['cb_orig', 'xl', 'wdsat'], case_sensitive=False), help='the external solver to be compiled')
 @ click.option('--q', help='field characteristic - needed for XL compilation', type=int)
 @ click.option('--m', help='number of equations - needed for XL and WDSAT compilation', type=int)
 @ click.option('--n', help='number of variables - needed for XL and WDSAT compilation', type=int)
+@ click.option('--cb_orig_path', default=Path("..", "crossbred"), help='the path the crossbred (original) solver folder', type=str)
 @ click.option('--wdsat_path', default=Path("..", "WDSat"), help='the path the WDSat solver folder: https://github.com/mtrimoska/WDSat', type=str)
 @ click.option('--xl_path', default=Path("..", "xl"), help='the path the XL solver folder: http://polycephaly.org/projects/xl', type=str)
-def main(solver, q, m, n, wdsat_path, xl_path):
+def main(solver, q, m, n, cb_orig_path, wdsat_path, xl_path):
     if not solver:
         print("Please specify a solver.")
         exit()
 
     M = m
     N = n
+
+    if solver == 'cb_orig':
+        cb_orig_status_path = Path("cb_orig_status.json")
+        compiled = check_params(cb_orig_status_path, q, m, n)
+        if compiled and Path(cb_orig_path, "LinBlockLanczos").exists() and Path(cb_orig_path, "CheckCandidate").exists():
+            print("\nThe crossbred (original) solver is already compiled.")
+        else:
+            suppressor_flag = "-Wno-unused-result -Wno-format -Wno-shift-count-overflow"
+            src = Path(cb_orig_path, "LinBlockLanczos.c")
+            binary = Path(cb_orig_path, "LinBlockLanczos")
+            trunc_var = get_trunc_var(M, N)
+            params = f"-DNBVARS={N} -DTRUNC_VAR={trunc_var} -DPRINTVARS={N} -DNBPOLS={M} -INPUTDEG=2"
+            gcc_cmd = f"gcc {params} -Ofast -march=native {suppressor_flag} -o {binary} {src}"
+            print("\nCompiling the crossbred (original) solver (linear algebra)...")
+
+            src = Path(cb_orig_path, "CheckCandidates.c")
+            binary = Path(cb_orig_path, "CheckCandidates")
+            gcc_cmd = f"gcc {params} -o {binary} {src}"
+            print("\nCompiling the crossbred (original) solver (checking)...")
+            Popen(gcc_cmd, shell=True).wait()
+
+            with open(cb_orig_status_path, 'w') as f:
+                params = {'q': q, 'M': M, 'N': N}
+                json.dump(params, f)
 
     if solver == 'wdsat':
         wdsat_status_path = Path("wdsat_status.json")

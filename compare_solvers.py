@@ -47,7 +47,8 @@ def get_total_resident_memory(proc, count_python=True, verbose=False):
 def main(o2_min, o2_max, iterations, log_path_brief, log_path_verbose, to_skip):
 
     # Set up main parameters
-    solvers = [s for s in ['cms', 'crossbred', 'libfes', 'magma', 'mq', 'wdsat', 'xl'] if s not in set(to_skip)]
+    solvers = [s for s in ['cb_orig', 'cms', 'crossbred', 'libfes',
+                           'magma', 'mq', 'wdsat', 'xl'] if s not in set(to_skip)]
     q_range = [2, 16]
     o2_range = range(o2_min, o2_max + 1, 2)
     outcomes = ["success", "failure"]

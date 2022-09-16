@@ -1,18 +1,19 @@
 #!/usr/bin/env python3
 
 from pathlib import Path
-from subprocess import Popen
+from subprocess import Popen, PIPE
 import click
 import os
 
 
 @ click.command()
-@ click.option('--solver', type=click.Choice(['cms', 'crossbred', 'libfes', 'magma', 'mq', 'wdsat', 'xl'], case_sensitive=False), help='the external solver to be used')
+@ click.option('--solver', type=click.Choice(['cb_orig', 'cms', 'crossbred', 'libfes', 'magma', 'mq', 'wdsat', 'xl'], case_sensitive=False), help='the external solver to be used')
 @ click.option('--equations_path', '-e', help='the path to the equation system', type=str)
 @ click.option('--q', help='field characteristic - needed for XL compilation', type=int)
 @ click.option('--m', help='number of equations - needed for XL and WDSAT compilation', type=int)
 @ click.option('--n', help='number of variables - needed for XL and WDSAT compilation', type=int)
 @ click.option('--log_path', '-l', default=Path(".", "log.txt"), help='the path to the output log', type=str)
+@ click.option('--cb_orig_path', default=Path("..", "crossbred"), help='the path the crossbred (original) solver folder', type=str)
 @ click.option('--cms_path', default=Path("..", "cryptominisat", "build"), help='the path the CMS solver folder: https://github.com/msoos/cryptominisat', type=str)
 @ click.option('--crossbred_path', default=Path("..", "mqsolver"), help='the path the crossbred solver folder: https://github.com/kcning/mqsolver', type=str)
 @ click.option('--libfes_path', default=Path("..", "libfes-lite", "build"), help='the path the libfes solver folder: https://github.com/cbouilla/libfes-lite', type=str)
@@ -22,7 +23,7 @@ import os
 @ click.option('--xl_path', default=Path("..", "xl"), help='the path the XL solver folder: http://polycephaly.org/projects/xl', type=str)
 @ click.option('--inner_hybridation', '-h', default="-1", help='the number of variable that are not guessed in MQ', type=int)
 @ click.option('--precompiled', default=False, is_flag=True, help='indicates if all relevant solvers are already compiled w.r.t. the parameters')
-def main(solver, equations_path, q, m, n, log_path, cms_path, crossbred_path, libfes_path, magma_path, mq_path, wdsat_path, xl_path, inner_hybridation, precompiled):
+def main(solver, equations_path, q, m, n, log_path, cb_orig_path, cms_path, crossbred_path, libfes_path, magma_path, mq_path, wdsat_path, xl_path, inner_hybridation, precompiled):
     if not solver:
         print("Please specify a solver.")
         exit()
@@ -32,6 +33,32 @@ def main(solver, equations_path, q, m, n, log_path, cms_path, crossbred_path, li
         exit()
 
     current_path = Path().cwd()
+
+    if solver == 'cb_orig':
+        linalg_path = Path(cb_orig_path, "LinBlockLanczos")
+        check_path = Path(cb_orig_path, "CheckCandidates")
+        if precompiled and linalg_path.exists() and check_path.exists():
+            print("\nThe crossbred (original) solver is already compiled.")
+        else:
+            make_cmd = f"python3 compile_solver.py --solver cb_orig --q {q} --m {m} --n {n} --xl_path {cb_orig_path}"
+            Popen(make_cmd, shell=True).wait()
+        Popen(" > {}".format(str(log_path)), shell=True).wait()
+        print("\nStarting the crossbred (original) solver...")
+        cb_orig_solve_cmd = f"{linalg_path} {equations_path} | tee {log_path}"
+        candidates = Popen(cb_orig_solve_cmd, stdout=PIPE, shell=True).communicate()[0]
+        with open(log_path, "a") as f:
+            for cand in candidates.decode('utf-8').strip().split("\n"):
+                print(cand)
+                check_cmd = f"echo {cand} | {check_path} {equations_path}"
+                out = Popen(check_cmd, stdout=PIPE, shell=True).communicate()[0].strip().decode('utf-8')
+                print(out)
+                res = out.split("\n")
+                # ensure compatibility with mqsolver log
+                if "solution found :)" in res:
+                    assert res[1] == '0' * m
+                    f.write(f"solution found: \n[{res[0]}]\n")
+                else:
+                    f.write(f"does not work: \n[{res[0]}]\n\tevaluates to {res[1]}")
 
     if solver == 'cms':
         Popen(" > {}".format(str(log_path)), shell=True).wait()
@@ -63,8 +90,7 @@ def main(solver, equations_path, q, m, n, log_path, cms_path, crossbred_path, li
 
     if solver == 'mq':
         print("\nStarting the MQ solver...")
-        inner_hybridation_arg = " --inner-hybridation " + \
-            str(inner_hybridation) if inner_hybridation != -1 else ""
+        inner_hybridation_arg = " --inner-hybridation " + str(inner_hybridation) if inner_hybridation != -1 else ""
         # Use the non-vectorized version for less than 8 variables
         if 3 <= n and n <= 8:
             # the first ineqality seems to prevent and infinite loop

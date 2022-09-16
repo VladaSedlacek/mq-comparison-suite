@@ -835,7 +835,7 @@ def get_solution_from_log(log_path, format, N, rainbow=None):
                     found = True
                     continue
                 if found:
-                    sol = [ZZ(c) for c in line.strip().strip('][').split(', ')]
+                    sol = [ZZ(c) for c in line.strip().strip('][').split(',')]
                     parts = [sol[deg * i:deg * i + deg]
                              for i in range(len(sol) / deg)]
                     return vector([linear_combination(bits, zs) for bits in parts])
@@ -882,7 +882,7 @@ def get_solution_from_log(log_path, format, N, rainbow=None):
 
 
 @ click.command()
-@ click.option('--solver', type=click.Choice(['cms', 'crossbred', 'libfes', 'magma', 'mq', 'wdsat', 'xl'], case_sensitive=False), help='the external solver to be used')
+@ click.option('--solver', type=click.Choice(['cb_orig', 'cms', 'crossbred', 'libfes', 'magma', 'mq', 'wdsat', 'xl'], case_sensitive=False), help='the external solver to be used')
 @ click.option('--q', default=16, help='the field order', type=int)
 @ click.option('--n', default=0, help='the number of variables', type=int)
 @ click.option('--m', default=0, help='the number of equations', type=int)
@@ -950,6 +950,8 @@ def main(q, n, m, o2, solver, solve_only, no_solve, inner_hybridation, verbose, 
         equations_path = cnf_system_path
     elif solver == 'crossbred':
         equations_path = crossbred_system_path
+    elif solver == 'cb_orig':
+        equations_path = jv_system_path
     elif solver == 'magma':
         equations_path = magma_system_path
     elif solver == 'mq' or solver == 'libfes':
@@ -969,7 +971,13 @@ def main(q, n, m, o2, solver, solve_only, no_solve, inner_hybridation, verbose, 
     if precompiled:
         solve_cmd += "--precompiled"
     Popen(solve_cmd, shell=True).wait()
-    log_format = 'mq' if solver == 'libfes' else solver
+
+    if solver == 'libfes':
+        log_format = 'mq'
+    elif solver == 'cb_orig':
+        log_format = 'crossbred'
+    else:
+        log_format = solver
 
     solution_found = get_solution_from_log(
         log_path, format=log_format, N=N, rainbow=rainbow)

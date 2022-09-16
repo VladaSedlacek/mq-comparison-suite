@@ -3,11 +3,12 @@
 This project aims to provide a simple unified interface for state-of-the-art solvers for the multivariate quadratic ([MQ](https://eprint.iacr.org/2005/393)) problem, and to facilitate comparing their practical performance.
 
 Currently, the following solver implementations are supported:
+* [crossbred](https://eprint.iacr.org/2017/372) (the original version, not public)
 * [cryptominisat](https://github.com/msoos/cryptominisat) (SAT solver for crypto problems)
 * [libfes](https://github.com/cbouilla/libfes-lite) (fast exhaustive search)
 * [magma](https://magma.maths.usyd.edu.au) (using the F4 algorithm for Groebner bases, closed source)
 * [mq](https://gitlab.lip6.fr/almasty/mq) (simple deterministic algorithm)
-* [mqsolver](https://github.com/kcning/mqsolver) (crossbred GPU)
+* [mqsolver](https://github.com/kcning/mqsolver) (GPU version of crossbred)
 * [wdsat](https://github.com/mtrimoska/WDSat) (SAT solver for systems coming from Weil descent)
 * [XL](http://polycephaly.org/projects/xl)
 
