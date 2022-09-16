@@ -11,6 +11,8 @@ Currently, the following solver implementations are supported:
 * [wdsat](https://github.com/mtrimoska/WDSat) (SAT solver for systems coming from Weil descent)
 * [XL](http://polycephaly.org/projects/xl)
 
+Note that magma supports all finite fields, XL supports $\mathbb{F}_2, \mathbb{F}_{16}$ and $\mathbb{F}_{31}$, while the other solvers support only $\mathbb{F}_2$. However, using the Weil descent, we can turn any system of $m$ equations with $n$ variables over $\mathbb{F}_{2^r}$ into a system of $rm$ equations with $rn$ variables over $\mathbb{F}_2$. This is done by default where needed to allow comparisons.
+
 Scripts:
 * `rainbow_attacks.sage` generates an instance of the [Rainbow](https://www.pqcrainbow.org/) cryptosystem, mounts the [differential attack](https://eprint.iacr.org/2022/214) and saves the resulting system in different formats for further usage.
    * example to just generate systems: `sage rainbow_attacks.sage --seed 0 --q 2 --o2 6 --no_solve`
