@@ -122,7 +122,7 @@ def main(o2_min, o2_max, iterations, log_path_brief, log_path_verbose, to_skip):
                 for solver in solvers:
 
                     # Compile the solver for each parameter set if needed
-                    if seed == 0 and solver in ["xl", "wdsat"]:
+                    if seed == 0 and solver in ["cb_orig", "xl", "wdsat"]:
                         compile_cmd = f"python3 compile_solver.py --solver {solver} --q {q} --m {m-1} --n {n-m-2} >> {log_path_verbose} 2>&1"
                         subprocess.call(compile_cmd, shell=True)
 

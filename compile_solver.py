@@ -68,9 +68,10 @@ def main(solver, q, m, n, cb_orig_path, wdsat_path, xl_path):
             src = Path(cb_orig_path, "LinBlockLanczos.c")
             binary = Path(cb_orig_path, "LinBlockLanczos")
             trunc_var = get_trunc_var(M, N)
-            params = f"-DNBVARS={N} -DTRUNC_VAR={trunc_var} -DPRINTVARS={N} -DNBPOLS={M} -INPUTDEG=2"
+            params = f"-DNBVARS={N} -DTRUNC_VAR={trunc_var} -DPRINTVARS={N} -DNBPOLS={M}"
             gcc_cmd = f"gcc {params} -Ofast -march=native {suppressor_flag} -o {binary} {src}"
             print("\nCompiling the crossbred (original) solver (linear algebra)...")
+            Popen(gcc_cmd, shell=True).wait()
 
             src = Path(cb_orig_path, "CheckCandidates.c")
             binary = Path(cb_orig_path, "CheckCandidates")

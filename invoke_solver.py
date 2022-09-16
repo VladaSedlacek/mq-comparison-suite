@@ -40,7 +40,7 @@ def main(solver, equations_path, q, m, n, log_path, cb_gpu_path, cb_orig_path, c
         if precompiled and linalg_path.exists() and check_path.exists():
             print("\nThe crossbred (original) solver is already compiled.")
         else:
-            make_cmd = f"python3 compile_solver.py --solver cb_orig --q {q} --m {m} --n {n} --xl_path {cb_orig_path}"
+            make_cmd = f"python3 compile_solver.py --solver cb_orig --q {q} --m {m} --n {n} --cb_orig_path {cb_orig_path}"
             Popen(make_cmd, shell=True).wait()
         Popen(" > {}".format(str(log_path)), shell=True).wait()
         print("\nStarting the crossbred (original) solver...")
