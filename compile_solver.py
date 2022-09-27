@@ -61,8 +61,10 @@ def main(solver, q, m, n, cb_orig_path, wdsat_path, xl_path):
     M = m
     N = n
 
+    Path("tmp").mkdir(exist_ok=True)
+
     if solver == 'cb_orig':
-        cb_orig_status_path = Path("cb_orig_status.json")
+        cb_orig_status_path = Path("tmp", "cb_orig_status.json")
         compiled = check_params(cb_orig_status_path, q, m, n)
         if compiled and Path(cb_orig_path, "LinBlockLanczos").exists() and Path(cb_orig_path, "CheckCandidate").exists():
             print("\nThe crossbred (original) solver is already compiled.")
@@ -91,7 +93,7 @@ def main(solver, q, m, n, cb_orig_path, wdsat_path, xl_path):
                 json.dump(params, f)
 
     if solver == 'wdsat':
-        wdsat_status_path = Path("wdsat_status.json")
+        wdsat_status_path = Path("tmp", "wdsat_status.json")
         compiled = check_params(wdsat_status_path, q, m, n)
         if compiled and Path(wdsat_path, "wdsat_solver").exists():
             print("\nThe WDSat solver is already compiled.")
@@ -107,7 +109,7 @@ def main(solver, q, m, n, cb_orig_path, wdsat_path, xl_path):
                 json.dump(params, f)
 
     if solver == 'xl':
-        xl_status_path = Path("xl_status.json")
+        xl_status_path = Path("tmp", "xl_status.json")
         compiled = check_params(xl_status_path, q, M, N)
         if compiled and Path(xl_path, "xl").exists():
             print("\nThe XL solver is already compiled.")
