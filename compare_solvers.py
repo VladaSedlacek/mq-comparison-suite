@@ -181,9 +181,6 @@ def main(o2_min, o2_max, iterations, log_path_brief, log_path_verbose, to_skip):
             T.clear_rows()
             T_color.clear_rows()
 
-            print(
-                f"Current memory usage of this process: {psutil.Process().memory_info().rss / 1000000:.2f} MB")
-
 
 if __name__ == '__main__':
     main()
