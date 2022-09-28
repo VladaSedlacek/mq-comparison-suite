@@ -6,54 +6,7 @@ import click
 import json
 
 
-def create_wdsat_config(wdsat_path, M, N):
-    with open(Path(wdsat_path, "src", "config.h"), 'w') as f:
-        f.write("""
-//enable the XG-ext module (must use anf as input)
-# define __XG_ENHANCED__
-
-//find all solutions instead of only one
-# define __FIND_ALL_SOLUTIONS__
-
-/** Rainbow : N={0} M={1} **/
-# ifdef __XG_ENHANCED__
-# define __MAX_ANF_ID__ {2} // make it +1
-# define __MAX_DEGREE__ 3 // make it +1
-# endif
-# define __MAX_ID__ {3}
-# define __MAX_BUFFER_SIZE__ 200000
-# define __MAX_EQ__ {5}
-# define __MAX_EQ_SIZE__ 4 //make it +1
-# define __MAX_XEQ__ {1}
-# define __MAX_XEQ_SIZE__ {4}""".format(N, M, N + 1, int(N*(N-1)/2), N * (N + 1), int(M*(M-1)/2)))
-
-
-def check_params(status_path, q, M, N):
-    if status_path.exists():
-        with open(status_path, 'r') as f:
-            try:
-                params = json.load(f)
-                if params['q'] == q and params['M'] == M and params['N'] == N:
-                    return True
-            except (KeyError, json.decoder.JSONDecodeError):
-                pass
-    return False
-
-
-def get_trunc_var(M, N):
-    # preliminary naive version
-    return round(3 * N / 4)
-
-
-@ click.command()
-@ click.option('--solver', type=click.Choice(['cb_orig', 'xl', 'wdsat'], case_sensitive=False), help='the external solver to be compiled')
-@ click.option('--q', help='field characteristic - needed for XL compilation', type=int)
-@ click.option('--m', help='number of equations - needed for XL and WDSAT compilation', type=int)
-@ click.option('--n', help='number of variables - needed for XL and WDSAT compilation', type=int)
-@ click.option('--cb_orig_path', default=Path("..", "crossbred"), help='the path the crossbred (original) solver folder', type=str)
-@ click.option('--wdsat_path', default=Path("..", "WDSat"), help='the path the WDSat solver folder: https://github.com/mtrimoska/WDSat', type=str)
-@ click.option('--xl_path', default=Path("..", "xl"), help='the path the XL solver folder: http://polycephaly.org/projects/xl', type=str)
-def main(solver, q, m, n, cb_orig_path, wdsat_path, xl_path):
+def compile_solver(solver, q, m, n, cb_orig_path=Path("..", "crossbred"), wdsat_path=Path("..", "WDSat"), xl_path=Path("..", "xl")):
     if not solver:
         print("Please specify a solver.")
         exit()
@@ -120,6 +73,57 @@ def main(solver, q, m, n, cb_orig_path, wdsat_path, xl_path):
             with open(xl_status_path, 'w') as f:
                 params = {'q': q, 'M': M, 'N': N}
                 json.dump(params, f)
+
+
+def create_wdsat_config(wdsat_path, M, N):
+    with open(Path(wdsat_path, "src", "config.h"), 'w') as f:
+        f.write("""
+//enable the XG-ext module (must use anf as input)
+# define __XG_ENHANCED__
+
+//find all solutions instead of only one
+# define __FIND_ALL_SOLUTIONS__
+
+/** Rainbow : N={0} M={1} **/
+# ifdef __XG_ENHANCED__
+# define __MAX_ANF_ID__ {2} // make it +1
+# define __MAX_DEGREE__ 3 // make it +1
+# endif
+# define __MAX_ID__ {3}
+# define __MAX_BUFFER_SIZE__ 200000
+# define __MAX_EQ__ {5}
+# define __MAX_EQ_SIZE__ 4 //make it +1
+# define __MAX_XEQ__ {1}
+# define __MAX_XEQ_SIZE__ {4}""".format(N, M, N + 1, int(N*(N-1)/2), N * (N + 1), int(M*(M-1)/2)))
+
+
+def check_params(status_path, q, M, N):
+    if status_path.exists():
+        with open(status_path, 'r') as f:
+            try:
+                params = json.load(f)
+                if params['q'] == q and params['M'] == M and params['N'] == N:
+                    return True
+            except (KeyError, json.decoder.JSONDecodeError):
+                pass
+    return False
+
+
+def get_trunc_var(M, N):
+    # preliminary naive version
+    return round(3 * N / 4)
+
+
+@ click.command()
+@ click.option('--solver', type=click.Choice(['cb_orig', 'xl', 'wdsat'], case_sensitive=False), help='the external solver to be compiled')
+@ click.option('--q', help='field characteristic - needed for XL compilation', type=int)
+@ click.option('--m', help='number of equations - needed for XL and WDSAT compilation', type=int)
+@ click.option('--n', help='number of variables - needed for XL and WDSAT compilation', type=int)
+@ click.option('--cb_orig_path', default=Path("..", "crossbred"), help='the path the crossbred (original) solver folder', type=str)
+@ click.option('--wdsat_path', default=Path("..", "WDSat"), help='the path the WDSat solver folder: https://github.com/mtrimoska/WDSat', type=str)
+@ click.option('--xl_path', default=Path("..", "xl"), help='the path the XL solver folder: http://polycephaly.org/projects/xl', type=str)
+def main(solver, q, m, n, cb_orig_path, wdsat_path, xl_path):
+    compile_solver(solver, q, m, n, cb_orig_path, wdsat_path, xl_path)
 
 
 if __name__ == '__main__':
