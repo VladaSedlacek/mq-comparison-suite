@@ -2,9 +2,9 @@
 
 from itertools import product
 from pathlib import Path
-from subprocess import Popen
 import click
 import re
+from invoke_solver import invoke_solver
 
 
 def get_polar_form(Q):
@@ -970,11 +970,7 @@ def main(q, n, m, o2, solver, solve_only, no_solve, inner_hybridation, verbose, 
     if no_solve:
         exit()
 
-    hybridation_cmd = f"--inner_hybridation {inner_hybridation}" if solver == 'mq' and inner_hybridation != -1 else ""
-    solve_cmd = f"python3 ./invoke_solver.py --equations_path {equations_path} --log_path {log_path} --solver {solver} --q {q} --m {M} --n {N} {hybridation_cmd}"
-    if precompiled:
-        solve_cmd += "--precompiled"
-    Popen(solve_cmd, shell=True).wait()
+    invoke_solver(solver, equations_path, q, M, N, log_path=log_path, inner_hybridation=inner_hybridation, precompiled=precompiled)
 
     if solver in ['cb_orig', 'cb_gpu']:
         log_format = 'crossbred'

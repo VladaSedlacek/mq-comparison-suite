@@ -11,6 +11,8 @@ import psutil
 import statistics
 import subprocess
 import time
+from compile_solver import compile_solver
+from invoke_solver import invoke_solver
 
 
 def sec_to_str(t):
@@ -123,12 +125,10 @@ def main(o2_min, o2_max, iterations, log_path_brief, log_path_verbose, to_skip):
 
                     # Compile the solver for each parameter set if needed
                     if seed == 0 and solver in ["cb_orig", "xl", "wdsat"]:
-                        compile_cmd = f"python3 compile_solver.py --solver {solver} --q {q} --m {m-1} --n {n-m-2} >> {log_path_verbose} 2>&1"
-                        subprocess.call(compile_cmd, shell=True)
+                        compile_solver(solver, q, m-1, n-m-2)
 
                     solve_cmd = f"sage rainbow_attacks.sage --seed {seed} --q {q} --o2 {o2} --m {m} --n {n} --solver {solver} --solve_only --precompiled 2>> {log_path_verbose} | tee -a {str(log_path_verbose)} "
-                    print_and_log(f"\n{stars}\nExecuting: {solve_cmd}\n", to_print="")
-                    print_and_log(f"Current datetime: {datetime.datetime.now().isoformat(' ', 'seconds')}", to_print="")
+                    print_and_log(f"\n{stars}\nSolving with {solver}, current datetime: {datetime.datetime.now().isoformat(' ', 'seconds')}", to_print="")
 
                     # Measure the time and memory usage of the active process and all its subprocesses
                     try:

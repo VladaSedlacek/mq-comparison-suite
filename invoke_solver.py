@@ -4,6 +4,7 @@ from pathlib import Path
 from subprocess import Popen, PIPE
 import click
 import os
+from compile_solver import compile_solver
 
 def invoke_solver(solver, equations_path, q, m, n, log_path=Path(".", "log.txt"), cb_gpu_path=Path("..", "mqsolver"), cb_orig_path=Path("..", "crossbred"), cms_path=Path("..", "cryptominisat", "build"), libfes_path=Path("..", "libfes-lite", "build"), magma_path=Path("magma"), mq_path=Path("..", "mq"), wdsat_path=Path("..", "WDSat"), xl_path=Path("..", "xl"), inner_hybridation=-1, precompiled=False):
 
@@ -23,8 +24,7 @@ def invoke_solver(solver, equations_path, q, m, n, log_path=Path(".", "log.txt")
         if precompiled and linalg_path.exists() and check_path.exists():
             print("\nThe crossbred (original) solver is already compiled.")
         else:
-            make_cmd = f"python3 compile_solver.py --solver cb_orig --q {q} --m {m} --n {n} --cb_orig_path {cb_orig_path}"
-            Popen(make_cmd, shell=True).wait()
+            compile_solver('cb_orig', q, m, n, cb_orig_path)
         Popen(" > {}".format(str(log_path)), shell=True).wait()
         print("\nStarting the crossbred (original) solver...")
         cb_orig_solve_cmd = f"{linalg_path} {equations_path} | tee {log_path}"
@@ -88,8 +88,7 @@ def invoke_solver(solver, equations_path, q, m, n, log_path=Path(".", "log.txt")
         if precompiled and Path(wdsat_path, "wdsat_solver").exists():
             print("\nThe WDSat solver is already compiled.")
         else:
-            make_cmd = f"python3 compile_solver.py --solver wdsat --q {q} --m {m} --n {n} --wdsat_path {wdsat_path}"
-            Popen(make_cmd, shell=True).wait()
+            compile_solver('wdsat', q, m, n, wdsat_path)
         print("\nStarting the WDSat solver...")
         wdsat_solve_cmd = "{} -i {}".format(
             str(Path(wdsat_path, "wdsat_solver")), str(equations_path) +
@@ -100,8 +99,7 @@ def invoke_solver(solver, equations_path, q, m, n, log_path=Path(".", "log.txt")
         if precompiled and Path(xl_path, "xl").exists():
             print("\nThe XL solver is already compiled.")
         else:
-            make_cmd = f"python3 compile_solver.py --solver xl --q {q} --m {m} --n {n} --xl_path {xl_path}"
-            Popen(make_cmd, shell=True).wait()
+            compile_solver('xl', q, m, n, xl_path)
         print("\nStarting the XL solver...")
         xl_solve_cmd = "{} --challenge {} --all".format(
             str(Path(xl_path, "xl")), str(equations_path)) + " | tee " + str(log_path)
