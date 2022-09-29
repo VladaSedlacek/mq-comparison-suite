@@ -42,7 +42,7 @@ def compile_solver(solver, q, m, n, cb_orig_path=Path("..", "crossbred"), wdsat_
             Popen(gcc_cmd, shell=True).wait()
 
             with open(cb_orig_status_path, 'w') as f:
-                params = {'q': q, 'M': M, 'N': N}
+                params = {'q': int(q), 'M': int(M), 'N': int(N)}
                 json.dump(params, f)
 
     if solver == 'wdsat':
@@ -58,7 +58,7 @@ def compile_solver(solver, q, m, n, cb_orig_path=Path("..", "crossbred"), wdsat_
             print("\nCompiling the WDSat solver...")
             Popen(make_cmd, shell=True).wait()
             with open(wdsat_status_path, 'w') as f:
-                params = {'q': q, 'M': M, 'N': N}
+                params = {'q': int(q), 'M': int(M), 'N': int(N)}
                 json.dump(params, f)
 
     if solver == 'xl':
@@ -71,7 +71,7 @@ def compile_solver(solver, q, m, n, cb_orig_path=Path("..", "crossbred"), wdsat_
             print("\nCompiling the XL solver...")
             Popen(make_cmd, shell=True).wait()
             with open(xl_status_path, 'w') as f:
-                params = {'q': q, 'M': M, 'N': N}
+                params = {'q': int(q), 'M': int(M), 'N': int(N)}
                 json.dump(params, f)
 
 
