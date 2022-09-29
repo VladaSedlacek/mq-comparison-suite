@@ -23,9 +23,7 @@ def invoke_solver(solver, equations_path, q, m, n, log_path=Path(".", "log.txt")
     if solver == 'cb_orig':
         linalg_path = Path(cb_orig_path, "LinBlockLanczos")
         check_path = Path(cb_orig_path, "CheckCandidates")
-        if precompiled and linalg_path.exists() and check_path.exists():
-            print("\nThe crossbred (original) solver is already compiled.")
-        else:
+        if not (precompiled and linalg_path.exists() and check_path.exists()):
             compile_solver('cb_orig', q, m, n, cb_orig_path)
         Popen(" > {}".format(str(log_path)), shell=True).wait()
         print("\nStarting the crossbred (original) solver...")
@@ -82,18 +80,14 @@ def invoke_solver(solver, equations_path, q, m, n, log_path=Path(".", "log.txt")
             solve_cmd = f"{p}{inner_hybridation_arg} < {equations_path}"
 
         if solver == 'wdsat':
-            if precompiled and Path(wdsat_path, "wdsat_solver").exists():
-                print("\nThe WDSat solver is already compiled.")
-            else:
+            if not (precompiled and Path(wdsat_path, "wdsat_solver").exists()):
                 compile_solver('wdsat', q, m, n, wdsat_path)
             print("\nStarting the WDSat solver...")
             p = Path(wdsat_path, "wdsat_solver")
             solve_cmd = f"{p} -i {equations_path}"
 
         if solver == 'xl':
-            if precompiled and Path(xl_path, "xl").exists():
-                print("\nThe XL solver is already compiled.")
-            else:
+            if not (precompiled and Path(xl_path, "xl").exists()):
                 compile_solver('xl', q, m, n, xl_path)
             print("\nStarting the XL solver...")
             p = Path(xl_path, "xl")
