@@ -5,6 +5,7 @@ from pathlib import Path
 import click
 import re
 from invoke_solver import invoke_solver
+from utils import get_eq_format
 
 
 def get_polar_form(Q):
@@ -978,21 +979,7 @@ def main(q, n, m, o2, solver, gen_only, solve_only, check_only, inner_hybridatio
         exit()
 
     if not check_only:
-        if solver == 'cb_gpu':
-            equations_path = cb_gpu_system_path
-        elif solver == 'cb_orig':
-            equations_path = cb_orig_system_path
-        elif solver == 'cms':
-            equations_path = cnf_system_path
-        elif solver == 'magma':
-            equations_path = magma_system_path
-        elif solver == 'mq' or solver == 'libfes':
-            equations_path = mq_system_path
-        elif solver == 'wdsat':
-            equations_path = wdsat_system_path
-        elif solver == 'xl':
-            equations_path = xl_system_path
-
+        equations_path = Path(system_folder_path, base_system_name + f".{get_eq_format(solver)}")
         invoke_solver(solver, equations_path, q, M, N, log_path=log_path,
                       inner_hybridation=inner_hybridation, precompiled=precompiled)
 
