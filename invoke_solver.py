@@ -3,6 +3,8 @@
 from pathlib import Path
 from subprocess import Popen, PIPE
 import click
+import subprocess as sp
+import time
 from compile_solver import compile_solver
 
 
@@ -28,12 +30,14 @@ def invoke_solver(solver, equations_path, q, m, n, log_path=Path(".", "log.txt")
         Popen(" > {}".format(str(log_path)), shell=True).wait()
         print("\nStarting the crossbred (original) solver...")
         solve_cmd = f"{linalg_path} {equations_path} | tee {log_path}"
+        start_time = time.time()
         candidates = Popen(solve_cmd, stdout=PIPE, shell=True).communicate()[0]
         with open(log_path, "a") as f:
             for cand in candidates.decode('utf-8').strip().split("\n"):
                 print(cand)
                 check_cmd = f"echo {cand} | {check_path} {equations_path}"
                 out = Popen(check_cmd, stdout=PIPE, shell=True).communicate()[0].strip().decode('utf-8')
+                time_taken = time.time() - start_time
                 print(out)
                 res = out.split("\n")
                 # ensure compatibility with mqsolver log
@@ -43,60 +47,65 @@ def invoke_solver(solver, equations_path, q, m, n, log_path=Path(".", "log.txt")
                 else:
                     f.write(f"does not work: \n[{res[0]}]\n\tevaluates to {res[1]}")
 
-    if solver == 'cms':
-        print("\nStarting the CryptoMiniSat solver...")
-        p = Path(cms_path, "cryptominisat5")
-        solve_cmd = f"{p} --verb 0 {equations_path} | tee {log_path}"
-        Popen(solve_cmd, shell=True).wait()
+    else:
+        if solver == 'cms':
+            print("\nStarting the CryptoMiniSat solver...")
+            p = Path(cms_path, "cryptominisat5")
+            solve_cmd = f"{p} --verb 0 {equations_path}"
+            Popen(solve_cmd, shell=True).wait()
 
-    if solver == 'cb_gpu':
-        print("\nStarting the crossbred (GPU) solver...")
-        solve_cmd = f"cd {cb_gpu_path} && ./solve.py -d 3 -k 16 -t 20 -v {str(Path(current_path, equations_path))}"
-        Popen(solve_cmd, shell=True).wait()
+        if solver == 'cb_gpu':
+            print("\nStarting the crossbred (GPU) solver...")
+            solve_cmd = f"cd {cb_gpu_path} && ./solve.py -d 3 -k 16 -t 20 -v {str(Path(current_path, equations_path))}"
 
-    if solver == 'libfes':
-        print("\nStarting the libfes solver...")
-        p = Path(libfes_path, "benchmark", "demo")
-        solve_cmd = f"{p} < {equations_path} | tee {log_path}"
-        Popen(solve_cmd, shell=True).wait()
+        if solver == 'libfes':
+            print("\nStarting the libfes solver...")
+            p = Path(libfes_path, "benchmark", "demo")
+            solve_cmd = f"{p} < {equations_path}"
+            Popen(solve_cmd, shell=True).wait()
 
-    if solver == 'magma':
-        print("\nStarting Magma...")
-        solve_cmd = f"{magma_path} < {equations_path} | tee {log_path}"
-        Popen(solve_cmd, shell=True).wait()
+        if solver == 'magma':
+            print("\nStarting Magma...")
+            solve_cmd = f"{magma_path} < {equations_path}"
+            Popen(solve_cmd, shell=True).wait()
 
-    if solver == 'mq':
-        print("\nStarting the MQ solver...")
-        inner_hybridation_arg = " --inner-hybridation " + str(inner_hybridation) if inner_hybridation != -1 else ""
-        # Use the non-vectorized version for less than 8 variables
-        if 3 <= n and n <= 8:
-            # the first ineqality seems to prevent an infinite loop
-            binary = "monica"
-        else:
-            binary = "monica_vector"
-        p = Path(mq_path, f"{binary}")
-        solve_cmd = f"{p}{inner_hybridation_arg} < {equations_path} | tee {log_path}"
-        Popen(solve_cmd, shell=True).wait()
+        if solver == 'mq':
+            print("\nStarting the MQ solver...")
+            inner_hybridation_arg = " --inner-hybridation " + str(inner_hybridation) if inner_hybridation != -1 else ""
+            # Use the non-vectorized version for less than 8 variables
+            if 3 <= n and n <= 8:
+                # the first ineqality seems to prevent an infinite loop
+                binary = "monica"
+            else:
+                binary = "monica_vector"
+            p = Path(mq_path, f"{binary}")
+            solve_cmd = f"{p}{inner_hybridation_arg} < {equations_path}"
 
-    if solver == 'wdsat':
-        if precompiled and Path(wdsat_path, "wdsat_solver").exists():
-            print("\nThe WDSat solver is already compiled.")
-        else:
-            compile_solver('wdsat', q, m, n, wdsat_path)
-        print("\nStarting the WDSat solver...")
-        p = Path(wdsat_path, "wdsat_solver")
-        solve_cmd = f"{p} -i {equations_path} | tee {log_path}"
-        Popen(solve_cmd, shell=True).wait()
+        if solver == 'wdsat':
+            if precompiled and Path(wdsat_path, "wdsat_solver").exists():
+                print("\nThe WDSat solver is already compiled.")
+            else:
+                compile_solver('wdsat', q, m, n, wdsat_path)
+            print("\nStarting the WDSat solver...")
+            p = Path(wdsat_path, "wdsat_solver")
+            solve_cmd = f"{p} -i {equations_path}"
 
-    if solver == 'xl':
-        if precompiled and Path(xl_path, "xl").exists():
-            print("\nThe XL solver is already compiled.")
-        else:
-            compile_solver('xl', q, m, n, xl_path)
-        print("\nStarting the XL solver...")
-        p = Path(xl_path, "xl")
-        solve_cmd = f"{p} --challenge {equations_path} --all | tee {log_path}"
-        Popen(solve_cmd, shell=True).wait()
+        if solver == 'xl':
+            if precompiled and Path(xl_path, "xl").exists():
+                print("\nThe XL solver is already compiled.")
+            else:
+                compile_solver('xl', q, m, n, xl_path)
+            print("\nStarting the XL solver...")
+            p = Path(xl_path, "xl")
+            solve_cmd = f"{p} --challenge {equations_path} --all"
+
+        start_time = time.time()
+        proc = sp.run(solve_cmd, stdout=sp.PIPE, stderr=sp.STDOUT, shell=True)
+        time_taken = time.time() - start_time
+        with open(log_path, 'w') as f:
+            f.write(proc.stdout.decode())
+
+    return time_taken
 
 
 @ click.command()
