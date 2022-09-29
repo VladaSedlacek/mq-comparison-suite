@@ -119,7 +119,7 @@ def main(o2_min, o2_max, iterations, log_path_brief, log_path_verbose, to_skip):
 
             # Go through all iterations for the given parameters
             for seed in range(iterations):
-                gen_cmd = f"sage rainbow_attacks.sage --seed {seed} --q {q} --o2 {o2} --m {m} --n {n}"
+                gen_cmd = f"sage rainbow_attacks.sage --seed {seed} --q {q} --o2 {o2} --m {m} --n {n} --gen_only"
                 subprocess.call(gen_cmd, shell=True)
                 for solver in solvers:
 
