@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 
 from pathlib import Path
-from subprocess import Popen, PIPE
 import click
 import subprocess as sp
 import time
@@ -25,32 +24,32 @@ def invoke_solver(solver, equations_path, q, m, n, log_path=Path(".", "log.txt")
         check_path = Path(cb_orig_path, "CheckCandidates")
         if not (precompiled and linalg_path.exists() and check_path.exists()):
             compile_solver('cb_orig', q, m, n, cb_orig_path)
-        Popen(" > {}".format(str(log_path)), shell=True).wait()
+        sp.Popen(" > {}".format(str(log_path)), shell=True).wait()
         print("\nStarting the crossbred (original) solver...")
         solve_cmd = f"{linalg_path} {equations_path} | tee {log_path}"
         start_time = time.time()
-        candidates = Popen(solve_cmd, stdout=PIPE, shell=True).communicate()[0]
+        candidates = sp.Popen(solve_cmd, stdout=sp.PIPE, shell=True).communicate()[0]
         with open(log_path, "a") as f:
             for cand in candidates.decode('utf-8').strip().split("\n"):
                 print(cand)
                 check_cmd = f"echo {cand} | {check_path} {equations_path}"
-                out = Popen(check_cmd, stdout=PIPE, shell=True).communicate()[0].strip().decode('utf-8')
+                out = sp.Popen(check_cmd, stdout=sp.PIPE, shell=True).communicate()[0].strip().decode('utf-8')
                 time_taken = time.time() - start_time
                 print(out)
                 res = out.split("\n")
                 # ensure compatibility with mqsolver log
                 if "solution found :)" in res:
                     assert res[1] == '0' * m
-                    f.write(f"solution found: \n[{res[0]}]\n")
+                    out = f"solution found: \n[{res[0]}]\n"
                 else:
-                    f.write(f"does not work: \n[{res[0]}]\n\tevaluates to {res[1]}")
+                    out = f"does not work: \n[{res[0]}]\n\tevaluates to {res[1]}"
+                f.write(out)
 
     else:
         if solver == 'cms':
             print("\nStarting the CryptoMiniSat solver...")
             p = Path(cms_path, "cryptominisat5")
             solve_cmd = f"{p} --verb 0 {equations_path}"
-            Popen(solve_cmd, shell=True).wait()
 
         if solver == 'cb_gpu':
             print("\nStarting the crossbred (GPU) solver...")
@@ -60,12 +59,10 @@ def invoke_solver(solver, equations_path, q, m, n, log_path=Path(".", "log.txt")
             print("\nStarting the libfes solver...")
             p = Path(libfes_path, "benchmark", "demo")
             solve_cmd = f"{p} < {equations_path}"
-            Popen(solve_cmd, shell=True).wait()
 
         if solver == 'magma':
             print("\nStarting Magma...")
             solve_cmd = f"{magma_path} < {equations_path}"
-            Popen(solve_cmd, shell=True).wait()
 
         if solver == 'mq':
             print("\nStarting the MQ solver...")
@@ -96,10 +93,11 @@ def invoke_solver(solver, equations_path, q, m, n, log_path=Path(".", "log.txt")
         start_time = time.time()
         proc = sp.run(solve_cmd, stdout=sp.PIPE, stderr=sp.STDOUT, shell=True)
         time_taken = time.time() - start_time
+        out = proc.stdout.decode()
         with open(log_path, 'w') as f:
-            f.write(proc.stdout.decode())
+            f.write(out)
 
-    return time_taken
+    return out, time_taken
 
 
 @ click.command()
