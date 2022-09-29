@@ -932,7 +932,7 @@ def main(q, n, m, o2, solver, gen_only, solve_only, check_only, inner_hybridatio
     set_random_seed(seed)
     M, N = compute_system_size(q, m, n, o2, attack_type)
     system_folder_path = 'systems'
-    log_path = Path(system_folder_path, "log.txt")
+    log_path = Path("log.txt")
     base_system_name = "rainbow_{}_seed_{}_q_{}_o2_{}_m_{}_n_{}_M_{}_N_{}".format(
         attack_type, seed, q, o2, m, n, M, N)
     cb_gpu_system_path = Path(system_folder_path, base_system_name + '.cb_gpu')
