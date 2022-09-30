@@ -22,8 +22,7 @@ def invoke_solver(solver, equations_path, q, m, n, log_path=Path(".", "log.txt")
         check_path = Path(cb_orig_path, "CheckCandidates")
         if not (precompiled and linalg_path.exists() and check_path.exists()):
             compile_solver('cb_orig', q, m, n, cb_orig_path)
-        sp.Popen(" > {}".format(str(log_path)), shell=True).wait()
-        print("\nStarting the crossbred (original) solver...")
+        print("Starting the crossbred (original) solver...")
         solve_cmd = f"{linalg_path} {equations_path} | tee {log_path}"
         start_time = time.time()
         candidates = sp.Popen(solve_cmd, stdout=sp.PIPE, shell=True).communicate()[0]
@@ -47,26 +46,26 @@ def invoke_solver(solver, equations_path, q, m, n, log_path=Path(".", "log.txt")
         cwd = Path.cwd()
 
         if solver == 'cms':
-            print("\nStarting the CryptoMiniSat solver...")
+            print("Starting the CryptoMiniSat solver...")
             p = Path(cms_path, "cryptominisat5")
             solve_cmd = f"{p} --verb 0 {equations_path}"
 
         if solver == 'cb_gpu':
-            print("\nStarting the crossbred (GPU) solver...")
+            print("Starting the crossbred (GPU) solver...")
             solve_cmd = f"./solve.py -d 3 -k 16 -t 20 -v {Path(cwd, equations_path)}"
             cwd = Path(cb_gpu_path)
 
         if solver == 'libfes':
-            print("\nStarting the libfes solver...")
+            print("Starting the libfes solver...")
             p = Path(libfes_path, "benchmark", "demo")
             solve_cmd = f"{p} < {equations_path}"
 
         if solver == 'magma':
-            print("\nStarting Magma...")
+            print("Starting Magma...")
             solve_cmd = f"{magma_path} < {equations_path}"
 
         if solver == 'mq':
-            print("\nStarting the MQ solver...")
+            print("Starting the MQ solver...")
             inner_hybridation_arg = " --inner-hybridation " + str(inner_hybridation) if inner_hybridation != -1 else ""
             # Use the non-vectorized version for less than 8 variables
             if 3 <= n and n <= 8:
@@ -80,14 +79,14 @@ def invoke_solver(solver, equations_path, q, m, n, log_path=Path(".", "log.txt")
         if solver == 'wdsat':
             if not (precompiled and Path(wdsat_path, "wdsat_solver").exists()):
                 compile_solver('wdsat', q, m, n, wdsat_path)
-            print("\nStarting the WDSat solver...")
+            print("Starting the WDSat solver...")
             p = Path(wdsat_path, "wdsat_solver")
             solve_cmd = f"{p} -i {equations_path}"
 
         if solver == 'xl':
             if not (precompiled and Path(xl_path, "xl").exists()):
                 compile_solver('xl', q, m, n, xl_path)
-            print("\nStarting the XL solver...")
+            print("Starting the XL solver...")
             p = Path(xl_path, "xl")
             solve_cmd = f"{p} --challenge {equations_path} --all"
 

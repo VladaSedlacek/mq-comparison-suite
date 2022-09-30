@@ -30,7 +30,7 @@ def compile_solver(solver, q, m, n, cb_orig_path=Path("..", "crossbred"), wdsat_
             trunc_var = get_trunc_var(M, N)
             params = f"-DNBVARS={N} -DTRUNC_VAR={trunc_var} -DPRINTVARS={N} -DNBPOLS={M}"
             gcc_cmd = f"gcc {params} -Ofast -march=native {suppressor_flag} -o {binary} {src}"
-            print("\nCompiling the crossbred (original) solver (linear algebra)...")
+            print("Compiling the crossbred (original) solver (linear algebra)...")
             Popen(gcc_cmd, shell=True).wait()
 
             src = Path(cb_orig_path, "CheckCandidates.c")
@@ -38,7 +38,7 @@ def compile_solver(solver, q, m, n, cb_orig_path=Path("..", "crossbred"), wdsat_
             if binary.exists():
                 binary.unlink()
             gcc_cmd = f"gcc {params} -o {binary} {src}"
-            print("\nCompiling the crossbred (original) solver (checking)...")
+            print("Compiling the crossbred (original) solver (checking)...")
             Popen(gcc_cmd, shell=True).wait()
 
             with open(cb_orig_status_path, 'w') as f:
@@ -55,7 +55,7 @@ def compile_solver(solver, q, m, n, cb_orig_path=Path("..", "crossbred"), wdsat_
             suppressor_flag = ""
             src_path = str(Path(wdsat_path, "src"))
             make_cmd = f"make -C {src_path} clean && make -C {src_path} {suppressor_flag}"
-            print("\nCompiling the WDSat solver...")
+            print("Compiling the WDSat solver...")
             Popen(make_cmd, shell=True).wait()
             with open(wdsat_status_path, 'w') as f:
                 params = {'q': int(q), 'M': int(M), 'N': int(N)}
