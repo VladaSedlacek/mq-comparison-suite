@@ -132,6 +132,7 @@ def main(o2_min, o2_max, iterations, log_path_brief, log_path_verbose, to_skip):
 
                     print_and_log(
                         f"\n{stars}\nCurrent datetime: {datetime.datetime.now().isoformat(' ', 'seconds')}", to_print="")
+                    print_and_log(f"Solver: {solver}\n", to_print="")
 
                     # Measure the time and memory usage of the active process and all its subprocesses
                     try:
@@ -153,7 +154,6 @@ def main(o2_min, o2_max, iterations, log_path_brief, log_path_verbose, to_skip):
                     solver_stats[solver]["successes"] += (1-code)
                     solver_stats[solver]["times"].append(time_taken)
                     solver_stats[solver]["memories"].append(rss)
-                    print_and_log(f"Solver: {solver}", to_print="")
                     print_and_log(f"Result: {outcomes[code]}", to_print="")
                     print_and_log(f"Time:   {sec_to_str(time_taken)}", to_print="")
                     print_and_log(f"Memory: {( rss / 1000000): .2f} MB", to_print="")
