@@ -644,10 +644,13 @@ Order : graded reverse lex order
         else:
             guessed = ', '.join(["{0}={1}".format(var, value) for var, value in zip(
                 rainbow.yy[max_var_index:], guessed_vars)])
+        dummy_variables = ""
+        if len(var_list) < 8:
+            dummy_variables += ", " + ", ".join([f"dummy_{i}" for i in range(8-len(var_list))])
 
         with open(file_path, 'w') as f:
             f.write("# Variables:\n")
-            f.write(variables + "\n#\n")
+            f.write(variables + dummy_variables + "\n#\n")
             f.write("# Guessed variables:\n")
             f.write("# " + guessed + "\n#\n")
             f.write("# Equations:\n")
@@ -896,6 +899,14 @@ def check_solution(log_path, solver, solution, N, rainbow, attack_type='differen
 
     solution_found = get_solution_from_log(
         log_path, format=log_format, N=N, rainbow=rainbow)
+
+    # handle potential dummy variables
+    try:
+        if solver in ["libfes", "mq"]:
+            solution_found = solution_found[:N]
+    except TypeError:
+        pass
+
     print(f"\n{'First solution found: ' : <25} {solution_found} ")
 
     if attack_type == 'differential':
