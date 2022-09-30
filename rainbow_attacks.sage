@@ -2,9 +2,10 @@
 
 from itertools import product
 from pathlib import Path
-from subprocess import Popen
 import click
 import re
+from invoke_solver import invoke_solver
+from utils import get_eq_format
 
 
 def get_polar_form(Q):
@@ -885,21 +886,45 @@ def get_solution_from_log(log_path, format, N, rainbow=None):
     return None
 
 
+def check_solution(log_path, solver, solution, N, rainbow, attack_type='differential'):
+    if solver in ['cb_orig', 'cb_gpu']:
+        log_format = 'crossbred'
+    elif solver == 'libfes':
+        log_format = 'mq'
+    else:
+        log_format = solver
+
+    solution_found = get_solution_from_log(
+        log_path, format=log_format, N=N, rainbow=rainbow)
+    print(f"\n{'First solution found: ' : <25} {solution_found} ")
+
+    if attack_type == 'differential':
+        solution_expected = solution[1:-1]
+        print(f"{'Expected solution: ' : <25} {solution_expected}\n")
+        success = solution_found == solution_expected
+        if success:
+            print("Attack successful!\n")
+        else:
+            print("Attack NOT successful. :(\n")
+        return success
+
+
 @ click.command()
 @ click.option('--solver', type=click.Choice(['cb_orig', 'cb_gpu', 'cms', 'libfes', 'magma', 'mq', 'wdsat', 'xl'], case_sensitive=False), help='the external solver to be used')
 @ click.option('--q', default=16, help='the field order', type=int)
 @ click.option('--n', default=0, help='the number of variables', type=int)
 @ click.option('--m', default=0, help='the number of equations', type=int)
 @ click.option('--o2', default=16, help='the oil subspace dimension', type=int)
-@ click.option('--solve_only', default=False, is_flag=True, help='skip equation generation and only use a solver')
-@ click.option('--no_solve', default=False, is_flag=True, help='only generate equations without solving them')
+@ click.option('--gen_only', default=False, is_flag=True, help='only generate equation systems')
+@ click.option('--solve_only', default=False, is_flag=True, help='only solve an existing system and check solutions')
+@ click.option('--check_only', default=False, is_flag=True, help='only check solutions')
 @ click.option('--inner_hybridation', '-h', default="-1", help='the number of variable that are not guessed in MQ', type=int)
 @ click.option('--verbose', '-v', default=False, is_flag=True, help='control the output verbosity')
 @ click.option('--reduce_dimension', '-r', default=True, is_flag=True, help='reduce the dimension when possible')
 @ click.option('--attack_type', '-t', default='differential', type=click.Choice(['differential', 'minrank', 'intersection'], case_sensitive=False), help='choose attack on Rainbow')
 @ click.option('--seed', '-s', default=0, help='the seed for randomness replication', type=int)
 @ click.option('--precompiled', default=False, is_flag=True, help='indicates if all relevant solvers are already compiled w.r.t. the parameters')
-def main(q, n, m, o2, solver, solve_only, no_solve, inner_hybridation, verbose, reduce_dimension, attack_type, seed, precompiled):
+def main(q, n, m, o2, solver, gen_only, solve_only, check_only, inner_hybridation, verbose, reduce_dimension, attack_type, seed, precompiled):
     if m == 0:
         m = 2*o2
     if n == 0:
@@ -907,7 +932,7 @@ def main(q, n, m, o2, solver, solve_only, no_solve, inner_hybridation, verbose, 
     set_random_seed(seed)
     M, N = compute_system_size(q, m, n, o2, attack_type)
     system_folder_path = 'systems'
-    log_path = Path(system_folder_path, "log.txt")
+    log_path = Path("log.txt")
     base_system_name = "rainbow_{}_seed_{}_q_{}_o2_{}_m_{}_n_{}_M_{}_N_{}".format(
         attack_type, seed, q, o2, m, n, M, N)
     cb_gpu_system_path = Path(system_folder_path, base_system_name + '.cb_gpu')
@@ -925,7 +950,7 @@ def main(q, n, m, o2, solver, solve_only, no_solve, inner_hybridation, verbose, 
         print("Generating Rainbow instance for seed={}, q={}, m={}, n={}, o2={}...".format(
             seed, q, m, n, o2))
     rainbow = Rainbow(q, m, n, o2, support=support, seed=seed)
-    if not solve_only:
+    if not (solve_only or check_only):
         save_setup(rainbow, setup_path, verbose=verbose)
         SS, equations, weil_coeff_list, guessed_vars, solution = mount_attack(
             rainbow, attack_type, M, N, reduce_dimension=False, verbose=verbose)
@@ -950,52 +975,15 @@ def main(q, n, m, o2, solver, solve_only, no_solve, inner_hybridation, verbose, 
             print("Skipping the attack equations generation...")
         solution = load_solution(solution_path, q)
 
-    if solver == 'cb_gpu':
-        equations_path = cb_gpu_system_path
-    elif solver == 'cb_orig':
-        equations_path = cb_orig_system_path
-    elif solver == 'cms':
-        equations_path = cnf_system_path
-    elif solver == 'magma':
-        equations_path = magma_system_path
-    elif solver == 'mq' or solver == 'libfes':
-        equations_path = mq_system_path
-    elif solver == 'wdsat':
-        equations_path = wdsat_system_path
-    elif solver == 'xl':
-        equations_path = xl_system_path
-    else:
-        no_solve = True
-
-    if no_solve:
+    if gen_only:
         exit()
 
-    hybridation_cmd = f"--inner_hybridation {inner_hybridation}" if solver == 'mq' and inner_hybridation != -1 else ""
-    solve_cmd = f"python3 ./invoke_solver.py --equations_path {equations_path} --log_path {log_path} --solver {solver} --q {q} --m {M} --n {N} {hybridation_cmd}"
-    if precompiled:
-        solve_cmd += "--precompiled"
-    Popen(solve_cmd, shell=True).wait()
+    if not check_only:
+        equations_path = Path(system_folder_path, base_system_name + f".{get_eq_format(solver)}")
+        invoke_solver(solver, equations_path, q, M, N, log_path=log_path,
+                      inner_hybridation=inner_hybridation, precompiled=precompiled)
 
-    if solver in ['cb_orig', 'cb_gpu']:
-        log_format = 'crossbred'
-    elif solver == 'libfes':
-        log_format = 'mq'
-    else:
-        log_format = solver
-
-    solution_found = get_solution_from_log(
-        log_path, format=log_format, N=N, rainbow=rainbow)
-    print(f"\n{'First solution found: ' : <25} {solution_found} ")
-
-    if attack_type == 'differential':
-        solution_expected = solution[1:-1]
-        print(f"{'Expected solution: ' : <25} {solution_expected}\n")
-        success = solution_found == solution_expected
-        if success:
-            print("Attack successful!\n")
-        else:
-            print("Attack NOT successful. :(\n")
-        return success
+    return check_solution(log_path, solver, solution, N, rainbow)
 
 
 if __name__ == '__main__':

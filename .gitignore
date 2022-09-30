@@ -1,5 +1,6 @@
 *.sage.py
 .vscode
 systems/
+__pycache__/
 *.txt
 *.json

@@ -1,9 +1,79 @@
 #!/usr/bin/env python3
 
 from pathlib import Path
-from subprocess import Popen
+import subprocess as sp
 import click
 import json
+
+
+def compile_solver(solver, q, m, n, cb_orig_path=Path("..", "crossbred"), wdsat_path=Path("..", "WDSat"), xl_path=Path("..", "xl")):
+    if not solver:
+        print("Please specify a solver.")
+        exit()
+
+    M = m
+    N = n
+
+    Path("tmp").mkdir(exist_ok=True)
+
+    if solver == 'cb_orig':
+        cb_orig_status_path = Path("tmp", "cb_orig_status.json")
+        compiled = check_params(cb_orig_status_path, q, m, n)
+        if compiled and Path(cb_orig_path, "LinBlockLanczos").exists() and Path(cb_orig_path, "CheckCandidate").exists():
+            out = "The crossbred (original) solver is already compiled."
+        else:
+            suppressor_flag = "-Wno-unused-result -Wno-format -Wno-shift-count-overflow"
+            src = Path(cb_orig_path, "LinBlockLanczos.c")
+            binary = Path(cb_orig_path, "LinBlockLanczos")
+            if binary.exists():
+                binary.unlink()
+            trunc_var = get_trunc_var(M, N)
+            params = f"-DNBVARS={N} -DTRUNC_VAR={trunc_var} -DPRINTVARS={N} -DNBPOLS={M}"
+            gcc_cmd = f"gcc {params} -Ofast -march=native {suppressor_flag} -o {binary} {src}"
+            print("Compiling the crossbred (original) solver (linear algebra)...")
+            out = sp.run(gcc_cmd, stdout=sp.PIPE, stderr=sp.STDOUT, shell=True).stdout.decode()
+
+            src = Path(cb_orig_path, "CheckCandidates.c")
+            binary = Path(cb_orig_path, "CheckCandidates")
+            if binary.exists():
+                binary.unlink()
+            gcc_cmd = f"gcc {params} -o {binary} {src}"
+            print("Compiling the crossbred (original) solver (checking)...")
+            out += sp.run(gcc_cmd, stdout=sp.PIPE, stderr=sp.STDOUT, shell=True).stdout.decode()
+
+            with open(cb_orig_status_path, 'w') as f:
+                params = {'q': int(q), 'M': int(M), 'N': int(N)}
+                json.dump(params, f)
+
+    if solver == 'wdsat':
+        wdsat_status_path = Path("tmp", "wdsat_status.json")
+        compiled = check_params(wdsat_status_path, q, m, n)
+        if compiled and Path(wdsat_path, "wdsat_solver").exists():
+            out = "The WDSat solver is already compiled."
+        else:
+            create_wdsat_config(wdsat_path, m, n)
+            suppressor_flag = ""
+            src_path = str(Path(wdsat_path, "src"))
+            make_cmd = f"make -C {src_path} clean && make -C {src_path} {suppressor_flag}"
+            print("Compiling the WDSat solver...")
+            out = sp.run(make_cmd, stdout=sp.PIPE, stderr=sp.STDOUT, shell=True).stdout.decode()
+        with open(wdsat_status_path, 'w') as f:
+            params = {'q': int(q), 'M': int(M), 'N': int(N)}
+            json.dump(params, f)
+
+    if solver == 'xl':
+        xl_status_path = Path("tmp", "xl_status.json")
+        compiled = check_params(xl_status_path, q, M, N)
+        if compiled and Path(xl_path, "xl").exists():
+            out = "The XL solver is already compiled."
+        else:
+            make_cmd = f"make -C {str(xl_path)} clean && make -C {str(xl_path)} Q={q} M={M} N={N} -Wno-unused-result -Wno-class-memaccess"
+            print("\nCompiling the XL solver...")
+            out = sp.run(make_cmd, stdout=sp.PIPE, stderr=sp.STDOUT, shell=True).stdout.decode()
+            with open(xl_status_path, 'w') as f:
+                params = {'q': int(q), 'M': int(M), 'N': int(N)}
+                json.dump(params, f)
+    return out
 
 
 def create_wdsat_config(wdsat_path, M, N):
@@ -25,7 +95,7 @@ def create_wdsat_config(wdsat_path, M, N):
 # define __MAX_EQ__ {5}
 # define __MAX_EQ_SIZE__ 4 //make it +1
 # define __MAX_XEQ__ {1}
-# define __MAX_XEQ_SIZE__ {4}""".format(N, M, N + 1, int(N*(N-1)/2), N * (N + 1), int(M*(M-1)/2)))
+# define __MAX_XEQ_SIZE__ {4}""".format(N, M, N + 1, int(N*(N+1)/2), N * (N + 1), int(M*(M-1)/2)))
 
 
 def check_params(status_path, q, M, N):
@@ -54,72 +124,7 @@ def get_trunc_var(M, N):
 @ click.option('--wdsat_path', default=Path("..", "WDSat"), help='the path the WDSat solver folder: https://github.com/mtrimoska/WDSat', type=str)
 @ click.option('--xl_path', default=Path("..", "xl"), help='the path the XL solver folder: http://polycephaly.org/projects/xl', type=str)
 def main(solver, q, m, n, cb_orig_path, wdsat_path, xl_path):
-    if not solver:
-        print("Please specify a solver.")
-        exit()
-
-    M = m
-    N = n
-
-    Path("tmp").mkdir(exist_ok=True)
-
-    if solver == 'cb_orig':
-        cb_orig_status_path = Path("tmp", "cb_orig_status.json")
-        compiled = check_params(cb_orig_status_path, q, m, n)
-        if compiled and Path(cb_orig_path, "LinBlockLanczos").exists() and Path(cb_orig_path, "CheckCandidate").exists():
-            print("\nThe crossbred (original) solver is already compiled.")
-        else:
-            suppressor_flag = "-Wno-unused-result -Wno-format -Wno-shift-count-overflow"
-            src = Path(cb_orig_path, "LinBlockLanczos.c")
-            binary = Path(cb_orig_path, "LinBlockLanczos")
-            if binary.exists():
-                binary.unlink()
-            trunc_var = get_trunc_var(M, N)
-            params = f"-DNBVARS={N} -DTRUNC_VAR={trunc_var} -DPRINTVARS={N} -DNBPOLS={M}"
-            gcc_cmd = f"gcc {params} -Ofast -march=native {suppressor_flag} -o {binary} {src}"
-            print("\nCompiling the crossbred (original) solver (linear algebra)...")
-            Popen(gcc_cmd, shell=True).wait()
-
-            src = Path(cb_orig_path, "CheckCandidates.c")
-            binary = Path(cb_orig_path, "CheckCandidates")
-            if binary.exists():
-                binary.unlink()
-            gcc_cmd = f"gcc {params} -o {binary} {src}"
-            print("\nCompiling the crossbred (original) solver (checking)...")
-            Popen(gcc_cmd, shell=True).wait()
-
-            with open(cb_orig_status_path, 'w') as f:
-                params = {'q': q, 'M': M, 'N': N}
-                json.dump(params, f)
-
-    if solver == 'wdsat':
-        wdsat_status_path = Path("tmp", "wdsat_status.json")
-        compiled = check_params(wdsat_status_path, q, m, n)
-        if compiled and Path(wdsat_path, "wdsat_solver").exists():
-            print("\nThe WDSat solver is already compiled.")
-        else:
-            create_wdsat_config(wdsat_path, m, n)
-            suppressor_flag = ""
-            src_path = str(Path(wdsat_path, "src"))
-            make_cmd = f"make -C {src_path} clean && make -C {src_path} {suppressor_flag}"
-            print("\nCompiling the WDSat solver...")
-            Popen(make_cmd, shell=True).wait()
-            with open(wdsat_status_path, 'w') as f:
-                params = {'q': q, 'M': M, 'N': N}
-                json.dump(params, f)
-
-    if solver == 'xl':
-        xl_status_path = Path("tmp", "xl_status.json")
-        compiled = check_params(xl_status_path, q, M, N)
-        if compiled and Path(xl_path, "xl").exists():
-            print("\nThe XL solver is already compiled.")
-        else:
-            make_cmd = f"make -C {str(xl_path)} clean && make -C {str(xl_path)} Q={q} M={M} N={N} -Wno-unused-result -Wno-class-memaccess"
-            print("\nCompiling the XL solver...")
-            Popen(make_cmd, shell=True).wait()
-            with open(xl_status_path, 'w') as f:
-                params = {'q': q, 'M': M, 'N': N}
-                json.dump(params, f)
+    compile_solver(solver, q, m, n, cb_orig_path, wdsat_path, xl_path)
 
 
 if __name__ == '__main__':

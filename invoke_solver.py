@@ -1,9 +1,103 @@
 #!/usr/bin/env python3
 
 from pathlib import Path
-from subprocess import Popen, PIPE
 import click
-import os
+import subprocess as sp
+import time
+from compile_solver import compile_solver
+
+
+def invoke_solver(solver, equations_path, q, m, n, log_path=Path(".", "log.txt"), cb_gpu_path=Path("..", "mqsolver"), cb_orig_path=Path("..", "crossbred"), cms_path=Path("..", "cryptominisat", "build"), libfes_path=Path("..", "libfes-lite", "build"), magma_path=Path("magma"), mq_path=Path("..", "mq"), wdsat_path=Path("..", "WDSat"), xl_path=Path("..", "xl"), inner_hybridation=-1, precompiled=False):
+
+    if not solver:
+        print("Please specify a solver.")
+        exit()
+
+    if not Path(equations_path).exists():
+        print("Please specify an existing equation file.")
+        exit()
+
+    if solver == 'cb_orig':
+        linalg_path = Path(cb_orig_path, "LinBlockLanczos")
+        check_path = Path(cb_orig_path, "CheckCandidates")
+        if not (precompiled and linalg_path.exists() and check_path.exists()):
+            compile_solver('cb_orig', q, m, n, cb_orig_path)
+        print("Starting the crossbred (original) solver...")
+        solve_cmd = f"{linalg_path} {equations_path} | tee {log_path}"
+        start_time = time.time()
+        out = sp.run(solve_cmd, stdout=sp.PIPE, stderr=sp.STDOUT, shell=True).stdout.decode()
+        candidates = [cand for cand in out.strip().split("\n") if "@" in cand]
+        out += "\n"
+        for cand in candidates:
+            out += f"Candidate: {cand}\n"
+            check_cmd = f"echo {cand} | {check_path} {equations_path}"
+            check_out = sp.run(check_cmd, stdout=sp.PIPE, stderr=sp.STDOUT, shell=True).stdout.decode()
+            res = check_out.split("\n")
+            # ensure compatibility with mqsolver log
+            if "solution found :)" in res:
+                assert res[1] == '0' * m
+                out += f"solution found: \n[{res[0]}]\n"
+            else:
+                out += f"does not work: \n[{res[0]}]\n\tevaluates to {res[1]}"
+        time_taken = time.time() - start_time
+
+    else:
+        cwd = Path.cwd()
+
+        if solver == 'cms':
+            print("Starting the CryptoMiniSat solver...")
+            p = Path(cms_path, "cryptominisat5")
+            solve_cmd = f"{p} --verb 0 {equations_path}"
+
+        if solver == 'cb_gpu':
+            print("Starting the crossbred (GPU) solver...")
+            solve_cmd = f"./solve.py -d 3 -k 16 -t 20 -v {Path(cwd, equations_path)}"
+            cwd = Path(cb_gpu_path)
+
+        if solver == 'libfes':
+            print("Starting the libfes solver...")
+            p = Path(libfes_path, "benchmark", "demo")
+            solve_cmd = f"{p} < {equations_path}"
+
+        if solver == 'magma':
+            print("Starting Magma...")
+            solve_cmd = f"{magma_path} < {equations_path}"
+
+        if solver == 'mq':
+            print("Starting the MQ solver...")
+            inner_hybridation_arg = " --inner-hybridation " + str(inner_hybridation) if inner_hybridation != -1 else ""
+            # Use the non-vectorized version for less than 8 variables
+            if 3 <= n and n <= 8:
+                # the first ineqality seems to prevent an infinite loop
+                binary = "monica"
+            else:
+                binary = "monica_vector"
+            p = Path(mq_path, f"{binary}")
+            solve_cmd = f"{p}{inner_hybridation_arg} < {equations_path}"
+
+        if solver == 'wdsat':
+            if not (precompiled and Path(wdsat_path, "wdsat_solver").exists()):
+                compile_solver('wdsat', q, m, n, wdsat_path)
+            print("Starting the WDSat solver...")
+            p = Path(wdsat_path, "wdsat_solver")
+            solve_cmd = f"{p} -i {equations_path}"
+
+        if solver == 'xl':
+            if not (precompiled and Path(xl_path, "xl").exists()):
+                compile_solver('xl', q, m, n, xl_path)
+            print("Starting the XL solver...")
+            p = Path(xl_path, "xl")
+            solve_cmd = f"{p} --challenge {equations_path} --all"
+
+        start_time = time.time()
+        proc = sp.run(solve_cmd, stdout=sp.PIPE, stderr=sp.STDOUT, shell=True, cwd=cwd)
+        time_taken = time.time() - start_time
+        out = proc.stdout.decode()
+
+    with open(log_path, 'w') as f:
+        f.write(out)
+
+    return out, time_taken
 
 
 @ click.command()
@@ -24,105 +118,9 @@ import os
 @ click.option('--inner_hybridation', '-h', default="-1", help='the number of variable that are not guessed in MQ', type=int)
 @ click.option('--precompiled', default=False, is_flag=True, help='indicates if all relevant solvers are already compiled w.r.t. the parameters')
 def main(solver, equations_path, q, m, n, log_path, cb_gpu_path, cb_orig_path, cms_path, libfes_path, magma_path, mq_path, wdsat_path, xl_path, inner_hybridation, precompiled):
-    if not solver:
-        print("Please specify a solver.")
-        exit()
-
-    if not Path(equations_path).exists():
-        print("Please specify an existing equation file.")
-        exit()
-
-    current_path = Path().cwd()
-
-    if solver == 'cb_orig':
-        linalg_path = Path(cb_orig_path, "LinBlockLanczos")
-        check_path = Path(cb_orig_path, "CheckCandidates")
-        if precompiled and linalg_path.exists() and check_path.exists():
-            print("\nThe crossbred (original) solver is already compiled.")
-        else:
-            make_cmd = f"python3 compile_solver.py --solver cb_orig --q {q} --m {m} --n {n} --cb_orig_path {cb_orig_path}"
-            Popen(make_cmd, shell=True).wait()
-        Popen(" > {}".format(str(log_path)), shell=True).wait()
-        print("\nStarting the crossbred (original) solver...")
-        cb_orig_solve_cmd = f"{linalg_path} {equations_path} | tee {log_path}"
-        candidates = Popen(cb_orig_solve_cmd, stdout=PIPE, shell=True).communicate()[0]
-        with open(log_path, "a") as f:
-            for cand in candidates.decode('utf-8').strip().split("\n"):
-                print(cand)
-                check_cmd = f"echo {cand} | {check_path} {equations_path}"
-                out = Popen(check_cmd, stdout=PIPE, shell=True).communicate()[0].strip().decode('utf-8')
-                print(out)
-                res = out.split("\n")
-                # ensure compatibility with mqsolver log
-                if "solution found :)" in res:
-                    assert res[1] == '0' * m
-                    f.write(f"solution found: \n[{res[0]}]\n")
-                else:
-                    f.write(f"does not work: \n[{res[0]}]\n\tevaluates to {res[1]}")
-
-    if solver == 'cms':
-        Popen(" > {}".format(str(log_path)), shell=True).wait()
-        print("\nStarting the CryptoMiniSat solver...")
-        cms_solve_cmd = "{} --verb 0 {}".format(
-            str(Path(cms_path, "cryptominisat5")), str(equations_path) +
-            " | tee " + str(log_path))
-        Popen(cms_solve_cmd, shell=True).wait()
-
-    if solver == 'cb_gpu':
-        print("\nStarting the crossbred (GPU) solver...")
-        os.chdir(cb_gpu_path)
-        cb_gpu_solve_cmd = "./solve.py -d 3 -k 16 -t 20 -v -o {} {}".format(
-            str(Path(current_path, log_path)), str(Path(current_path, equations_path)))
-        Popen(cb_gpu_solve_cmd, shell=True).wait()
-        os.chdir(current_path)
-
-    if solver == 'libfes':
-        print("\nStarting the libfes solver...")
-        mq_solve_cmd = "{} < {}".format(
-            str(Path(libfes_path, "benchmark", "demo")), str(equations_path)) + " | tee " + str(log_path)
-        Popen(mq_solve_cmd, shell=True).wait()
-
-    if solver == 'magma':
-        Popen(" > {}".format(str(log_path)), shell=True).wait()
-        print("\nStarting Magma...")
-        magma_solve_cmd = f"{magma_path} < {equations_path} | tee {log_path}"
-        Popen(magma_solve_cmd, shell=True).wait()
-
-    if solver == 'mq':
-        print("\nStarting the MQ solver...")
-        inner_hybridation_arg = " --inner-hybridation " + str(inner_hybridation) if inner_hybridation != -1 else ""
-        # Use the non-vectorized version for less than 8 variables
-        if 3 <= n and n <= 8:
-            # the first ineqality seems to prevent and infinite loop
-            binary = "monica"
-        else:
-            binary = "monica_vector"
-        mq_solve_cmd = "{}{} < {}".format(
-            str(Path(mq_path, f"{binary}")), inner_hybridation_arg, str(equations_path)) + " | tee " + str(log_path)
-        Popen(mq_solve_cmd, shell=True).wait()
-
-    if solver == 'wdsat':
-        if precompiled and Path(wdsat_path, "wdsat_solver").exists():
-            print("\nThe WDSat solver is already compiled.")
-        else:
-            make_cmd = f"python3 compile_solver.py --solver wdsat --q {q} --m {m} --n {n} --wdsat_path {wdsat_path}"
-            Popen(make_cmd, shell=True).wait()
-        print("\nStarting the WDSat solver...")
-        wdsat_solve_cmd = "{} -i {}".format(
-            str(Path(wdsat_path, "wdsat_solver")), str(equations_path) +
-            " | tee " + str(log_path))
-        Popen(wdsat_solve_cmd, shell=True).wait()
-
-    if solver == 'xl':
-        if precompiled and Path(xl_path, "xl").exists():
-            print("\nThe XL solver is already compiled.")
-        else:
-            make_cmd = f"python3 compile_solver.py --solver xl --q {q} --m {m} --n {n} --xl_path {xl_path}"
-            Popen(make_cmd, shell=True).wait()
-        print("\nStarting the XL solver...")
-        xl_solve_cmd = "{} --challenge {} --all".format(
-            str(Path(xl_path, "xl")), str(equations_path)) + " | tee " + str(log_path)
-        Popen(xl_solve_cmd, shell=True).wait()
+    out, _ = invoke_solver(solver, equations_path, q, m, n, log_path, cb_gpu_path, cb_orig_path, cms_path,
+                           libfes_path, magma_path, mq_path, wdsat_path, xl_path, inner_hybridation, precompiled)
+    print(out)
 
 
 if __name__ == '__main__':

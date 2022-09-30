@@ -22,7 +22,7 @@ Note that magma supports all finite fields, XL supports $\mathbb{F}\_2$, $\mathb
 ## Scripts
 
 * `rainbow_attacks.sage` generates an instance of the [Rainbow](https://www.pqcrainbow.org/) cryptosystem, mounts the [differential attack](https://eprint.iacr.org/2022/214) and saves the resulting system in different formats for further usage.
-  * example to just generate systems: `sage rainbow_attacks.sage --seed 0 --q 2 --o2 6 --no_solve`
+  * example to just generate systems: `sage rainbow_attacks.sage --seed 0 --q 2 --o2 6 --gen_only`
   * example to also start solving: `sage rainbow_attacks.sage --seed 0 --q 2 --o2 6 --solver cms`
   * see `sage rainbow_attacks.sage --help` for more
 * `invoke_solver.py` calls a solver on a provided equation file. It is called internally by `rainbow_attacks.sage`, but can also be used for custom equation systems.

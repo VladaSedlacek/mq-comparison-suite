@@ -9,8 +9,10 @@ import datetime
 import json
 import psutil
 import statistics
-import subprocess
-import time
+import subprocess as sp
+from compile_solver import compile_solver
+from invoke_solver import invoke_solver
+from utils import get_eq_format
 
 
 def sec_to_str(t):
@@ -32,7 +34,7 @@ def get_total_resident_memory(proc, count_python=True, verbose=False):
             pass
         try:
             proc.wait(1)
-        except subprocess.TimeoutExpired:
+        except sp.TimeoutExpired:
             pass
     return rss
 
@@ -110,6 +112,8 @@ def main(o2_min, o2_max, iterations, log_path_brief, log_path_verbose, to_skip):
         for o2 in o2_range:
             m = 2 * o2
             n = 3 * o2
+            M = m - 1
+            N = n - m - 2
             gen_msg = f"Generating equations for q = {q: 2}, o2 = {o2: 2}, m = {m: 2}, n = {n: 2}; {iterations: 2} iterations..."
             print_and_log(f"\n\n{stars}\n{left_pad}{gen_msg}\n{stars}", include_brief=True)
             solver_stats = {solver: {"successes": 0, "times": [], "memories": [],
@@ -117,35 +121,39 @@ def main(o2_min, o2_max, iterations, log_path_brief, log_path_verbose, to_skip):
 
             # Go through all iterations for the given parameters
             for seed in range(iterations):
-                gen_cmd = f"sage rainbow_attacks.sage --seed {seed} --q {q} --o2 {o2} --m {m} --n {n}"
-                subprocess.call(gen_cmd, shell=True)
+                gen_cmd = f"sage rainbow_attacks.sage --seed {seed} --q {q} --o2 {o2} --m {m} --n {n} --gen_only"
+                sp.call(gen_cmd, shell=True)
                 for solver in solvers:
 
                     # Compile the solver for each parameter set if needed
                     if seed == 0 and solver in ["cb_orig", "xl", "wdsat"]:
-                        compile_cmd = f"python3 compile_solver.py --solver {solver} --q {q} --m {m-1} --n {n-m-2} >> {log_path_verbose} 2>&1"
-                        subprocess.call(compile_cmd, shell=True)
+                        out = compile_solver(solver, q, M, N)
+                        print_and_log(out, to_print="")
 
-                    solve_cmd = f"sage rainbow_attacks.sage --seed {seed} --q {q} --o2 {o2} --m {m} --n {n} --solver {solver} --solve_only --precompiled 2>> {log_path_verbose} | tee -a {str(log_path_verbose)} "
-                    print_and_log(f"\n{stars}\nExecuting: {solve_cmd}\n", to_print="")
-                    print_and_log(f"Current datetime: {datetime.datetime.now().isoformat(' ', 'seconds')}", to_print="")
+                    print_and_log(
+                        f"\n{stars}\nCurrent datetime: {datetime.datetime.now().isoformat(' ', 'seconds')}", to_print="")
+                    print_and_log(f"Solver: {solver}\n", to_print="")
 
                     # Measure the time and memory usage of the active process and all its subprocesses
                     try:
-                        proc = subprocess.Popen(solve_cmd + " | grep 'Attack successful!' --quiet", shell=True)
-                        start_time = time.time()
-                        rss = get_total_resident_memory(proc, count_python=False)
-                        time_taken = time.time() - start_time
-                        code = proc.poll()
+                        equations_path = f"./systems/rainbow_differential_seed_{seed}_q_{q}_o2_{o2}_m_{m}_n_{n}_M_{M}_N_{N}.{get_eq_format(solver)}"
+                        out, time_taken = invoke_solver(solver, equations_path, q, M, N, precompiled=True)
+                        print_and_log(out, to_print="")
+                        check_cmd = f"sage rainbow_attacks.sage --seed {seed} --q {q} --o2 {o2} --m {m} --n {n} --solver {solver} --check_only"
+                        proc = sp.run(check_cmd, stdout=sp.PIPE, stderr=sp.STDOUT, shell=True)
+                        # successful solutions should yield code 0
+                        code = int('Attack successful!' not in proc.stdout.decode())
                     except Exception as e:
                         print_and_log(str(e))
                         continue
+
+                    # Placeholder value
+                    rss = 0
 
                     # Save the iteration results
                     solver_stats[solver]["successes"] += (1-code)
                     solver_stats[solver]["times"].append(time_taken)
                     solver_stats[solver]["memories"].append(rss)
-                    print_and_log(f"Solver: {solver}", to_print="")
                     print_and_log(f"Result: {outcomes[code]}", to_print="")
                     print_and_log(f"Time:   {sec_to_str(time_taken)}", to_print="")
                     print_and_log(f"Memory: {( rss / 1000000): .2f} MB", to_print="")
