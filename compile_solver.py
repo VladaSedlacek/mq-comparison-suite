@@ -95,7 +95,7 @@ def create_wdsat_config(wdsat_path, M, N):
 # define __MAX_EQ__ {5}
 # define __MAX_EQ_SIZE__ 4 //make it +1
 # define __MAX_XEQ__ {1}
-# define __MAX_XEQ_SIZE__ {4}""".format(N, M, N + 1, int(N*(N-1)/2), N * (N + 1), int(M*(M-1)/2)))
+# define __MAX_XEQ_SIZE__ {4}""".format(N, M, N + 1, int(N*(N+1)/2), N * (N + 1), int(M*(M-1)/2)))
 
 
 def check_params(status_path, q, M, N):
