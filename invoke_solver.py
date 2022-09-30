@@ -17,8 +17,6 @@ def invoke_solver(solver, equations_path, q, m, n, log_path=Path(".", "log.txt")
         print("Please specify an existing equation file.")
         exit()
 
-    current_path = Path().cwd()
-
     if solver == 'cb_orig':
         linalg_path = Path(cb_orig_path, "LinBlockLanczos")
         check_path = Path(cb_orig_path, "CheckCandidates")
@@ -46,6 +44,8 @@ def invoke_solver(solver, equations_path, q, m, n, log_path=Path(".", "log.txt")
                 f.write(out)
 
     else:
+        cwd = Path.cwd()
+
         if solver == 'cms':
             print("\nStarting the CryptoMiniSat solver...")
             p = Path(cms_path, "cryptominisat5")
@@ -53,7 +53,8 @@ def invoke_solver(solver, equations_path, q, m, n, log_path=Path(".", "log.txt")
 
         if solver == 'cb_gpu':
             print("\nStarting the crossbred (GPU) solver...")
-            solve_cmd = f"cd {cb_gpu_path} && ./solve.py -d 3 -k 16 -t 20 -v {str(Path(current_path, equations_path))}"
+            solve_cmd = f"./solve.py -d 3 -k 16 -t 20 -v {Path(cwd, equations_path)}"
+            cwd = Path(cb_gpu_path)
 
         if solver == 'libfes':
             print("\nStarting the libfes solver...")
@@ -91,7 +92,7 @@ def invoke_solver(solver, equations_path, q, m, n, log_path=Path(".", "log.txt")
             solve_cmd = f"{p} --challenge {equations_path} --all"
 
         start_time = time.time()
-        proc = sp.run(solve_cmd, stdout=sp.PIPE, stderr=sp.STDOUT, shell=True)
+        proc = sp.run(solve_cmd, stdout=sp.PIPE, stderr=sp.STDOUT, shell=True, cwd=cwd)
         time_taken = time.time() - start_time
         out = proc.stdout.decode()
         with open(log_path, 'w') as f:
