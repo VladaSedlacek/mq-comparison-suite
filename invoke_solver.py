@@ -118,8 +118,9 @@ def invoke_solver(solver, equations_path, q, m, n, log_path=Path(".", "log.txt")
 @ click.option('--inner_hybridation', '-h', default="-1", help='the number of variable that are not guessed in MQ', type=int)
 @ click.option('--precompiled', default=False, is_flag=True, help='indicates if all relevant solvers are already compiled w.r.t. the parameters')
 def main(solver, equations_path, q, m, n, log_path, cb_gpu_path, cb_orig_path, cms_path, libfes_path, magma_path, mq_path, wdsat_path, xl_path, inner_hybridation, precompiled):
-    invoke_solver(solver, equations_path, q, m, n, log_path, cb_gpu_path, cb_orig_path, cms_path,
-                  libfes_path, magma_path, mq_path, wdsat_path, xl_path, inner_hybridation, precompiled)
+    out, _ = invoke_solver(solver, equations_path, q, m, n, log_path, cb_gpu_path, cb_orig_path, cms_path,
+                           libfes_path, magma_path, mq_path, wdsat_path, xl_path, inner_hybridation, precompiled)
+    print(out)
 
 
 if __name__ == '__main__':
