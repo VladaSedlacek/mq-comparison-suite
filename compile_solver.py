@@ -68,7 +68,7 @@ def compile_solver(solver, q, m, n, cb_orig_path=Path("..", "crossbred"), wdsat_
             out = "The XL solver is already compiled."
         else:
             make_cmd = f"make -C {str(xl_path)} clean && make -C {str(xl_path)} Q={q} M={M} N={N} -Wno-unused-result -Wno-class-memaccess"
-            print("\nCompiling the XL solver...")
+            print("Compiling the XL solver...")
             out = sp.run(make_cmd, stdout=sp.PIPE, stderr=sp.STDOUT, shell=True).stdout.decode()
             with open(xl_status_path, 'w') as f:
                 params = {'q': int(q), 'M': int(M), 'N': int(N)}
