@@ -20,7 +20,7 @@ def compile_solver(solver, q, m, n, cb_orig_path=Path("..", "crossbred"), wdsat_
         cb_orig_status_path = Path("tmp", "cb_orig_status.json")
         compiled = check_params(cb_orig_status_path, q, m, n)
         if compiled and Path(cb_orig_path, "LinBlockLanczos").exists() and Path(cb_orig_path, "CheckCandidate").exists():
-            print("\nThe crossbred (original) solver is already compiled.")
+            out = "The crossbred (original) solver is already compiled."
         else:
             suppressor_flag = "-Wno-unused-result -Wno-format -Wno-shift-count-overflow"
             src = Path(cb_orig_path, "LinBlockLanczos.c")
@@ -49,7 +49,7 @@ def compile_solver(solver, q, m, n, cb_orig_path=Path("..", "crossbred"), wdsat_
         wdsat_status_path = Path("tmp", "wdsat_status.json")
         compiled = check_params(wdsat_status_path, q, m, n)
         if compiled and Path(wdsat_path, "wdsat_solver").exists():
-            print("\nThe WDSat solver is already compiled.")
+            out = "The WDSat solver is already compiled."
         else:
             create_wdsat_config(wdsat_path, m, n)
             suppressor_flag = ""
@@ -65,7 +65,7 @@ def compile_solver(solver, q, m, n, cb_orig_path=Path("..", "crossbred"), wdsat_
         xl_status_path = Path("tmp", "xl_status.json")
         compiled = check_params(xl_status_path, q, M, N)
         if compiled and Path(xl_path, "xl").exists():
-            print("\nThe XL solver is already compiled.")
+            out = "The XL solver is already compiled."
         else:
             make_cmd = f"make -C {str(xl_path)} clean && make -C {str(xl_path)} Q={q} M={M} N={N} -Wno-unused-result -Wno-class-memaccess"
             print("\nCompiling the XL solver...")
