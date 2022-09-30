@@ -127,7 +127,8 @@ def main(o2_min, o2_max, iterations, log_path_brief, log_path_verbose, to_skip):
 
                     # Compile the solver for each parameter set if needed
                     if seed == 0 and solver in ["cb_orig", "xl", "wdsat"]:
-                        compile_solver(solver, q, M, N)
+                        out = compile_solver(solver, q, M, N)
+                        print_and_log(out)
 
                     print_and_log(
                         f"\n{stars}\nCurrent datetime: {datetime.datetime.now().isoformat(' ', 'seconds')}", to_print="")

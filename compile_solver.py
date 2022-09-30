@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 from pathlib import Path
-from subprocess import Popen
+import subprocess as sp
 import click
 import json
 
@@ -31,7 +31,7 @@ def compile_solver(solver, q, m, n, cb_orig_path=Path("..", "crossbred"), wdsat_
             params = f"-DNBVARS={N} -DTRUNC_VAR={trunc_var} -DPRINTVARS={N} -DNBPOLS={M}"
             gcc_cmd = f"gcc {params} -Ofast -march=native {suppressor_flag} -o {binary} {src}"
             print("Compiling the crossbred (original) solver (linear algebra)...")
-            Popen(gcc_cmd, shell=True).wait()
+            out = sp.run(gcc_cmd, stdout=sp.PIPE, stderr=sp.STDOUT, shell=True).stdout.decode()
 
             src = Path(cb_orig_path, "CheckCandidates.c")
             binary = Path(cb_orig_path, "CheckCandidates")
@@ -39,7 +39,7 @@ def compile_solver(solver, q, m, n, cb_orig_path=Path("..", "crossbred"), wdsat_
                 binary.unlink()
             gcc_cmd = f"gcc {params} -o {binary} {src}"
             print("Compiling the crossbred (original) solver (checking)...")
-            Popen(gcc_cmd, shell=True).wait()
+            out += sp.run(gcc_cmd, stdout=sp.PIPE, stderr=sp.STDOUT, shell=True).stdout.decode()
 
             with open(cb_orig_status_path, 'w') as f:
                 params = {'q': int(q), 'M': int(M), 'N': int(N)}
@@ -56,10 +56,10 @@ def compile_solver(solver, q, m, n, cb_orig_path=Path("..", "crossbred"), wdsat_
             src_path = str(Path(wdsat_path, "src"))
             make_cmd = f"make -C {src_path} clean && make -C {src_path} {suppressor_flag}"
             print("Compiling the WDSat solver...")
-            Popen(make_cmd, shell=True).wait()
-            with open(wdsat_status_path, 'w') as f:
-                params = {'q': int(q), 'M': int(M), 'N': int(N)}
-                json.dump(params, f)
+            out = sp.run(make_cmd, stdout=sp.PIPE, stderr=sp.STDOUT, shell=True).stdout.decode()
+        with open(wdsat_status_path, 'w') as f:
+            params = {'q': int(q), 'M': int(M), 'N': int(N)}
+            json.dump(params, f)
 
     if solver == 'xl':
         xl_status_path = Path("tmp", "xl_status.json")
@@ -69,10 +69,11 @@ def compile_solver(solver, q, m, n, cb_orig_path=Path("..", "crossbred"), wdsat_
         else:
             make_cmd = f"make -C {str(xl_path)} clean && make -C {str(xl_path)} Q={q} M={M} N={N} -Wno-unused-result -Wno-class-memaccess"
             print("\nCompiling the XL solver...")
-            Popen(make_cmd, shell=True).wait()
+            out = sp.run(make_cmd, stdout=sp.PIPE, stderr=sp.STDOUT, shell=True).stdout.decode()
             with open(xl_status_path, 'w') as f:
                 params = {'q': int(q), 'M': int(M), 'N': int(N)}
                 json.dump(params, f)
+    return out
 
 
 def create_wdsat_config(wdsat_path, M, N):
