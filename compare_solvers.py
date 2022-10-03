@@ -20,25 +20,6 @@ def sec_to_str(t):
     return "{:01.0f}:{:02.0f}:{:02.0f}.{:02.0f}".format(*units[:-1], *[x/10 for x in units[-1:]])
 
 
-def get_total_resident_memory(proc, count_python=True, verbose=False):
-    proc_ps = psutil.Process(proc.pid)
-    while proc.poll() is None:
-        try:
-            rss = proc_ps.memory_info().rss
-            for child in proc_ps.children(recursive=True):
-                if count_python or child.name() not in ["python", "python3"]:
-                    rss += child.memory_info().rss
-            if verbose:
-                print(f"{child.name()}: {child.memory_info().rss / 1000000} MB")
-        except psutil.NoSuchProcess:
-            pass
-        try:
-            proc.wait(1)
-        except sp.TimeoutExpired:
-            pass
-    return rss
-
-
 @ click.command()
 @ click.option('--o2_min', default=10, help='lower bound for o2', type=int)
 @ click.option('--o2_max', default=16, help='upper bound for o2', type=int)
@@ -137,15 +118,12 @@ def main(o2_min, o2_max, iterations, log_path_brief, log_path_verbose, to_skip):
 
                         # Measure the time and memory usage of the active process and all its subprocesses
                         equations_path = f"./systems/rainbow_differential_seed_{seed}_q_{q}_o2_{o2}_m_{m}_n_{n}_M_{M}_N_{N}.{get_eq_format(solver)}"
-                        out, time_taken = invoke_solver(solver, equations_path, q, M, N, precompiled=True)
+                        out, time_taken, rss = invoke_solver(solver, equations_path, q, M, N, precompiled=True)
                         print_and_log(out, to_print="")
                         check_cmd = f"sage rainbow_attacks.sage --seed {seed} --q {q} --o2 {o2} --m {m} --n {n} --solver {solver} --check_only"
                         proc = sp.run(check_cmd, stdout=sp.PIPE, stderr=sp.STDOUT, shell=True)
                         # successful solutions should yield code 0
                         code = int('Attack successful!' not in proc.stdout.decode())
-
-                        # Placeholder value
-                        rss = 0
 
                         # Save the iteration results
                         solver_stats[solver]["successes"] += (1-code)
