@@ -30,7 +30,7 @@ def invoke_solver(solver, equations_path, q, m, n, log_path=Path(".", "log.txt")
         while proc.poll() is None:
             rss = psutil.Process(proc.pid).memory_info().rss
             # the memory used in the checking part is neglected
-            proc.wait(1)
+            proc.wait(1000)
         out = proc.communicate()[0].decode()
         candidates = [cand for cand in out.strip().split("\n") if "@" in cand]
         out += "\n"
@@ -99,7 +99,7 @@ def invoke_solver(solver, equations_path, q, m, n, log_path=Path(".", "log.txt")
         proc = sp.Popen(solve_cmd, stdout=sp.PIPE, stderr=sp.STDOUT, shell=True, cwd=cwd)
         while proc.poll() is None:
             rss = psutil.Process(proc.pid).memory_info().rss
-            proc.wait(1)
+            proc.wait(1000)
         time_taken = time.time() - start_time
         out = proc.communicate()[0].decode()
 
