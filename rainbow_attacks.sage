@@ -17,6 +17,7 @@ class Rainbow():
 
     def __init__(self, q, m, n, o2, seed=0, debug=True, support=False):
         assert o2 < m and m < n
+        assert o2 > 3
         self.seed = seed
         self.debug = debug
         self.q = q
