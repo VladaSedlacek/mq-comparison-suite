@@ -126,7 +126,7 @@ def invoke_solver(solver, equations_path, q, m, n, log_path=Path(".", "log.txt")
 @ click.option('--xl_path', default=Path("..", "xl"), help='the path the XL solver folder: http://polycephaly.org/projects/xl', type=str)
 @ click.option('--inner_hybridation', '-h', default="-1", help='the number of variable that are not guessed in MQ', type=int)
 @ click.option('--precompiled', default=False, is_flag=True, help='indicates if all relevant solvers are already compiled w.r.t. the parameters')
-@ click.option('--timeout', default=1000,  help='the maximum time allowed for running the solver')
+@ click.option('--timeout', '-t', default=1000,  help='the maximum time (in seconds) allowed for running the solver')
 def main(solver, equations_path, q, m, n, log_path, cb_gpu_path, cb_orig_path, cms_path, libfes_path, magma_path, mq_path, wdsat_path, xl_path, inner_hybridation, precompiled, timeout):
     out, time_taken, rss = invoke_solver(solver, equations_path, q, m, n, log_path, cb_gpu_path, cb_orig_path,
                                          cms_path, libfes_path, magma_path, mq_path, wdsat_path, xl_path, inner_hybridation, precompiled, timeout)

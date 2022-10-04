@@ -27,7 +27,8 @@ def sec_to_str(t):
 @ click.option('--log_path_brief', default=Path("comparison_log_brief.txt"), help='the path to the brief log')
 @ click.option('--log_path_verbose', default=Path("comparison_log_verbose.txt"), help='the path to the verbose log')
 @ click.option('--to_skip', '-s', type=click.Choice(['cb_gpu', 'cb_orig', 'cms', 'libfes', 'magma', 'mq', 'wdsat', 'xl'], case_sensitive=False), multiple=True, help='the solvers to be skipped', default=[])
-def main(o2_min, o2_max, iterations, log_path_brief, log_path_verbose, to_skip):
+@ click.option('--timeout', '-t', default=1000,  help='the maximum time (in seconds) allowed for running the solver')
+def main(o2_min, o2_max, iterations, log_path_brief, log_path_verbose, to_skip, timeout):
 
     # Set up main parameters
     solvers = [s for s in ['cb_gpu', 'cb_orig', 'cms', 'libfes', 'magma', 'mq', 'wdsat', 'xl'] if s not in set(to_skip)]
@@ -118,7 +119,8 @@ def main(o2_min, o2_max, iterations, log_path_brief, log_path_verbose, to_skip):
 
                         # Measure the time and memory usage of the active process and all its subprocesses
                         equations_path = f"./systems/rainbow_differential_seed_{seed}_q_{q}_o2_{o2}_m_{m}_n_{n}_M_{M}_N_{N}.{get_eq_format(solver)}"
-                        out, time_taken, rss = invoke_solver(solver, equations_path, q, M, N, precompiled=True)
+                        out, time_taken, rss = invoke_solver(
+                            solver, equations_path, q, M, N, precompiled=True, timeout=timeout)
                         print_and_log(out, to_print="")
                         check_cmd = f"sage rainbow_attacks.sage --seed {seed} --q {q} --o2 {o2} --m {m} --n {n} --solver {solver} --check_only"
                         proc = sp.run(check_cmd, stdout=sp.PIPE, stderr=sp.STDOUT, shell=True)
