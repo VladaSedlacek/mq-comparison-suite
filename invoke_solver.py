@@ -8,7 +8,7 @@ import time
 from compile_solver import compile_solver
 
 
-def invoke_solver(solver, equations_path, q, m, n, log_path=Path(".", "log.txt"), cb_gpu_path=Path("..", "mqsolver"), cb_orig_path=Path("..", "crossbred"), cms_path=Path("..", "cryptominisat", "build"), libfes_path=Path("..", "libfes-lite", "build"), magma_path=Path("magma"), mq_path=Path("..", "mq"), wdsat_path=Path("..", "WDSat"), xl_path=Path("..", "xl"), inner_hybridation=-1, precompiled=False):
+def invoke_solver(solver, equations_path, q, m, n, log_path=Path(".", "log.txt"), cb_gpu_path=Path("..", "mqsolver"), cb_orig_path=Path("..", "crossbred"), cms_path=Path("..", "cryptominisat", "build"), libfes_path=Path("..", "libfes-lite", "build"), magma_path=Path("magma"), mq_path=Path("..", "mq"), wdsat_path=Path("..", "WDSat"), xl_path=Path("..", "xl"), inner_hybridation=-1, precompiled=False, timeout=1000):
 
     if not solver:
         print("Please specify a solver.")
@@ -30,7 +30,7 @@ def invoke_solver(solver, equations_path, q, m, n, log_path=Path(".", "log.txt")
         while proc.poll() is None:
             rss = psutil.Process(proc.pid).memory_info().rss
             # the memory used in the checking part is neglected
-            proc.wait(1000)
+            proc.wait(timeout)
         out = proc.communicate()[0].decode()
         candidates = [cand for cand in out.strip().split("\n") if "@" in cand]
         out += "\n"
@@ -99,7 +99,7 @@ def invoke_solver(solver, equations_path, q, m, n, log_path=Path(".", "log.txt")
         proc = sp.Popen(solve_cmd, stdout=sp.PIPE, stderr=sp.STDOUT, shell=True, cwd=cwd)
         while proc.poll() is None:
             rss = psutil.Process(proc.pid).memory_info().rss
-            proc.wait(1000)
+            proc.wait(timeout)
         time_taken = time.time() - start_time
         out = proc.communicate()[0].decode()
 
@@ -126,9 +126,10 @@ def invoke_solver(solver, equations_path, q, m, n, log_path=Path(".", "log.txt")
 @ click.option('--xl_path', default=Path("..", "xl"), help='the path the XL solver folder: http://polycephaly.org/projects/xl', type=str)
 @ click.option('--inner_hybridation', '-h', default="-1", help='the number of variable that are not guessed in MQ', type=int)
 @ click.option('--precompiled', default=False, is_flag=True, help='indicates if all relevant solvers are already compiled w.r.t. the parameters')
-def main(solver, equations_path, q, m, n, log_path, cb_gpu_path, cb_orig_path, cms_path, libfes_path, magma_path, mq_path, wdsat_path, xl_path, inner_hybridation, precompiled):
+@ click.option('--timeout', default=1000,  help='the maximum time allowed for running the solver')
+def main(solver, equations_path, q, m, n, log_path, cb_gpu_path, cb_orig_path, cms_path, libfes_path, magma_path, mq_path, wdsat_path, xl_path, inner_hybridation, precompiled, timeout):
     out, time_taken, rss = invoke_solver(solver, equations_path, q, m, n, log_path, cb_gpu_path, cb_orig_path,
-                                         cms_path, libfes_path, magma_path, mq_path, wdsat_path, xl_path, inner_hybridation, precompiled)
+                                         cms_path, libfes_path, magma_path, mq_path, wdsat_path, xl_path, inner_hybridation, precompiled, timeout)
     print(out)
     print(f"Time taken: {time_taken: .2f} s")
     print(f"Resident memory used: {( rss / 1000000): .2f} MB")
