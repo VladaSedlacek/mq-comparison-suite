@@ -522,7 +522,24 @@ def delete_powers(eq):
     return sum([radical(mon) for mon in eq.monomials()])
 
 
-def save_system(file_format, file_path, rainbow, equations=[], guessed_vars=[], reduce_dimension=False, SS=[], weil_coeff_list=[], verbose=False):
+def equations_to_degrevlex_str(equations):
+    q = equations[0].base_ring().order()
+    var_set = set().union(*[eq.variables() for eq in equations])
+    var_list = sorted(var_set)[:: -1] + [1]
+    degrevlex_mons = []
+    # degrevlex corresponds to reading the upper part of the quadratic form matrix column-wise
+    for j in range(len(var_list)):
+        for i in range(j + 1):
+            degrevlex_mons.append(var_list[i] * var_list[j])
+
+    coeff_str = ""
+    for eq in equations:
+        coeffs = [eq.monomial_coefficient(mon) for mon in degrevlex_mons[:-1]] + [eq.constant_coefficient()]
+        coeff_str += " ".join([elt_to_str(q, coeff) for coeff in coeffs]) + " ;\n"
+    return coeff_str
+
+
+def save_system(file_format, file_path, rainbow, equations, verbose=False):
     if file_path.is_file() and verbose:
         print("The file {} already exists!".format(str(file_path)))
         return
@@ -531,20 +548,19 @@ def save_system(file_format, file_path, rainbow, equations=[], guessed_vars=[], 
 
     if file_format == 'cb_gpu':
         '''The format for the GPU F2 crossbred solver of Niederhagen, Ning and Yang: https://github.com/kcning/mqsolver/'''
-        N = SS[0].ncols() - 1
-        Nw = N * rainbow.ext_deg
+        var_set = set().union(*[eq.variables() for eq in equations if eq != 0])
+        M = len(equations)
+        N = len(var_set)
         with open(file_path, 'w') as f:
             f.write(
-                """Galois Field : GF({})
+                """Galois Field : GF(2)
 Number of variables (n) : {}
 Number of polynomials (m) : {}
 Seed : {}
 Order : graded reverse lex order
 
-*********************\n""".format(radical(rainbow.q), Nw, len(weil_coeff_list), rainbow.seed))
-            # when q==2, this should yield the same representation as for XL
-            for weil_coeffs in weil_coeff_list:
-                f.write(" ".join([str(wc) for wc in weil_coeffs]) + " ; \n")
+*********************\n""".format(N, M, rainbow.seed))
+            f.write(equations_to_degrevlex_str(equations))
 
     elif file_format == 'cb_orig':
         var_set = set().union(*[eq.variables() for eq in equations if eq != 0])
@@ -693,8 +709,7 @@ Order : graded reverse lex order
     elif file_format == 'xl':
         '''The format for the block Wiedemann XL solver of Niederhagen: http://polycephaly.org/projects/xl'''
         with open(file_path, 'w') as f:
-            for s in SS:
-                f.write(UD_to_string(rainbow.q, s))
+            f.write(equations_to_degrevlex_str(equations))
 
     assert file_format in ['cb_gpu', 'cb_orig', 'cnf', 'magma', 'mq', 'mq_compact', 'wdsat', 'xl']
     if verbose:
