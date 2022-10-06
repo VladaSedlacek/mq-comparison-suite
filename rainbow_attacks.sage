@@ -975,7 +975,7 @@ def main(q, n, m, o2, solver, gen_only, solve_only, check_only, inner_hybridatio
             print("Skipping the attack equations generation...")
         solution = load_solution(solution_path, q)
 
-    if gen_only:
+    if gen_only or solver == None:
         exit()
 
     if not check_only:
