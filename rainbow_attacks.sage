@@ -386,7 +386,7 @@ def four_bits_to_str(bit_list):
 
 
 def UD_to_string(q, M):
-    # this corresponds the the degrevlex order
+    # this corresponds to the degrevlex order
     S = ""
     for i in range(M.ncols()):
         for j in range(i + 1):
