@@ -15,7 +15,7 @@ def get_polar_form(Q):
 class Rainbow():
     """A class for the Rainbow scheme."""
 
-    def __init__(self, q, m, n, o2, seed=0, debug=True, support=False):
+    def __init__(self, q, m, n, o2, seed=0, debug=True):
         assert o2 < m and m < n
         self.seed = seed
         self.debug = debug
@@ -26,13 +26,10 @@ class Rainbow():
         self.m = m
         self.n = n
         self.o2 = o2
-        self.k = find_max_k(m=self.o2, n=self.n, verbose=False)
-        self.reduced = self.q % 2 == 0 and self.n % 2 == 1
         self.V = VectorSpace(F, n)
         self.V2 = VectorSpace(F, m)
         self.order = "lex"
-        self.R = PolynomialRing(F, ['x%s' % p for p in range(
-            1, n + 1)] + ['v%s' % p for p in range(1, m + 1)], order=self.order)
+        self.R = PolynomialRing(F, ['x%s' % p for p in range(1, n + 1)], order=self.order)
         self.R.inject_variables(verbose=False)
         self.weil_ring = PolynomialRing(
             F, ['w%s_%s' % (p1, p2) for p1, p2 in product(range(1, n - m + 1), range(self.ext_deg))], order='degrevlex')
@@ -40,20 +37,7 @@ class Rainbow():
         self.ww = vector(self.weil_ring.gens())
         self.ww_parts = [self.ww[i:i + self.ext_deg]
                          for i in range(0, self.ext_deg * (n - m), self.ext_deg)]
-        self.xx = vector(self.R.gens()[: n])
-        self.vv = vector(self.R.gens()[n:])
-        if support:
-            self.support_minors_indices = [
-                str(c) for c in Combinations([1..self.m], self.o2)]
-            self.support_minors_variables = [
-                'c%s' % s for s in [1..len(list(self.support_minors_indices))]]
-            self.support_minors_dict = dict(
-                zip(self.support_minors_indices, self.support_minors_variables))
-            self.support_ring = PolynomialRing(F, ['y%s' % p for p in range(
-                1, n + 1)] + self.support_minors_variables, order=self.order)
-            self.support_ring.inject_variables(verbose=False)
-            self.yy = vector(self.support_ring.gens()[: n])
-            self.cc = vector(self.support_ring.gens()[n:])
+        self.xx = vector(self.R.gens())
         self.FF = self.construct_central_map()
         self.T, self.S, self.PP, self.MM = self.hide_central_map()
         self.O1, self.O2, self.W = self.find_subspaces()
@@ -135,96 +119,6 @@ class Rainbow():
             assert O2.dimension() == o2
             assert W.dimension() == o2
         return O1, O2, W
-
-    def intersection_attack(self, verbose=False):
-        if self.reduced:
-            print("Reduced variant not implemented yet")
-            exit()
-        MM = self.MM
-        PP = self.PP
-        xx = self.xx
-        vv = self.vv
-        LL = []
-        combinations = []
-        for i in range(self.k):
-            while True:
-                coefficients = self.V2.random_element()
-                L = linear_combination(coefficients, MM)
-                if L.is_invertible():
-                    LL.append(L)
-                    combinations.append(coefficients)
-                    break
-        equations = []
-        redundant = []
-        for i in range(self.k):
-            u = LL[i].inverse() * xx
-            for P in PP:
-                equations.append(u * P * u)
-            for j in range(i + 1, self.k):
-                v = LL[j].inverse() * xx
-                for l, M in enumerate(MM):
-                    eq = u * M * v
-                    nonzero_index_i, nonzero_index_j = first_different_nonzero_indices(
-                        combinations[i], combinations[j])
-                    if l != nonzero_index_i and l != nonzero_index_j:
-                        equations.append(eq)
-                    else:
-                        redundant.append(eq)
-            for e in self.V.basis():
-                eq = linear_combination(vv, [u * M * e for M in MM])
-                equations.append(eq)
-        matrices = [L.inverse() for L in LL]
-        return equations, redundant, matrices
-
-    def rectangular_minrank_attack(self, reduce_dimension=False, debug=True, verbose=True):
-        m, n, o2 = self.m, self.n, self.o2
-        yy = self.yy
-        max_var_index = n
-        if reduce_dimension:
-            max_var_index -= o2 - 1
-        guessed_vars = [self.F.random_element()
-                        for _ in range(n - max_var_index)]
-        all_vars = vector(list(yy[:max_var_index]) + guessed_vars)
-
-        def Lx(self, x):
-            rows = []
-            for e in self.V.basis():
-                rows.append([e * M * x for M in self.MM])
-            return matrix(self.support_ring, rows)
-
-        Les = [Lx(self, e) for e in self.V.basis()]
-        Ly = linear_combination(all_vars, Les)
-
-        if verbose:
-            print("Ly:\n", Ly)
-        if debug:
-            # Check that for random y from O2, the conditions hold (after dimension reduction)
-            for _ in range(2 ^ min(len(guessed_vars), 10)):
-                y = self.O2.random_element()
-                if y[max_var_index:] == all_vars[max_var_index:]:
-                    assert Ly(*y, *self.cc).rank() <= o2
-                    for row in [row for row in Ly(*y, *self.cc).rows()]:
-                        assert vector(self.F(el) for el in row) in self.W
-
-        equations = []
-
-        # Add equations for Support Minors Modeling.
-        for j in range(n):
-            rj = Ly[j]
-            for columns in Combinations([1..self.m], self.o2 + 1):
-                eq = 0
-                for main_index in columns:
-                    support_indices = [c for c in columns if c != main_index]
-                    cs = self.support_ring(
-                        self.support_minors_dict[str(support_indices)])
-                    eq += (-1) ^ (main_index - 1) * rj[main_index - 1] * cs
-                equations.append(eq)
-
-        # Add quadratic equations for oil subspace membership.
-        for P in self.PP:
-            equations.append(all_vars * P * all_vars)
-
-        return equations, guessed_vars
 
     def differential_attack(self, debug=False, verbose=False):
         '''Adapted from https://github.com/WardBeullens/BreakingRainbow'''
@@ -347,7 +241,7 @@ class Rainbow():
                 assert linear_combination(
                     max_quadratic.monomials(), weil_coeffs) == eq
                 weil_coeff_list.append(weil_coeffs)
-        return SS, equations_final, weil_coeff_list, Sol
+        return equations_final, Sol
 
 
 # evaluate Multivariate map and Differential
@@ -407,23 +301,6 @@ def weil_coeff_list_to_string(weil_coeff_list, deg):
     return S
 
 
-def first_nonzero_index(it):
-    for i, _ in enumerate(it):
-        if it[i] != 0:
-            return i
-    return None
-
-
-def first_different_nonzero_indices(it1, it2):
-    i = first_nonzero_index(it1)
-    j = first_nonzero_index(it2)
-    if i == j:
-        j = first_nonzero_index(
-            [0] + list(it2))
-    assert i != j
-    return i, j
-
-
 def linear_combination(coefficients, objects):
     assert len(coefficients) == len(objects)
     return sum(c * o for c, o in zip(coefficients, objects))
@@ -443,79 +320,6 @@ def weil_decomposition(poly):
     base_polys = [linear_combination(coeffs, poly.monomials())
                   for coeffs in base_coeff_list]
     return base_polys
-
-
-def find_max_k(m, n, verbose=False):
-    if n == 3 * m:
-        return 2
-    if n == 2 * m:
-        return ceil(sqrt(m))
-    k = 2
-    while True:
-        if verbose:
-            print("current k:", k, ", n/m:", (n / m).numerical_approx(digits=3),
-                  ", (2 * k - 1) / (k - 1):", ((2 * k - 1) / (k - 1)).numerical_approx(digits=3))
-        if n >= (2 * k - 1) / (k - 1) * m:
-            k -= 1
-            break
-        k += 1
-    if verbose:
-        print("k:", k)
-    assert n > k * m - (k - 1) * (n - m)
-    return k
-
-
-def check_solution(equations, solution, reduced=False):
-    if len(solution) == 0:
-        print("No solution found")
-        return False
-    if reduced:
-        solution = vector([0] + list(solution))
-    for eq in equations:
-        assert eq(*solution) == 0
-    print("The solution is correct")
-    return True
-
-
-def check_intersection_attack_success(equations, solution, rainbow, verbose=True):
-    print("Solution found:", solution)
-    success = check_solution(equations, solution, rainbow.reduced)
-    v = solution[rainbow.n:]
-    Mv = linear_combination(v, rainbow.MM)
-    return success and rainbow.O2.is_subspace(Mv.kernel())
-
-
-def check_rectangular_minrank_attack_success(equations, solution, rainbow, reduce_dimension=False, verbose=True):
-    print("Solution found:", solution)
-    success = check_solution(equations, solution, rainbow.reduced)
-    n = rainbow.n
-    o2 = rainbow.o2
-    max_nonzero_index = n
-    if reduce_dimension:
-        max_nonzero_index -= o2 - 1
-    oil_vector = vector(list(solution[: max_nonzero_index]
-                             ) + [0] * (n - max_nonzero_index))
-    return success and oil_vector in rainbow.O2
-
-
-def count_monomials(equations):
-    monomials = set()
-    for eq in equations:
-        for mon in eq.monomials():
-            monomials.add(mon)
-    return sorted(list(monomials))
-
-
-def compare_variants(n, m, o2):
-    print("m = {0}, n = {1}, o2 = {2}".format(m, n, o2))
-    smm_equations = n * binomial(m, o2 + 1) + m
-    smm_variables = binomial(m, o2) + n - o2 + 1
-    alt_equations = m * (n + 1)
-    alt_variables = m * (n + o2) + n - o2 + 1
-    print("\tSMM: {0} equations, {1} variables \n\tratio: {2}, difference: {3}".format(
-        smm_equations, smm_variables, (smm_variables / smm_equations).numerical_approx(digits=3), smm_variables - smm_equations))  # %
-    print("\tALT: {0} equations, {1} variables \n\tratio: {2}, difference: {3}".format(
-        alt_equations, alt_variables, (alt_variables / alt_equations).numerical_approx(digits=3), alt_variables - alt_equations))
 
 
 def delete_powers(eq):
@@ -652,32 +456,12 @@ Order : graded reverse lex order
         var_set = set().union(*[eq.variables() for eq in equations])
         var_list = [str(var) for var in sorted(var_set)[:: -1]]
         variables = ', '.join(var_list)
-        max_var_index = rainbow.n
-        if reduce_dimension:
-            max_var_index -= rainbow.o2 - 1
-        if guessed_vars == []:
-            guessed = ""
-        else:
-            guessed = ', '.join(["{0}={1}".format(var, value) for var, value in zip(
-                rainbow.yy[max_var_index:], guessed_vars)])
-
         with open(file_path, 'w') as f:
             f.write("# Variables:\n")
             f.write(variables + "\n#\n")
-            f.write("# Guessed variables:\n")
-            f.write("# " + guessed + "\n#\n")
             f.write("# Equations:\n")
             for eq in equations:
                 f.write(str(eq) + "\n")
-        if verbose:
-            print("Number of equations:", len(equations))
-            print("Number of monomials:", len(
-                count_monomials(equations)))
-
-    elif file_format == 'mq_compact':
-        with open(file_path, 'w') as f:
-            f.write(weil_coeff_list_to_string(
-                weil_coeff_list, rainbow.ext_deg))
 
     elif file_format == 'wdsat':
         var_set = set().union(*[eq.variables() for eq in equations if eq != 0])
@@ -711,7 +495,7 @@ Order : graded reverse lex order
         with open(file_path, 'w') as f:
             f.write(equations_to_degrevlex_str(equations))
 
-    assert file_format in ['cb_gpu', 'cb_orig', 'cnf', 'magma', 'mq', 'mq_compact', 'wdsat', 'xl']
+    assert file_format in ['cb_gpu', 'cb_orig', 'cnf', 'magma', 'mq', 'wdsat', 'xl']
     if verbose:
         print("Equation system written to: " + str(file_path))
 
@@ -748,86 +532,19 @@ def load_solution(solution_path, q):
         exit()
 
 
-def print_nist_comparisons():
-    # Rainbow notation mapping:
-    # v1 + o2 + o1 -> n
-    #      o2 + o1 -> m
-    #           o1 -> o2
-    print("\n\nNIST parameters over F_16 (Ia, IVa, VIa):")
-    compare_variants(n=96, m=64, o2=32)
-    compare_variants(n=152, m=96, o2=48)
-    compare_variants(n=204, m=128, o2=64)
-    print("\n\nNIST parameters over F_31 (Ib, IIIb, VIb:")
-    compare_variants(n=92, m=56, o2=28)
-    compare_variants(n=144, m=80, o2=32)
-    compare_variants(n=196, m=112, o2=56)
-    print("\n\nNIST parameters over F_256 (Ic, IIIc, Vc):")
-    compare_variants(n=88, m=48, o2=24)
-    compare_variants(n=140, m=72, o2=36)
-    compare_variants(n=188, m=96, o2=48)
-    print("\n\nNew suggested parameters over F_16 (I):")
-    compare_variants(m=68, n=109, o2=36)
-
-
-def try_toy_solution(rainbow, equations, attack_type, reduce_dimension):
-    print("Constructing toy solution...")
-    if attack_type == 'minrank':
-        solution = vector(list(rainbow.O2.random_element()) +
-                          [0] * len(rainbow.support_minors_indices))
-        success = check_rectangular_minrank_attack_success(
-            equations, solution, rainbow, reduce_dimension=reduce_dimension)
-    elif attack_type == 'intersection':
-        solution = vector([0] * n + list(rainbow.W.complement().basis()[0]))
-        success = check_intersection_attack_success(
-            equations, solution, rainbow)
-    if success:
-        print("Attack successful!")
-    else:
-        print("Attack not successful :(")
-
-
-def compute_system_size(q, m, n, o2, attack_type):
+def compute_system_size(q, m, n, attack_type='differential'):
     '''Return the number of equations and the number of variables'''
     if attack_type == 'differential':
         if q % 2 == 0:
             return m - 1, n - m - 2
         return m, n - m - 1
-    if attack_type == 'minrank':
-        # TODO: this should be different for even q
-        return n * binomial(m, o2 + 1) + m, n - o2 + 1 + binomial(m, o2)
-    if attack_type == 'intersection':
-        k = find_max_k(o2, n)
-        return binomial(k + 1, 2) * m - k * (k - 1), n + m
-    return None, None
 
 
-def mount_attack(rainbow, attack_type, M, N, reduce_dimension=False, verbose=False):
-    SS = []
-    guessed_vars = []
-    weil_coeff_list = []
+def mount_attack(rainbow, attack_type="differential", verbose=False):
     if attack_type == 'differential':
         if verbose:
             print("Mounting the differential attack...")
-        SS, equations, weil_coeff_list, solution = rainbow.differential_attack(
-            debug=False, verbose=verbose)
-        assert M == len(SS)
-        assert N == SS[0].ncols() - 1
-    elif attack_type == 'minrank':
-        if verbose:
-            print("Mounting the rectangular MinRank attack...")
-        equations, guessed_vars = rainbow.rectangular_minrank_attack(
-            reduce_dimension=reduce_dimension, verbose=verbose)
-        solution = vector([])
-        # not implemeted yet
-    elif attack_type == 'intersection':
-        if verbose:
-            print("Mounting the intersection attack...")
-        equations, _, _ = rainbow.intersection_attack()
-        solution = vector([])
-        # not implemeted yet
-    if rainbow.q % 2 == 0:
-        equations = [delete_powers(eq) for eq in equations]
-    return SS, equations, weil_coeff_list, guessed_vars, solution
+        return rainbow.differential_attack(debug=False, verbose=verbose)
 
 
 def get_solution_from_log(log_path, format, N, rainbow=None):
@@ -935,22 +652,20 @@ def check_solution(log_path, solver, solution, N, rainbow, attack_type='differen
 @ click.option('--check_only', default=False, is_flag=True, help='only check solutions')
 @ click.option('--inner_hybridation', '-h', default="-1", help='the number of variable that are not guessed in MQ', type=int)
 @ click.option('--verbose', '-v', default=False, is_flag=True, help='control the output verbosity')
-@ click.option('--reduce_dimension', '-r', default=True, is_flag=True, help='reduce the dimension when possible')
-@ click.option('--attack_type', '-t', default='differential', type=click.Choice(['differential', 'minrank', 'intersection'], case_sensitive=False), help='choose attack on Rainbow')
 @ click.option('--seed', '-s', default=0, help='the seed for randomness replication', type=int)
 @ click.option('--precompiled', default=False, is_flag=True, help='indicates if all relevant solvers are already compiled w.r.t. the parameters')
-def main(q, n, m, o2, solver, gen_only, solve_only, check_only, inner_hybridation, verbose, reduce_dimension, attack_type, seed, precompiled):
+def main(q, n, m, o2, solver, gen_only, solve_only, check_only, inner_hybridation, verbose, seed, precompiled):
     if m == 0:
         m = 2*o2
     if n == 0:
         n = 3*o2
     set_random_seed(seed)
-    M, N = compute_system_size(q, m, n, o2, attack_type)
+    M, N = compute_system_size(q, m, n)
     system_folder_path = 'systems'
     Path(system_folder_path).mkdir(parents=True, exist_ok=True)
     log_path = Path("log.txt")
     base_system_name = "rainbow_{}_seed_{}_q_{}_o2_{}_m_{}_n_{}_M_{}_N_{}".format(
-        attack_type, seed, q, o2, m, n, M, N)
+        "differential", seed, q, o2, m, n, M, N)
     cb_gpu_system_path = Path(system_folder_path, base_system_name + '.cb_gpu')
     cb_orig_system_path = Path(system_folder_path, base_system_name + '.cb_orig')
     cnf_system_path = Path(system_folder_path, base_system_name + '.cnf')
@@ -960,32 +675,29 @@ def main(q, n, m, o2, solver, gen_only, solve_only, check_only, inner_hybridatio
     wdsat_system_path = Path(system_folder_path, base_system_name + '.anf')
     setup_path = Path(system_folder_path, base_system_name + '.stp')
     solution_path = Path(system_folder_path, base_system_name + '.sol')
-    support = True if attack_type == 'minrank' else False
 
     if verbose:
         print("Generating Rainbow instance for seed={}, q={}, m={}, n={}, o2={}...".format(
             seed, q, m, n, o2))
-    rainbow = Rainbow(q, m, n, o2, support=support, seed=seed)
+    rainbow = Rainbow(q, m, n, o2, seed=seed)
     if not (solve_only or check_only):
         save_setup(rainbow, setup_path, verbose=verbose)
-        SS, equations, weil_coeff_list, guessed_vars, solution = mount_attack(
-            rainbow, attack_type, M, N, reduce_dimension=False, verbose=verbose)
+        equations, solution = mount_attack(rainbow, verbose=verbose)
+        equations = [delete_powers(eq) for eq in equations]
         save_solution(solution, solution_path)
-        if attack_type == 'differential':
-            save_system(file_format='xl', file_path=xl_system_path,
-                        rainbow=rainbow, SS=SS, verbose=verbose)
+        save_system(file_format='xl', file_path=xl_system_path, rainbow=rainbow, equations=equations, verbose=verbose)
         save_system(file_format='cb_gpu', file_path=cb_gpu_system_path,
-                    rainbow=rainbow, SS=SS, equations=equations, weil_coeff_list=weil_coeff_list, verbose=verbose)
-        save_system(file_format='cb_orig', file_path=cb_orig_system_path, rainbow=rainbow, equations=equations,
-                    guessed_vars=guessed_vars, reduce_dimension=reduce_dimension, verbose=verbose)
+                    rainbow=rainbow, equations=equations, verbose=verbose)
+        save_system(file_format='cb_orig', file_path=cb_orig_system_path,
+                    rainbow=rainbow, equations=equations, verbose=verbose)
         save_system(file_format='cnf', file_path=cnf_system_path, rainbow=rainbow, equations=equations,
-                    guessed_vars=guessed_vars, reduce_dimension=reduce_dimension, verbose=verbose)
+                    verbose=verbose)
         save_system(file_format='magma', file_path=magma_system_path, rainbow=rainbow, equations=equations,
-                    guessed_vars=guessed_vars, reduce_dimension=reduce_dimension, verbose=verbose)
+                    verbose=verbose)
         save_system(file_format='mq', file_path=mq_system_path, rainbow=rainbow, equations=equations,
-                    guessed_vars=guessed_vars, reduce_dimension=reduce_dimension, verbose=verbose)
+                    verbose=verbose)
         save_system(file_format='wdsat', file_path=wdsat_system_path, rainbow=rainbow, equations=equations,
-                    guessed_vars=guessed_vars, reduce_dimension=reduce_dimension, verbose=verbose)
+                    verbose=verbose)
     else:
         if verbose:
             print("Skipping the attack equations generation...")
