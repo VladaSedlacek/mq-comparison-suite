@@ -564,7 +564,7 @@ Order : graded reverse lex order
                 f.write(str(-1) + "\n")
 
     elif file_format == 'cnf':
-        var_set = set().union(*[eq.variables() for eq in equations if eq != 0])
+        var_set = set().union(*[eq.variables() for eq in equations])
         var_list = sorted(var_set)[:: -1]
         var_prod_list = []
         M = len(equations)
