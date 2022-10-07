@@ -2,11 +2,12 @@ from pathlib import Path
 
 
 def elt_to_str(q, a):
-    if q == 16:
-        return str(hex(sum([2**i * a.polynomial()[i].lift() for i in range(4)])))[2:]
-    if ZZ(q).is_prime() and q < 16:
+    if q.is_prime():
+        # this is just a special case of the latter, but it is more readable
         return str(hex(a))[2:]
-    return str(a)
+    else:
+        d = log(q, radical(q))
+        return str(hex(sum([2**i * a.polynomial()[i].lift() for i in range(d)])))[2:]
 
 
 def str_to_elt(q, s):
@@ -240,7 +241,6 @@ Order : graded reverse lex order
                     f.write(str(eq) + "\n")
 
         elif eq_format == 'xl':
-            # TODO handle the case of extension fields
             '''The format for the block Wiedemann XL solver of Niederhagen: http://polycephaly.org/projects/xl'''
             with open(file_path, 'w') as f:
                 f.write(self.to_degrevlex_str())
