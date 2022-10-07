@@ -232,11 +232,13 @@ Order : graded reverse lex order
             if q == 2:
                 # for optimized performance
                 ring_type = "BooleanPolynomialRing("
+                field_string = f"F := GaloisField({q});\n"
             else:
                 ring_type = "PolynomialRing(F, "
+                field_string = f"F<{self.F.gen()}> := GaloisField({q});\n"
             var_list = [str(var) for var in self.var_list]
             with open(file_path, 'w') as f:
-                f.write(f"F := GaloisField({q});\n")
+                f.write(field_string)
                 f.write(f"R<{', '.join(var_list)}> := {ring_type}{len(var_list)}, \"grevlex\");\n")
                 f.write(f"I := ideal<R |\n")
                 # add field equations
