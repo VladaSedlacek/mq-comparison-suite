@@ -642,11 +642,11 @@ def check_solution(log_path, solver, solution, N, rainbow, attack_type='differen
 
 
 @ click.command()
-@ click.option('--solver', type=click.Choice(['cb_orig', 'cb_gpu', 'cms', 'libfes', 'magma', 'mq', 'wdsat', 'xl'], case_sensitive=False), help='the external solver to be used')
 @ click.option('--q', default=16, help='the field order', type=int)
 @ click.option('--n', default=0, help='the number of variables', type=int)
 @ click.option('--m', default=0, help='the number of equations', type=int)
 @ click.option('--o2', default=16, help='the oil subspace dimension', type=int)
+@ click.option('--solver', type=click.Choice(['cb_orig', 'cb_gpu', 'cms', 'libfes', 'magma', 'mq', 'wdsat', 'xl'], case_sensitive=False), help='the external solver to be used')
 @ click.option('--gen_only', default=False, is_flag=True, help='only generate equation systems')
 @ click.option('--solve_only', default=False, is_flag=True, help='only solve an existing system and check solutions')
 @ click.option('--check_only', default=False, is_flag=True, help='only check solutions')
