@@ -106,11 +106,6 @@ class EquationSystem():
             print("The file {} already exists!".format(str(file_path)))
             return
 
-        assert eq_format in ['anf', 'cb_gpu', 'cb_orig', 'cnf', 'magma', 'mq', 'xl']
-        # choose Weil descent for formats intended for GF(2)
-        if eq_format in ['anf', 'cb_gpu', 'cb_orig', 'cnf', 'mq'] and self.weil is not None:
-            return(self.weil.save_one(eq_format, file_path))
-
         if eq_format == 'anf':
             var_list = self.var_list
             # assume sorted variables so that e.g. x1*x2 always appears instead of x2*x1
@@ -251,5 +246,10 @@ Order : graded reverse lex order
     def save_all(self, folder, base_system_name):
         eq_formats = ['anf', 'cb_gpu', 'cb_orig', 'cnf', 'magma', 'mq', 'xl']
         for eq_format in eq_formats:
-            eq_path = Path(folder, base_system_name + "." + eq_format)
-            self.save_one(eq_format, eq_path)
+            # choose Weil descent for formats intended for GF(2)
+            if eq_format in ['anf', 'cb_gpu', 'cb_orig', 'cnf', 'mq'] and self.weil is not None:
+                eq_path = Path(folder, f"{base_system_name}_M_{self.weil.M}_N_{self.weil.N}_weil.{eq_format}")
+                self.weil.save_one(eq_format, eq_path)
+            else:
+                eq_path = Path(folder, f"{base_system_name}_M_{self.M}_N_{self.N}.{eq_format}")
+                self.save_one(eq_format, eq_path)

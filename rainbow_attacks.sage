@@ -405,8 +405,7 @@ def main(q, n, m, o2, solver, gen_only, solve_only, check_only, inner_hybridatio
         # save everything
         system_folder_path = 'systems'
         Path(system_folder_path).mkdir(parents=True, exist_ok=True)
-        base_system_name = "rainbow_{}_seed_{}_q_{}_o2_{}_m_{}_n_{}_M_{}_N_{}".format(
-            "differential", seed, q, o2, m, n, M, N)
+        base_system_name = f"rainbow_diff_s_{seed}_q_{q}_o2_{o2}_m_{m}_n_{n}"
         setup_path = Path(system_folder_path, base_system_name + '.stp')
         solution_path = Path(system_folder_path, base_system_name + '.sol')
         EqSys.save_all(system_folder_path, base_system_name)
