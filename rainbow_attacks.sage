@@ -6,10 +6,32 @@ import click
 import re
 from invoke_solver import invoke_solver
 from utils import get_eq_format
+load("equation_utils.sage")
 
+
+# multivariate util functions
 
 def get_polar_form(Q):
     return Q + Q.transpose()
+
+
+def Eval(F, x):
+    # evaluate Multivariate map and Differential
+    return vector([x * M * x for M in F])
+
+
+def Differential(F, x, y):
+    return vector([(x * M * y) + (y * M * x) for M in F])
+
+
+def Make_UD(M):
+    # make a matrix upper diagonal
+    n = M.ncols()
+    K = M[0, 0].parent()
+    for i in range(n):
+        for j in range(i + 1, n):
+            M[i, j] += M[j, i]
+            M[j, i] = K(0)
 
 
 class Rainbow():
@@ -28,15 +50,8 @@ class Rainbow():
         self.o2 = o2
         self.V = VectorSpace(F, n)
         self.V2 = VectorSpace(F, m)
-        self.order = "lex"
+        self.order = "degrevlex"
         self.R = PolynomialRing(F, ['x%s' % p for p in range(1, n + 1)], order=self.order)
-        self.R.inject_variables(verbose=False)
-        self.weil_ring = PolynomialRing(
-            F, ['w%s_%s' % (p1, p2) for p1, p2 in product(range(1, n - m + 1), range(self.ext_deg))], order='degrevlex')
-        self.weil_ring.inject_variables(verbose=False)
-        self.ww = vector(self.weil_ring.gens())
-        self.ww_parts = [self.ww[i:i + self.ext_deg]
-                         for i in range(0, self.ext_deg * (n - m), self.ext_deg)]
         self.xx = vector(self.R.gens())
         self.FF = self.construct_central_map()
         self.T, self.S, self.PP, self.MM = self.hide_central_map()
@@ -169,7 +184,6 @@ class Rainbow():
                 print("\tGood D_x found after %d attempts." % attempts)
 
                 print("\tThe expected solution is:", Sol)
-                print("\tIn hex format:", [elt_to_str(q, s) for s in Sol])
 
         # Compose smaller system D_x(o)= 0 and P(o) = 0
         SS = [D_x_ker * M * D_x_ker.transpose() for M in self.PP]
@@ -180,7 +194,6 @@ class Rainbow():
         if not Sol is None:
             assert Eval(SS, Sol) == vector(m * [0])
 
-        weil_coeff_list = []
         if q % 2 == 0:
             Px = Eval(self.PP, x)
             # define Y by setting first coord to 0?
@@ -211,293 +224,12 @@ class Rainbow():
             # assert NewSol == Sol
             # assert Eval(SS_orig, NewSol) == vector(m * [0])
 
-            # Perform the Weil descent
-            z = self.F.gens()[0]
-            zs = [z ^ i for i in range(self.ext_deg)]
-            yy_weil = vector([linear_combination(w, zs)
-                              for w in self.ww_parts])
-            yy_weil_affine = vector(list(yy_weil[1:-1]) + [1])
-            equations = [yy_weil_affine * s * yy_weil_affine for s in SS]
-            assert len(equations) == m - 1
-            equations_weil = [
-                w_eq for eq in equations for w_eq in weil_decomposition(eq)]
-            # intentionally do not call delete_powers at this point to be consistent with XL representation
-            equations_final = equations_weil
-
-            # Get Weil coefficients from the equations
-            weil_vars = [
-                var for part in self.ww_parts for var in part][self.ext_deg:-self.ext_deg]
-            # get all monomials that are at most quadratic, in grevdeglex order
-            weil_vars.append(1)
-            l = len(weil_vars)
-            rows = [i * [0] + (l - i) * [1] for i in range(l)]
-            upper_matrix = Matrix(self.F, rows)
-            max_quadratic = vector(weil_vars) * \
-                upper_matrix * vector(weil_vars)
-            for eq in equations_final:
-                weil_coeffs = []
-                for mon in max_quadratic.monomials():
-                    weil_coeffs.append(eq.monomial_coefficient(mon))
-                assert linear_combination(
-                    max_quadratic.monomials(), weil_coeffs) == eq
-                weil_coeff_list.append(weil_coeffs)
-        return equations_final, Sol
-
-
-# evaluate Multivariate map and Differential
-def Eval(F, x):
-    return vector([x * M * x for M in F])
-
-
-def Differential(F, x, y):
-    return vector([(x * M * y) + (y * M * x) for M in F])
-
-
-# makes a matrix upper diagonal
-def Make_UD(M):
-    n = M.ncols()
-    K = M[0, 0].parent()
-    for i in range(n):
-        for j in range(i + 1, n):
-            M[i, j] += M[j, i]
-            M[j, i] = K(0)
-
-
-def elt_to_str(q, a):
-    if q == 16:
-        return str(hex(sum([2**i * a.polynomial()[i].lift() for i in range(4)])))[2:]
-    if ZZ(q).is_prime() and q < 16:
-        return str(hex(a))[2:]
-    return str(a)
-
-
-def str_to_elt(q, s):
-    return GF(q).fetch_int(int(s, q))
-
-
-def four_bits_to_str(bit_list):
-    return str(hex(int(''.join(map(str, bit_list)).encode(), 2)))[2:]
-
-
-def UD_to_string(q, M):
-    # this corresponds to the degrevlex order
-    S = ""
-    for i in range(M.ncols()):
-        for j in range(i + 1):
-            S += elt_to_str(q, M[j, i]) + ' '
-    S += ';\n'
-    return S
-
-
-def weil_coeff_list_to_string(weil_coeff_list, deg):
-    S = ""
-    for weil_coeffs in weil_coeff_list:
-        weil_coeffs += ((-len(weil_coeffs)) % deg) * [0]
-        assert len(weil_coeffs) % deg == 0
-        for i in range(len(weil_coeffs) / deg):
-            bit_list = weil_coeffs[deg * i:deg * i + deg]
-            S += four_bits_to_str(bit_list) + ' '
-        S += ';\n'
-    return S
-
-
-def linear_combination(coefficients, objects):
-    assert len(coefficients) == len(objects)
-    return sum(c * o for c, o in zip(coefficients, objects))
-
-
-def weil_decomposition(poly):
-    if poly == 0:
-        return []
-    # Constant coefficients come first
-    extension_coeffs = [c.polynomial().list() for c in poly.coefficients()]
-    max_len = max(len(ec) for ec in extension_coeffs)
-    # Pad the coefficient lists
-    for ec in extension_coeffs:
-        for _ in range(max_len - len(ec)):
-            ec.append(0)
-    base_coeff_list = zip(*extension_coeffs)
-    base_polys = [linear_combination(coeffs, poly.monomials())
-                  for coeffs in base_coeff_list]
-    return base_polys
-
-
-def delete_powers(eq):
-    return sum([radical(mon) for mon in eq.monomials()])
-
-
-def equations_to_degrevlex_str(equations):
-    q = equations[0].base_ring().order()
-    var_set = set().union(*[eq.variables() for eq in equations])
-    var_list = sorted(var_set)[:: -1] + [1]
-    degrevlex_mons = []
-    # degrevlex corresponds to reading the upper part of the quadratic form matrix column-wise
-    for j in range(len(var_list)):
-        for i in range(j + 1):
-            degrevlex_mons.append(var_list[i] * var_list[j])
-
-    coeff_str = ""
-    for eq in equations:
-        coeffs = [eq.monomial_coefficient(mon) for mon in degrevlex_mons[:-1]] + [eq.constant_coefficient()]
-        coeff_str += " ".join([elt_to_str(q, coeff) for coeff in coeffs]) + " ;\n"
-    return coeff_str
-
-
-def save_system(file_format, file_path, rainbow, equations, verbose=False):
-    if file_path.is_file() and verbose:
-        print("The file {} already exists!".format(str(file_path)))
-        return
-
-    equations = [eq for eq in equations if eq != 0]
-
-    if file_format == 'cb_gpu':
-        '''The format for the GPU F2 crossbred solver of Niederhagen, Ning and Yang: https://github.com/kcning/mqsolver/'''
-        var_set = set().union(*[eq.variables() for eq in equations if eq != 0])
-        M = len(equations)
-        N = len(var_set)
-        with open(file_path, 'w') as f:
-            f.write(
-                """Galois Field : GF(2)
-Number of variables (n) : {}
-Number of polynomials (m) : {}
-Seed : {}
-Order : graded reverse lex order
-
-*********************\n""".format(N, M, rainbow.seed))
-            f.write(equations_to_degrevlex_str(equations))
-
-    elif file_format == 'cb_orig':
-        var_set = set().union(*[eq.variables() for eq in equations if eq != 0])
-        M = len(equations)
-        N = len(var_set)
-        with open(file_path, 'w') as f:
-            for eq in equations:
-                eq_repr = []
-                for var_tuple, coeff in eq.dict().items():
-                    if coeff == 1:
-                        # create an integer whose binary representation corresponds to variables present in the monomial; divide by 2 to disregard the last variable, which should not be present
-                        mon_repr = ZZ(''.join([str(k) for k in var_tuple]), 2)
-                        assert mon_repr % 2 == 0
-                        eq_repr.append(mon_repr / 2)
-                for mon_repr in sorted(eq_repr, reverse=True):
-                    f.write(str(mon_repr) + "\n")
-                f.write(str(-1) + "\n")
-
-    elif file_format == 'cnf':
-        var_set = set().union(*[eq.variables() for eq in equations])
-        var_list = sorted(var_set)[:: -1]
-        var_prod_list = []
-        M = len(equations)
-        N = len(var_set)
-        with open(file_path, 'w') as f:
-            f.write("p cnf {} {}\n".format(
-                N + binomial(N, 2) + 1, M + 3 * binomial(N, 2) + 1))
-            # introduce the constant variable
-            f.write("{} 0\n".format(N + binomial(N, 2) + 1))
-            # convert ANDs to ORs by introducing new variables
-            prod_index = 0
-            for i, _ in enumerate(var_list):
-                for j in range(i + 1, len(var_list)):
-                    prod_index += 1
-                    var_prod_list.append(var_list[i] * var_list[j])
-                    f.write("{} -{} 0\n".format(i + 1, N + prod_index))
-                    f.write("{} -{} 0\n".format(j + 1, N + prod_index))
-                    f.write("-{} -{} {} 0\n".format(i +
-                                                    1, j + 1, N + prod_index))
-            for eq in equations:
-                const_present = False
-                cnf_line = "x "
-                for mon in eq.monomials():
-                    # add linear monomials
-                    if mon in var_list:
-                        cnf_line += "{} ".format(var_list.index(mon) + 1)
-                    # add quadratic monomials
-                    elif mon in var_prod_list:
-                        cnf_line += "{} ".format(
-                            N + var_prod_list.index(mon) + 1)
-                    else:
-                        assert mon == 1
-                        const_present = True
-                if not const_present:
-                    # the right hand side of the equation must correspond to True
-                    cnf_line += "{} ".format(str(N + binomial(N, 2) + 1))
-                cnf_line += "0\n"
-                f.write(cnf_line)
-
-    elif file_format == 'magma':
-        q = rainbow.q
-        if q == 2:
-            # for optimized performance
-            ring_type = "BooleanPolynomialRing("
-        else:
-            ring_type = "PolynomialRing(F, "
-        var_set = set().union(*[eq.variables() for eq in equations])
-        var_list = [str(var) for var in sorted(var_set)[:: -1]]
-        with open(file_path, 'w') as f:
-            f.write(f"F := GaloisField({q});\n")
-            f.write(f"R<{', '.join(var_list)}> := {ring_type}{len(var_list)}, \"grevlex\");\n")
-            f.write(f"I := ideal<R |\n")
-            # add field equations
-            for v in var_list:
-                f.write(f"{v}^{q} - {v},\n")
-            # add system equations
-            for i, eq in enumerate(equations):
-                f.write(f"{eq}")
-                if i != len(equations) - 1:
-                    f.write(",\n")
-                else:
-                    f.write("\n")
-            f.write(f">;\n")
-            # use the F4 algorithm
-            f.write("GroebnerBasis(I: Faugere:=true);\n")
-            f.write("Variety(I);")
-
-    elif file_format == 'mq':
-        var_set = set().union(*[eq.variables() for eq in equations])
-        var_list = [str(var) for var in sorted(var_set)[:: -1]]
-        variables = ', '.join(var_list)
-        with open(file_path, 'w') as f:
-            f.write("# Variables:\n")
-            f.write(variables + "\n#\n")
-            f.write("# Equations:\n")
-            for eq in equations:
-                f.write(str(eq) + "\n")
-
-    elif file_format == 'wdsat':
-        var_set = set().union(*[eq.variables() for eq in equations if eq != 0])
-        var_list = sorted(var_set)[:: -1]
-        var_prod_dict = {v1 * v2: sorted([i + 1, j + 1]) for i, v1 in enumerate(
-            var_list) for j, v2 in enumerate(var_list) if v1 != v2}
-        M = len(equations)
-        N = len(var_set)
-        with open(file_path, 'w') as f:
-            f.write("p anf {} {}\n".format(N, M))
-            for eq in equations:
-                const_present = False
-                anf_line = "x "
-                for mon in eq.monomials():
-                    if mon in var_list:
-                        anf_line += "{} ".format(var_list.index(mon) + 1)
-                    elif mon in var_prod_dict.keys():
-                        anf_line += ".2 {} {} ".format(
-                            var_prod_dict[mon][0], var_prod_dict[mon][1])
-                    else:
-                        assert mon == 1
-                        const_present = True
-                if not const_present:
-                    # the right hand side of the equation must correspond to True
-                    anf_line += "T "
-                anf_line += "0\n"
-                f.write(anf_line)
-
-    elif file_format == 'xl':
-        '''The format for the block Wiedemann XL solver of Niederhagen: http://polycephaly.org/projects/xl'''
-        with open(file_path, 'w') as f:
-            f.write(equations_to_degrevlex_str(equations))
-
-    assert file_format in ['cb_gpu', 'cb_orig', 'cnf', 'magma', 'mq', 'wdsat', 'xl']
-    if verbose:
-        print("Equation system written to: " + str(file_path))
+            # handle indexing from 0/1
+            affine_vars = vector(list(self.xx[: n-m-2]) + [1])
+            equations = [affine_vars * s * affine_vars for s in SS]
+        # TODO odd char
+        assert len(equations) == m - 1
+        return equations, Sol
 
 
 def save_setup(rainbow, setup_path, verbose=False):
@@ -661,43 +393,24 @@ def main(q, n, m, o2, solver, gen_only, solve_only, check_only, inner_hybridatio
         n = 3*o2
     set_random_seed(seed)
     M, N = compute_system_size(q, m, n)
+    log_path = Path("log.txt")
     system_folder_path = 'systems'
     Path(system_folder_path).mkdir(parents=True, exist_ok=True)
-    log_path = Path("log.txt")
     base_system_name = "rainbow_{}_seed_{}_q_{}_o2_{}_m_{}_n_{}_M_{}_N_{}".format(
         "differential", seed, q, o2, m, n, M, N)
-    cb_gpu_system_path = Path(system_folder_path, base_system_name + '.cb_gpu')
-    cb_orig_system_path = Path(system_folder_path, base_system_name + '.cb_orig')
-    cnf_system_path = Path(system_folder_path, base_system_name + '.cnf')
-    magma_system_path = Path(system_folder_path, base_system_name + '.magma')
-    mq_system_path = Path(system_folder_path, base_system_name + '.mq')
-    xl_system_path = Path(system_folder_path, base_system_name + '.xl')
-    wdsat_system_path = Path(system_folder_path, base_system_name + '.anf')
     setup_path = Path(system_folder_path, base_system_name + '.stp')
     solution_path = Path(system_folder_path, base_system_name + '.sol')
 
     if verbose:
-        print("Generating Rainbow instance for seed={}, q={}, m={}, n={}, o2={}...".format(
-            seed, q, m, n, o2))
+        print(f"Generating Rainbow instance for seed={seed}, q={q}, m={m}, n={n}, o2={o2}...")
     rainbow = Rainbow(q, m, n, o2, seed=seed)
+
     if not (solve_only or check_only):
         save_setup(rainbow, setup_path, verbose=verbose)
         equations, solution = mount_attack(rainbow, verbose=verbose)
-        equations = [delete_powers(eq) for eq in equations]
+        EqSys = EquationSystem(equations, seed=seed, verbose=verbose)
+        EqSys.save_all(system_folder_path, base_system_name)
         save_solution(solution, solution_path)
-        save_system(file_format='xl', file_path=xl_system_path, rainbow=rainbow, equations=equations, verbose=verbose)
-        save_system(file_format='cb_gpu', file_path=cb_gpu_system_path,
-                    rainbow=rainbow, equations=equations, verbose=verbose)
-        save_system(file_format='cb_orig', file_path=cb_orig_system_path,
-                    rainbow=rainbow, equations=equations, verbose=verbose)
-        save_system(file_format='cnf', file_path=cnf_system_path, rainbow=rainbow, equations=equations,
-                    verbose=verbose)
-        save_system(file_format='magma', file_path=magma_system_path, rainbow=rainbow, equations=equations,
-                    verbose=verbose)
-        save_system(file_format='mq', file_path=mq_system_path, rainbow=rainbow, equations=equations,
-                    verbose=verbose)
-        save_system(file_format='wdsat', file_path=wdsat_system_path, rainbow=rainbow, equations=equations,
-                    verbose=verbose)
     else:
         if verbose:
             print("Skipping the attack equations generation...")
