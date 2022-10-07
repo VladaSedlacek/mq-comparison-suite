@@ -228,7 +228,6 @@ class Rainbow():
             affine_vars = vector(list(self.xx[: n-m-2]) + [1])
             equations = [affine_vars * s * affine_vars for s in SS]
         # TODO odd char
-        assert len(equations) == m - 1
         return equations, Sol
 
 
@@ -392,24 +391,26 @@ def main(q, n, m, o2, solver, gen_only, solve_only, check_only, inner_hybridatio
     if n == 0:
         n = 3*o2
     set_random_seed(seed)
-    M, N = compute_system_size(q, m, n)
-    log_path = Path("log.txt")
-    system_folder_path = 'systems'
-    Path(system_folder_path).mkdir(parents=True, exist_ok=True)
-    base_system_name = "rainbow_{}_seed_{}_q_{}_o2_{}_m_{}_n_{}_M_{}_N_{}".format(
-        "differential", seed, q, o2, m, n, M, N)
-    setup_path = Path(system_folder_path, base_system_name + '.stp')
-    solution_path = Path(system_folder_path, base_system_name + '.sol')
-
     if verbose:
         print(f"Generating Rainbow instance for seed={seed}, q={q}, m={m}, n={n}, o2={o2}...")
     rainbow = Rainbow(q, m, n, o2, seed=seed)
 
     if not (solve_only or check_only):
-        save_setup(rainbow, setup_path, verbose=verbose)
+        # get the attack equations
         equations, solution = mount_attack(rainbow, verbose=verbose)
         EqSys = EquationSystem(equations, seed=seed, verbose=verbose)
+        M, N = EqSys.M, EqSys.N
+        assert M, N == compute_system_size(q, m, n)
+
+        # save everything
+        system_folder_path = 'systems'
+        Path(system_folder_path).mkdir(parents=True, exist_ok=True)
+        base_system_name = "rainbow_{}_seed_{}_q_{}_o2_{}_m_{}_n_{}_M_{}_N_{}".format(
+            "differential", seed, q, o2, m, n, M, N)
+        setup_path = Path(system_folder_path, base_system_name + '.stp')
+        solution_path = Path(system_folder_path, base_system_name + '.sol')
         EqSys.save_all(system_folder_path, base_system_name)
+        save_setup(rainbow, setup_path, verbose=verbose)
         save_solution(solution, solution_path)
     else:
         if verbose:
@@ -420,6 +421,7 @@ def main(q, n, m, o2, solver, gen_only, solve_only, check_only, inner_hybridatio
         exit()
 
     if not check_only:
+        log_path = Path("log.txt")
         equations_path = Path(system_folder_path, base_system_name + f".{get_eq_format(solver)}")
         invoke_solver(solver, equations_path, q, M, N, log_path=log_path,
                       inner_hybridation=inner_hybridation, precompiled=precompiled)
