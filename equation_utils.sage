@@ -13,32 +13,6 @@ def str_to_elt(q, s):
     return GF(q).fetch_int(int(s, q))
 
 
-def four_bits_to_str(bit_list):
-    return str(hex(int(''.join(map(str, bit_list)).encode(), 2)))[2:]
-
-
-def UD_to_string(q, M):
-    # this corresponds to the degrevlex order
-    S = ""
-    for i in range(M.ncols()):
-        for j in range(i + 1):
-            S += elt_to_str(q, M[j, i]) + ' '
-    S += ';\n'
-    return S
-
-
-def weil_coeff_list_to_string(weil_coeff_list, deg):
-    S = ""
-    for weil_coeffs in weil_coeff_list:
-        weil_coeffs += ((-len(weil_coeffs)) % deg) * [0]
-        assert len(weil_coeffs) % deg == 0
-        for i in range(len(weil_coeffs) / deg):
-            bit_list = weil_coeffs[deg * i:deg * i + deg]
-            S += four_bits_to_str(bit_list) + ' '
-        S += ';\n'
-    return S
-
-
 def delete_powers(eq):
     return sum([radical(mon) for mon in eq.monomials()])
 
