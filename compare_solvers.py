@@ -12,7 +12,7 @@ import statistics
 import subprocess as sp
 from compile_solver import compile_solver
 from invoke_solver import invoke_solver
-from utils import get_eq_format
+from utils import get_eq_pathname
 
 
 def sec_to_str(t):
@@ -118,7 +118,7 @@ def main(o2_min, o2_max, iterations, log_path_brief, log_path_verbose, to_skip, 
                         print_and_log(f"Solver: {solver}\n", to_print="")
 
                         # Measure the time and memory usage of the active process and all its subprocesses
-                        equations_path = f"./systems/rainbow_differential_seed_{seed}_q_{q}_o2_{o2}_m_{m}_n_{n}_M_{M}_N_{N}.{get_eq_format(solver)}"
+                        equations_path = get_eq_pathname(seed, q, o2, m, n, M, N, solver)
                         out, time_taken, rss = invoke_solver(
                             solver, equations_path, q, M, N, precompiled=True, timeout=timeout)
                         print_and_log(out, to_print="")

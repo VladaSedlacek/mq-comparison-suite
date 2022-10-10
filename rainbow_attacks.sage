@@ -5,7 +5,7 @@ from pathlib import Path
 import click
 import re
 from invoke_solver import invoke_solver
-from utils import get_eq_format
+from utils import declare_paths, get_eq_pathname
 load("equation_utils.sage")
 
 
@@ -382,11 +382,12 @@ def check_solution(log_path, solver, solution, N, rainbow, attack_type='differen
 @ click.option('--gen_only', default=False, is_flag=True, help='only generate equation systems')
 @ click.option('--solve_only', default=False, is_flag=True, help='only solve an existing system and check solutions')
 @ click.option('--check_only', default=False, is_flag=True, help='only check solutions')
+@ click.option('--log_path', default=Path("log.txt"), help='path to a log with the solution')
 @ click.option('--inner_hybridation', '-h', default="-1", help='the number of variable that are not guessed in MQ', type=int)
 @ click.option('--verbose', '-v', default=False, is_flag=True, help='control the output verbosity')
 @ click.option('--seed', '-s', default=0, help='the seed for randomness replication', type=int)
 @ click.option('--precompiled', default=False, is_flag=True, help='indicates if all relevant solvers are already compiled w.r.t. the parameters')
-def main(q, n, m, o2, solver, gen_only, solve_only, check_only, inner_hybridation, verbose, seed, precompiled):
+def main(q, n, m, o2, solver, gen_only, solve_only, check_only, log_path, inner_hybridation, verbose, seed, precompiled):
     if m == 0:
         m = 2*o2
     if n == 0:
@@ -404,13 +405,9 @@ def main(q, n, m, o2, solver, gen_only, solve_only, check_only, inner_hybridatio
         assert M, N == compute_system_size(q, m, n)
 
         # save everything
-        system_folder_path = 'systems'
-        Path(system_folder_path).mkdir(parents=True, exist_ok=True)
-        base_system_name = f"rainbow_diff_s_{seed}_q_{q}_o2_{o2}_m_{m}_n_{n}"
-        setup_path = Path(system_folder_path, base_system_name + '.stp')
-        solution_path = Path(system_folder_path, base_system_name + '.sol')
+        system_folder_path, base_system_name = declare_paths(seed, q, o2, m, n)
+        save_setup(rainbow, Path(system_folder_path, base_system_name + '.stp'), verbose=verbose)
         EqSys.save_all(system_folder_path, base_system_name)
-        save_setup(rainbow, setup_path, verbose=verbose)
         save_solution(solution, solution_path)
     else:
         if verbose:
@@ -421,8 +418,7 @@ def main(q, n, m, o2, solver, gen_only, solve_only, check_only, inner_hybridatio
         exit()
 
     if not check_only:
-        log_path = Path("log.txt")
-        equations_path = Path(system_folder_path, base_system_name + f".{get_eq_format(solver)}")
+        equations_path = get_eq_pathname(seed, q, o2, m, n, M, N, solver)
         invoke_solver(solver, equations_path, q, M, N, log_path=log_path,
                       inner_hybridation=inner_hybridation, precompiled=precompiled)
 

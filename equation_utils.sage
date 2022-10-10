@@ -327,6 +327,7 @@ Order : graded reverse lex order
             print("Equation system written to: " + str(file_path))
 
     def save_all(self, folder, base_system_name, append_dims=True):
+        Path(folder).mkdir(parents=True, exist_ok=True)
         eq_formats = ['anf', 'cb_gpu', 'cb_orig', 'cnf', 'magma', 'mq', 'xl']
         for eq_format in eq_formats:
             # choose Weil descent for formats intended for GF(2)
