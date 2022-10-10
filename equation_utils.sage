@@ -123,7 +123,7 @@ def convert_fukuoka_to_others(fukuoka_path):
 class EquationSystem():
     """A class providing an interface to equation systems of all formats."""
 
-    def __init__(self, equations, seed=0, verbose=False, order='degrevlex'):
+    def __init__(self, equations, seed=0, verbose=False, order='degrevlex', solution=None):
         # initialize the instance with a list of equations over a multivariate ring
         self.seed = seed
         self.verbose = verbose
@@ -143,6 +143,7 @@ class EquationSystem():
         self.equations = [self.R(eq) for eq in equations if eq != 0]
         self.M = len(self.equations)
         self.N = len(self.var_list)
+        self.solution = solution
         self.ext_deg = self.F.degree()
         if is_prime(self.q):
             self.weil = None
@@ -163,7 +164,12 @@ class EquationSystem():
         assert set(eq_w.parent() for eq_w in equations_weil) == {weil_ring}
         assert len(equations_weil) == self.M * self.ext_deg
         assert len(set().union(*[eq_w.variables() for eq_w in equations_weil])) == self.N * self.ext_deg
-        return EquationSystem(equations_weil, self.seed, self.verbose, self.order)
+        if self.solution is None:
+            solution_weil = None
+        else:
+            solution_weil_parts = [weil_decomposition(poly) for poly in self.solution]
+            solution_weil = vector([c for part in solution_weil_parts for c in part])
+        return EquationSystem(equations_weil, self.seed, self.verbose, self.order, solution=solution_weil)
 
     def to_degrevlex_str(self):
         degrevlex_mons = compute_degrevlex_mons(self.var_list)
@@ -332,3 +338,13 @@ Order : graded reverse lex order
                 dim_str = f"_M_{self.M}_N_{self.N}" if append_dims else ""
                 eq_path = Path(folder, f"{base_system_name}{dim_str}.{eq_format}")
                 self.save_one(eq_format, eq_path)
+
+    def check_solution(self):
+        # check if the solution attribute actually satisfies the equations
+        if self.solution is None:
+            return False
+        else:
+            for eq in self.equations:
+                if eq(*self.solution) != 0:
+                    return False
+            return True

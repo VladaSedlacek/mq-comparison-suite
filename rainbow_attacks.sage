@@ -398,7 +398,7 @@ def main(q, n, m, o2, solver, gen_only, solve_only, check_only, inner_hybridatio
     if not (solve_only or check_only):
         # get the attack equations
         equations, solution = mount_attack(rainbow, verbose=verbose)
-        EqSys = EquationSystem(equations, seed=seed, verbose=verbose)
+        EqSys = EquationSystem(equations, seed=seed, verbose=verbose, solution=solution[1:-1])
         M, N = EqSys.M, EqSys.N
         assert M, N == compute_system_size(q, m, n)
 
