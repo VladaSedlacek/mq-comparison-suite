@@ -138,7 +138,7 @@ class EquationSystem():
         self.equations = [self.R(eq) for eq in equations if eq != 0]
         self.M = len(self.equations)
         self.N = len(self.var_list)
-        self.ext_deg = self.F.modulus().degree()
+        self.ext_deg = self.F.degree()
         if is_prime(self.q):
             self.weil = None
         else:
