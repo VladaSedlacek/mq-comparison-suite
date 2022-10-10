@@ -271,13 +271,6 @@ def compute_system_size(q, m, n, attack_type='differential'):
         return m, n - m - 1
 
 
-def mount_attack(rainbow, attack_type="differential", verbose=False):
-    if attack_type == 'differential':
-        if verbose:
-            print("Mounting the differential attack...")
-        return rainbow.differential_attack(debug=False, verbose=verbose)
-
-
 def get_solution_from_log(log_path, format, N, rainbow=None):
     assert format in ['cms', 'crossbred', 'magma', 'mq', 'wdsat', 'xl']
     with open(log_path, 'r') as f:
@@ -397,7 +390,7 @@ def main(q, n, m, o2, solver, gen_only, solve_only, check_only, inner_hybridatio
 
     if not (solve_only or check_only):
         # get the attack equations
-        equations, solution = mount_attack(rainbow, verbose=verbose)
+        equations, solution = rainbow.differential_attack(verbose=verbose)
         EqSys = EquationSystem(equations, seed=seed, verbose=verbose, solution=solution[1:-1])
         M, N = EqSys.M, EqSys.N
         assert M, N == compute_system_size(q, m, n)
