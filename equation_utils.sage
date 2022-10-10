@@ -11,7 +11,7 @@ def elt_to_str(q, a):
 
 
 def str_to_elt(q, s):
-    return GF(q).fetch_int(int(s, q))
+    return GF(q).fetch_int(int(s, 16))
 
 
 def delete_powers(eq):
