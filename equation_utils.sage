@@ -10,8 +10,11 @@ def elt_to_str(q, a):
         return str(hex(sum([2**i * a.polynomial()[i].lift() for i in range(d)])))[2:]
 
 
-def str_to_elt(q, s):
-    return GF(q).fetch_int(int(s, 16))
+def str_to_elt(q, s, field=None):
+    if field is not None:
+        return field.fetch_int(int(s, 16))
+    else:
+        return GF(q).fetch_int(int(s, 16))
 
 
 def delete_powers(eq):
