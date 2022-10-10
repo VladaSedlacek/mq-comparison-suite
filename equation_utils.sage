@@ -110,7 +110,7 @@ def convert_fukuoka_to_others(fukuoka_path):
     folder = Path(fukuoka_path).parent
     base_system_name = Path(fukuoka_path).stem
     FukuokaSystem = load_fukuoka(fukuoka_path)
-    FukuokaSystem.save_all(folder, base_system_name)
+    FukuokaSystem.save_all(folder, base_system_name, append_dims=False)
     # for systems over GF(2), the new ".cb_gpu" should be the same as the input Fukuoka file
 
 
@@ -313,13 +313,15 @@ Order : graded reverse lex order
         if self.verbose:
             print("Equation system written to: " + str(file_path))
 
-    def save_all(self, folder, base_system_name):
+    def save_all(self, folder, base_system_name, append_dims=True):
         eq_formats = ['anf', 'cb_gpu', 'cb_orig', 'cnf', 'magma', 'mq', 'xl']
         for eq_format in eq_formats:
             # choose Weil descent for formats intended for GF(2)
             if eq_format in ['anf', 'cb_gpu', 'cb_orig', 'cnf', 'mq'] and self.weil is not None:
-                eq_path = Path(folder, f"{base_system_name}_M_{self.weil.M}_N_{self.weil.N}_weil.{eq_format}")
+                dim_str = f"_M_{self.weil.M}_N_{self.weil.N}_weil" if append_dims else ""
+                eq_path = Path(folder, f"{base_system_name}{dim_str}.{eq_format}")
                 self.weil.save_one(eq_format, eq_path)
             else:
-                eq_path = Path(folder, f"{base_system_name}_M_{self.M}_N_{self.N}.{eq_format}")
+                dim_str = f"_M_{self.M}_N_{self.N}" if append_dims else ""
+                eq_path = Path(folder, f"{base_system_name}{dim_str}.{eq_format}")
                 self.save_one(eq_format, eq_path)
