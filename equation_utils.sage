@@ -174,7 +174,7 @@ class EquationSystem():
                 print("The file {} already exists, overwriting...".format(str(file_path)))
             else:
                 print("The file {} already exists, skipping this phase...".format(str(file_path)))
-            return
+                return
 
         if eq_format == 'anf':
             var_list = self.var_list
