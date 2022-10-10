@@ -149,12 +149,7 @@ class EquationSystem():
         return EquationSystem(equations_weil, self.seed, self.verbose, self.order)
 
     def to_degrevlex_str(self):
-        var_list = self.var_list + [1]
-        degrevlex_mons = []
-        # degrevlex corresponds to reading the upper part of the quadratic form matrix column-wise
-        for j in range(len(var_list)):
-            for i in range(j + 1):
-                degrevlex_mons.append(var_list[i] * var_list[j])
+        degrevlex_mons = compute_degrevlex_mons(self.var_list)
         coeff_str = ""
         for eq in self.equations:
             coeffs = [eq.monomial_coefficient(mon) for mon in degrevlex_mons[:-1]] + [eq.constant_coefficient()]
