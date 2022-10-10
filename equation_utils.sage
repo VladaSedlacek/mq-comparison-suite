@@ -31,21 +31,26 @@ def linear_combination(coefficients, objects):
 
 def weil_decomposition(poly):
     if poly == 0:
-        return []
-    # Constant coefficients come first
-    extension_coeffs = [c.polynomial().list() for c in poly.coefficients()]
-    max_len = max(len(ec) for ec in extension_coeffs)
-    # Pad the coefficient lists
-    for ec in extension_coeffs:
-        for _ in range(max_len - len(ec)):
-            ec.append(0)
-    base_coeff_list = zip(*extension_coeffs)
-    base_polys = [linear_combination(coeffs, poly.monomials()) for coeffs in base_coeff_list]
-    # Convert the base polys into actual polynomials over the base field
-    ext_ring = poly.parent()
-    base_field = ext_ring.base().base()
-    base_ring = ext_ring.change_ring(base_field)
-    return [base_ring(base_poly) for base_poly in base_polys]
+        return [0] * poly.parent().degree()
+    try:
+        # constant coefficients come first
+        extension_coeffs = [c.polynomial().list() for c in poly.coefficients()]
+        max_len = max(len(ec) for ec in extension_coeffs)
+        # pad the coefficient lists
+        for ec in extension_coeffs:
+            ec += [0] * (poly.base_ring().degree() - len(ec))
+        base_coeff_list = zip(*extension_coeffs)
+        base_polys = [linear_combination(coeffs, poly.monomials()) for coeffs in base_coeff_list]
+        # convert the base polys into actual polynomials over the base field
+        ext_ring = poly.parent()
+        base_field = ext_ring.base().base()
+        base_ring = ext_ring.change_ring(base_field)
+        return [base_ring(base_poly) for base_poly in base_polys]
+    except AttributeError:
+        # handle constant polynomials
+        coeffs = poly.polynomial().list()
+        coeffs += [0] * (poly.parent().degree() - len(coeffs))
+        return coeffs
 
 
 def compute_degrevlex_mons(var_list):
