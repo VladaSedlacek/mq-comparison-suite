@@ -103,6 +103,14 @@ def load_fukuoka(fukuoka_path):
         return EquationSystem(equations, seed=seed)
 
 
+def convert_fukuoka_to_others(fukuoka_path):
+    folder = Path(fukuoka_path).parent
+    base_system_name = Path(fukuoka_path).stem
+    FukuokaSystem = load_fukuoka(fukuoka_path)
+    FukuokaSystem.save_all(folder, base_system_name)
+    # for systems over GF(2), the new ".cb_gpu" should be the same as the input Fukuoka file
+
+
 class EquationSystem():
     """A class providing an interface to equation systems of all formats."""
 
