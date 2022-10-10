@@ -3,8 +3,11 @@ from pathlib import Path
 
 def elt_to_str(q, a):
     if q.is_prime():
-        # this is just a special case of the latter, but it is more readable
-        return str(hex(a))[2:].zfill(2)
+        # this is just a special case of the latter (up to the padding), but it is more readable
+        if q < 11:
+            return str(hex(a))[2:]
+        else:
+            return str(hex(a))[2:].zfill(2)
     else:
         d = log(q, radical(q))
         return str(hex(sum([2**i * a.polynomial()[i].lift() for i in range(d)])))[2:].zfill(2)
