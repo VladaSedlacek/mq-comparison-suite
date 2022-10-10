@@ -45,6 +45,64 @@ def weil_decomposition(poly):
     return [base_ring(base_poly) for base_poly in base_polys]
 
 
+def compute_degrevlex_mons(var_list):
+    var_list = var_list + [1]
+    degrevlex_mons = []
+    # degrevlex corresponds to reading the upper part of the quadratic form matrix column-wise
+    for j in range(len(var_list)):
+        for i in range(j + 1):
+            degrevlex_mons.append(var_list[i] * var_list[j])
+    return degrevlex_mons
+
+
+def load_fukuoka(fukuoka_path):
+    # the input file format is the one used by https://www.mqchallenge.org/ (and coincides with cb_gpu)
+    with open(fukuoka_path, 'r') as f:
+        lines = f.readlines()
+
+        # perform basic sanity checks on the input file
+        assert "Galois Field : " in lines[0]
+        assert "Number of variables (n) : " in lines[1]
+        assert "Number of polynomials (m) : " in lines[2]
+        assert "Seed : " in lines[3]
+        assert "Order : " in lines[4]
+        assert lines[5].strip() == ""
+        assert lines[6].strip() == "*********************"
+
+        # parse the header
+        field_str = lines[0].split("Galois Field : ")[1].strip().split(" / ")
+        if len(field_str) > 1:
+            base_str = field_str[0].split("[x]")[0].strip()
+            modulus_str = field_str[1].strip()
+            ring = sage_eval(f"PolynomialRing({base_str}, 'x')")
+            q = ring.characteristic()
+            modulus = ring(modulus_str)
+            d = modulus.degree()
+            field = GF(q ^ d, name='z', modulus=modulus)
+        else:
+            field = sage_eval(field_str[0].strip())
+
+        n = int(lines[1].split("Number of variables (n) : ")[1].strip())
+        m = int(lines[2].split("Number of polynomials (m) : ")[1].strip())
+        seed = int(lines[3].split("Seed : ")[1].strip())
+        order = lines[4].split("Order : ")[1].strip()
+
+        assert order == 'graded reverse lex order'
+        # other orders are not supported yet
+
+        # construct the equations
+        R = PolynomialRing(field, ['x%s' % p for p in range(1, n + 1)], order='degrevlex')
+        degrevlex_mons = compute_degrevlex_mons(list(R.gens()))
+        equations = []
+        for line in lines[7:]:
+            assert line.strip()[-1] == ';'
+            str_coeffs = line.strip().split(" ")[:-1]
+            coeffs = [str_to_elt(field.order, str_coeff, field) for str_coeff in str_coeffs]
+            equations.append(linear_combination(coeffs, degrevlex_mons))
+        assert len(equations) == m
+        return EquationSystem(equations, seed=seed)
+
+
 class EquationSystem():
     """A class providing an interface to equation systems of all formats."""
 
