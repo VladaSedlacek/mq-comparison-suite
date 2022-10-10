@@ -111,7 +111,8 @@ def convert_fukuoka_to_others(fukuoka_path):
     base_system_name = Path(fukuoka_path).stem
     FukuokaSystem = load_fukuoka(fukuoka_path)
     FukuokaSystem.save_all(folder, base_system_name, append_dims=False)
-    # for systems over GF(2), the new ".cb_gpu" should be the same as the input Fukuoka file
+    # for systems over GF(2) (including after Weil descent), the new ".cb_gpu" and ".xl" representations
+    # might differ from the original Fukuoka respresentations because of the delete_powers() function
 
 
 class EquationSystem():
