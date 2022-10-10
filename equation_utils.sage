@@ -164,10 +164,13 @@ class EquationSystem():
             coeff_str += " ".join([elt_to_str(self.q, coeff) for coeff in coeffs]) + " ;\n"
         return coeff_str
 
-    def save_one(self, eq_format, file_path):
+    def save_one(self, eq_format, file_path, overwrite=False):
         # handle overwrite behaviour
-        if file_path.is_file() and self.verbose:
-            print("The file {} already exists!".format(str(file_path)))
+        if file_path.is_file():
+            if overwrite:
+                print("The file {} already exists, overwriting...".format(str(file_path)))
+            else:
+                print("The file {} already exists, skipping this phase...".format(str(file_path)))
             return
 
         if eq_format == 'anf':
