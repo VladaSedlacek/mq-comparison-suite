@@ -396,18 +396,20 @@ def main(q, n, m, o2, solver, gen_only, solve_only, check_only, log_path, inner_
     if verbose:
         print(f"Generating Rainbow instance for seed={seed}, q={q}, m={m}, n={n}, o2={o2}...")
     rainbow = Rainbow(q, m, n, o2, seed=seed)
+    system_folder_path, base_system_name = declare_paths(seed, q, o2, m, n)
+    setup_path = Path(system_folder_path, base_system_name + '.stp')
+    solution_path = Path(system_folder_path, base_system_name + '.sol')
+    M, N = compute_system_size(q, m, n)
 
     if not (solve_only or check_only):
         # get the attack equations
         equations, solution = rainbow.differential_attack(verbose=verbose)
         EqSys = EquationSystem(equations, seed=seed, verbose=verbose, solution=solution[1:-1])
-        M, N = EqSys.M, EqSys.N
-        assert M, N == compute_system_size(q, m, n)
+        assert (EqSys.M, EqSys.N) == (M, N)
 
         # save everything
-        system_folder_path, base_system_name = declare_paths(seed, q, o2, m, n)
-        save_setup(rainbow, Path(system_folder_path, base_system_name + '.stp'), verbose=verbose)
         EqSys.save_all(system_folder_path, base_system_name)
+        save_setup(rainbow, setup_path, verbose=verbose)
         save_solution(solution, solution_path)
     else:
         if verbose:
