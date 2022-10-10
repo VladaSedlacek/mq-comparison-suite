@@ -30,7 +30,7 @@ Note that magma supports all finite fields, XL supports $\mathbb{F}\_2$, $\mathb
   * see `python3 invoke_solver.py --help` for usage
 * `compile_solver.py` takes care of solver which need to be precompiled in advance. It is called internally by other scripts.
 * `compare_solvers.py` is the top layer wrapper which performs a comprehensive comparison of all the solvers and logs the results.
-  * example: `sage compare_solvers.py -s magma` runs the comparison of all solvers except for magma
+  * example: `sage compare_solvers.py -s magma -t 3600` runs the comparison of all solvers except for magma, with one hour timeout for each solver
 
 ## Equation file formats
 

@@ -352,6 +352,14 @@ def check_solution(log_path, solver, solution, N, rainbow, attack_type='differen
 
     solution_found = get_solution_from_log(
         log_path, format=log_format, N=N, rainbow=rainbow)
+
+    # handle potential dummy variables
+    try:
+        if solver in ["libfes", "mq"]:
+            solution_found = solution_found[:N]
+    except TypeError:
+        pass
+
     print(f"\n{'First solution found: ' : <25} {solution_found} ")
 
     if attack_type == 'differential':
