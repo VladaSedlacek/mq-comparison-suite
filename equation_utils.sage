@@ -170,10 +170,11 @@ class EquationSystem():
     def save_one(self, eq_format, file_path, overwrite=False):
         # handle overwrite behaviour
         if file_path.is_file():
-            if overwrite:
+            if overwrite and self.verbose:
                 print("The file {} already exists, overwriting...".format(str(file_path)))
             else:
-                print("The file {} already exists, skipping this phase...".format(str(file_path)))
+                if self.verbose:
+                    print("The file {} already exists, skipping this phase...".format(str(file_path)))
                 return
 
         if eq_format == 'anf':
