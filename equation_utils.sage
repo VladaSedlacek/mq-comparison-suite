@@ -179,6 +179,17 @@ class EquationSystem():
             coeff_str += " ".join([elt_to_str(self.q, coeff) for coeff in coeffs]) + " ;\n"
         return coeff_str
 
+    def save_solution(self, solution_path, overwrite=False):
+        if Path(solution_path).is_file():
+            if overwrite and self.verbose:
+                print("The file {} already exists, overwriting...".format(str(file_path)))
+            else:
+                if self.verbose:
+                    print("The file {} already exists, skipping this phase...".format(str(file_path)))
+                return
+        with open(solution_path, 'w') as f:
+            f.write(str(self.solution))
+
     def save_one(self, eq_format, file_path, overwrite=False):
         # handle overwrite behaviour
         if file_path.is_file():
@@ -329,6 +340,7 @@ Order : graded reverse lex order
 
     def save_all(self, folder, base_system_name, append_dims=True, overwrite=False):
         Path(folder).mkdir(parents=True, exist_ok=True)
+        # save the equations
         eq_formats = ['anf', 'cb_gpu', 'cb_orig', 'cnf', 'magma', 'mq', 'xl']
         for eq_format in eq_formats:
             # choose Weil descent for formats intended for GF(2)
@@ -340,6 +352,10 @@ Order : graded reverse lex order
                 dim_str = f"_M_{self.M}_N_{self.N}" if append_dims else ""
                 eq_path = Path(folder, f"{base_system_name}{dim_str}.{eq_format}")
                 self.save_one(eq_format, eq_path, overwrite=overwrite)
+        # save the solution
+        self.save_solution(Path(folder, f"{base_system_name}.sol"), overwrite=overwrite)
+        if self.weil is not None:
+            self.weil.save_solution(Path(folder, f"{base_system_name}_weil.sol"), overwrite=overwrite)
 
     def check_solution(self):
         # check if the solution attribute actually satisfies the equations

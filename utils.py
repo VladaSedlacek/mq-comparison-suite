@@ -17,6 +17,20 @@ def get_eq_format(solver):
     return formats[solver]
 
 
+def get_log_format(solver):
+    formats = {
+        'cb_gpu': 'cb',
+        'cb_orig': 'cb',
+        'cms': 'cms',
+        'libfes': 'mq',
+        'magma': 'magma',
+        'mq': 'mq',
+        'wdsat': 'wdsat',
+        'xl': 'xl',
+    }
+    return formats[solver]
+
+
 def declare_paths(seed, q, o2, m, n):
     system_folder_path = Path("systems")
     Path(system_folder_path).mkdir(parents=True, exist_ok=True)
@@ -24,7 +38,12 @@ def declare_paths(seed, q, o2, m, n):
     return system_folder_path, base_system_name
 
 
-def get_eq_pathname(seed, q, o2, m, n, M, N, solver):
+def get_sol_path(seed, q, o2, m, n):
+    system_folder_path, base_system_name = declare_paths(seed, q, o2, m, n)
+    return Path(system_folder_path, base_system_name + ".sol")
+
+
+def get_eq_path(seed, q, o2, m, n, M, N, solver):
     assert q % 2 == 0
     d = int(log(q, 2))
     dim_str = f"_M_{M * d}_N_{N * d}_weil" if d > 1 else f"_M_{M}_N_{N}"

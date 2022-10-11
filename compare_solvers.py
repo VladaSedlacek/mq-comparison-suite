@@ -12,7 +12,7 @@ import statistics
 import subprocess as sp
 from compile_solver import compile_solver
 from invoke_solver import invoke_solver
-from utils import get_eq_pathname
+from utils import get_eq_path, get_sol_path
 
 
 def sec_to_str(t):
@@ -118,12 +118,14 @@ def main(o2_min, o2_max, iterations, log_path_brief, log_path_verbose, to_skip, 
                         print_and_log(f"Solver: {solver}\n", to_print="")
 
                         # Measure the time and memory usage of the active process and all its subprocesses
-                        equations_path = get_eq_pathname(seed, q, o2, m, n, M, N, solver)
+                        equations_path = get_eq_path(seed, q, o2, m, n, M, N, solver)
                         out, time_taken, rss = invoke_solver(
                             solver, equations_path, q, M, N, precompiled=True, timeout=timeout)
                         print_and_log(out, to_print="")
-                        check_cmd = f"sage rainbow_attacks.sage --seed {seed} --q {q} --o2 {o2} --m {m} --n {n} --solver {solver} --check_only"
+                        sol_path = get_sol_path(seed, q, o2, m, n)
+                        check_cmd = f"sage check_solution.sage --sol_path {sol_path} --solver {solver}"
                         proc = sp.run(check_cmd, stdout=sp.PIPE, stderr=sp.STDOUT, shell=True)
+                        print_and_log(proc.stdout.decode(), to_print="")
                         # successful solutions should yield code 0
                         code = int('Attack successful!' not in proc.stdout.decode())
 

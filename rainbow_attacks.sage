@@ -3,9 +3,9 @@
 from itertools import product
 from pathlib import Path
 import click
-import re
+import subprocess as sp
 from invoke_solver import invoke_solver
-from utils import declare_paths, get_eq_pathname
+from utils import declare_paths, get_eq_path, get_sol_path
 load("equation_utils.sage")
 
 
@@ -242,135 +242,12 @@ def save_setup(rainbow, setup_path, verbose=False):
         f.write("# W:" + str(rainbow.W) + "\n\n")
 
 
-def save_solution(solution, solution_path, verbose=False):
-    if solution_path.is_file() and verbose:
-        print("The file {} already exists!".format(str(solution_path)))
-        return
-    with open(solution_path, 'w') as f:
-        for s in solution:
-            f.write(str(s) + "\n")
-
-
-def load_solution(solution_path, q):
-    try:
-        F = GF(q)
-        with open(solution_path, 'r') as f:
-            lines = f.readlines()
-            solution = [F(s) for s in lines]
-            return vector(solution)
-    except Exception as e:
-        print("An error ocurred during loading the solution: ", e)
-        exit()
-
-
 def compute_system_size(q, m, n, attack_type='differential'):
     '''Return the number of equations and the number of variables'''
     if attack_type == 'differential':
         if q % 2 == 0:
             return m - 1, n - m - 2
         return m, n - m - 1
-
-
-def get_solution_from_log(log_path, format, N, rainbow=None):
-    assert format in ['cms', 'crossbred', 'magma', 'mq', 'wdsat', 'xl']
-    with open(log_path, 'r') as f:
-        if rainbow != None:
-            z = rainbow.F.gens()[0]
-            deg = rainbow.ext_deg
-            zs = [z ^ i for i in range(deg)]
-        variables = []
-        found = False
-        sol_str = ""
-        for line in f.readlines():
-            if format == 'cms':
-                Nw = N * deg
-                if line[0] == 'v':
-                    variables += line.strip().split(" ")[1:]
-                    if len(variables) < Nw:
-                        continue
-                    sol = [int((sgn(int(b)) + 1) / 2) for b in variables[:Nw]]
-                    parts = [sol[deg * i:deg * i + deg]
-                             for i in range(len(sol) / deg)]
-                    return vector([linear_combination(bits, zs) for bits in parts])
-
-            if format == 'crossbred':
-                if "solution found: " in line:
-                    found = True
-                    continue
-                if found:
-                    sol = [ZZ(c) for c in line.strip().strip('][').split(',')]
-                    parts = [sol[deg * i:deg * i + deg]
-                             for i in range(len(sol) / deg)]
-                    return vector([linear_combination(bits, zs) for bits in parts])
-
-            if format == 'magma':
-                # find solutions even across multiple lines and take the first one
-                if line[:3] == "[ <":
-                    found = True
-                if found:
-                    sol_str += line
-                    if ">" in line:
-                        end = sol_str.index(">")
-                        sol = vector([rainbow.F(x) for x in sol_str[3:end] if x not in [',', ' ', '\n']])
-                        parts = [sol[deg * i:deg * i + deg]
-                                 for i in range(len(sol) / deg)]
-                        return vector([linear_combination(bits, zs) for bits in parts])
-
-            if format == 'mq':
-                # possibly includes Weil descent
-                if "solution found : " in line:
-                    sol = [int(b) for b in line.split(
-                        "solution found : ")[1][1:-2].split(", ")]
-                    parts = [sol[deg * i:deg * i + deg]
-                             for i in range(len(sol) / deg)]
-                    return vector([linear_combination(bits, zs) for bits in parts])
-
-            if format == 'wdsat':
-                line = line.strip()
-                if line == "":
-                    continue
-                if re.match('^[0-1]*$', line):
-                    sol = [ZZ(b) for b in list(line)]
-                    parts = [sol[deg * i:deg * i + deg]
-                             for i in range(len(sol) / deg)]
-                    return vector([linear_combination(bits, zs) for bits in parts])
-
-            if format == 'xl':
-                if "  is sol" in line:
-                    sol = line.split("  is sol")[0].split(" ")
-                    return vector([str_to_elt(rainbow.q, c) for c in sol])
-    return None
-
-
-def check_solution(log_path, solver, solution, N, rainbow, attack_type='differential'):
-    if solver in ['cb_orig', 'cb_gpu']:
-        log_format = 'crossbred'
-    elif solver == 'libfes':
-        log_format = 'mq'
-    else:
-        log_format = solver
-
-    solution_found = get_solution_from_log(
-        log_path, format=log_format, N=N, rainbow=rainbow)
-
-    # handle potential dummy variables
-    try:
-        if solver in ["libfes", "mq"]:
-            solution_found = solution_found[:N]
-    except TypeError:
-        pass
-
-    print(f"\n{'First solution found: ' : <25} {solution_found} ")
-
-    if attack_type == 'differential':
-        solution_expected = solution[1:-1]
-        print(f"{'Expected solution: ' : <25} {solution_expected}\n")
-        success = solution_found == solution_expected
-        if success:
-            print("Attack successful!\n")
-        else:
-            print("Attack NOT successful. :(\n")
-        return success
 
 
 @ click.command()
@@ -381,13 +258,12 @@ def check_solution(log_path, solver, solution, N, rainbow, attack_type='differen
 @ click.option('--solver', type=click.Choice(['cb_orig', 'cb_gpu', 'cms', 'libfes', 'magma', 'mq', 'wdsat', 'xl'], case_sensitive=False), help='the external solver to be used')
 @ click.option('--gen_only', default=False, is_flag=True, help='only generate equation systems')
 @ click.option('--solve_only', default=False, is_flag=True, help='only solve an existing system and check solutions')
-@ click.option('--check_only', default=False, is_flag=True, help='only check solutions')
 @ click.option('--log_path', default=Path("log.txt"), help='path to a log with the solution')
 @ click.option('--inner_hybridation', '-h', default="-1", help='the number of variable that are not guessed in MQ', type=int)
 @ click.option('--verbose', '-v', default=False, is_flag=True, help='control the output verbosity')
 @ click.option('--seed', '-s', default=0, help='the seed for randomness replication', type=int)
 @ click.option('--precompiled', default=False, is_flag=True, help='indicates if all relevant solvers are already compiled w.r.t. the parameters')
-def main(q, n, m, o2, solver, gen_only, solve_only, check_only, log_path, inner_hybridation, verbose, seed, precompiled):
+def main(q, n, m, o2, solver, gen_only, solve_only, log_path, inner_hybridation, verbose, seed, precompiled):
     if m == 0:
         m = 2*o2
     if n == 0:
@@ -401,30 +277,30 @@ def main(q, n, m, o2, solver, gen_only, solve_only, check_only, log_path, inner_
     solution_path = Path(system_folder_path, base_system_name + '.sol')
     M, N = compute_system_size(q, m, n)
 
-    if not (solve_only or check_only):
+    if not solve_only:
         # get the attack equations
         equations, solution = rainbow.differential_attack(verbose=verbose)
         EqSys = EquationSystem(equations, seed=seed, verbose=verbose, solution=solution[1:-1])
         assert (EqSys.M, EqSys.N) == (M, N)
-
         # save everything
         EqSys.save_all(system_folder_path, base_system_name)
         save_setup(rainbow, setup_path, verbose=verbose)
-        save_solution(solution, solution_path)
     else:
         if verbose:
             print("Skipping the attack equations generation...")
-        solution = load_solution(solution_path, q)
 
     if gen_only or solver == None:
         exit()
 
-    if not check_only:
-        equations_path = get_eq_pathname(seed, q, o2, m, n, M, N, solver)
-        invoke_solver(solver, equations_path, q, M, N, log_path=log_path,
-                      inner_hybridation=inner_hybridation, precompiled=precompiled)
+    equations_path = get_eq_path(seed, q, o2, m, n, M, N, solver)
+    invoke_solver(solver, equations_path, q, M, N, log_path=log_path,
+                  inner_hybridation=inner_hybridation, precompiled=precompiled)
 
-    return check_solution(log_path, solver, solution, N, rainbow)
+    if not solve_only:
+        sol_path = get_sol_path(seed, q, o2, m, n)
+        check_cmd = f"sage check_solution.sage --sol_path {sol_path} --solver {solver}"
+        proc = sp.run(check_cmd, stdout=sp.PIPE, stderr=sp.STDOUT, shell=True)
+        print(proc.stdout.decode())
 
 
 if __name__ == '__main__':
