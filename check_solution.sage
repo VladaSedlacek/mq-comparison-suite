@@ -1,7 +1,7 @@
 #!/usr/bin/env sage
 import click
 import re
-from utils import get_log_format
+from config_utils import get_log_format
 load("equation_utils.sage")
 
 
