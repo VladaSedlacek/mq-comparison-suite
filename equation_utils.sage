@@ -182,8 +182,9 @@ class EquationSystem():
     def save_one(self, eq_format, file_path, overwrite=False):
         # handle overwrite behaviour
         if file_path.is_file():
-            if overwrite and self.verbose:
-                print("The file {} already exists, overwriting...".format(str(file_path)))
+            if overwrite:
+                if self.verbose:
+                    print("The file {} already exists, overwriting...".format(str(file_path)))
             else:
                 if self.verbose:
                     print("The file {} already exists, skipping this phase...".format(str(file_path)))
@@ -326,7 +327,7 @@ Order : graded reverse lex order
         if self.verbose:
             print("Equation system written to: " + str(file_path))
 
-    def save_all(self, folder, base_system_name, append_dims=True):
+    def save_all(self, folder, base_system_name, append_dims=True, overwrite=False):
         Path(folder).mkdir(parents=True, exist_ok=True)
         eq_formats = ['anf', 'cb_gpu', 'cb_orig', 'cnf', 'magma', 'mq', 'xl']
         for eq_format in eq_formats:
@@ -334,11 +335,11 @@ Order : graded reverse lex order
             if eq_format in ['anf', 'cb_gpu', 'cb_orig', 'cnf', 'mq'] and self.weil is not None:
                 dim_str = f"_M_{self.weil.M}_N_{self.weil.N}_weil" if append_dims else ""
                 eq_path = Path(folder, f"{base_system_name}{dim_str}.{eq_format}")
-                self.weil.save_one(eq_format, eq_path)
+                self.weil.save_one(eq_format, eq_path, overwrite=overwrite)
             else:
                 dim_str = f"_M_{self.M}_N_{self.N}" if append_dims else ""
                 eq_path = Path(folder, f"{base_system_name}{dim_str}.{eq_format}")
-                self.save_one(eq_format, eq_path)
+                self.save_one(eq_format, eq_path, overwrite=overwrite)
 
     def check_solution(self):
         # check if the solution attribute actually satisfies the equations
