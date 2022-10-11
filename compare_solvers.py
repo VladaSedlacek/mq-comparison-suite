@@ -7,12 +7,11 @@ from prettytable import PrettyTable
 import click
 import datetime
 import json
-import psutil
 import statistics
 import subprocess as sp
 from compile_solver import compile_solver
 from invoke_solver import invoke_solver
-from utils import get_eq_path, get_sol_path
+from config_utils import get_eq_path, get_sol_path
 
 
 def sec_to_str(t):
@@ -32,7 +31,7 @@ def main(o2_min, o2_max, iterations, log_path_brief, log_path_verbose, to_skip, 
 
     # Set up main parameters
     solvers = [s for s in ['cb_gpu', 'cb_orig', 'cms', 'libfes', 'magma', 'mq', 'wdsat', 'xl'] if s not in set(to_skip)]
-    q_range = [2, 16]
+    q_range = [2]
     o2_range = range(o2_min, o2_max + 1, 2)
     outcomes = ["success", "failure"]
 

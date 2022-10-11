@@ -5,7 +5,7 @@ from pathlib import Path
 import click
 import subprocess as sp
 from invoke_solver import invoke_solver
-from utils import declare_paths, get_eq_path, get_sol_path
+from config_utils import declare_paths, get_eq_path, get_sol_path
 load("equation_utils.sage")
 
 

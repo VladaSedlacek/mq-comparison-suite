@@ -29,7 +29,7 @@ for solver in solvers:
         finished = [st for st in [stats(o2, solver) for o2 in o2s] if st is not None]
     except KeyError:
         continue
-    times = [par["mean_time"] if par["successes"] == max_suc else 0 for par in finished]
+    times = [par["mean_time"] if par["successes"] == max_suc else -100 for par in finished]
     plt.plot(o2x, times, label=solver)
 
 plt.legend(loc='upper left')
