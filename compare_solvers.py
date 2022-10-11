@@ -11,7 +11,7 @@ import statistics
 import subprocess as sp
 from compile_solver import compile_solver
 from invoke_solver import invoke_solver
-from config_utils import get_eq_path, get_sol_path
+from config_utils import get_eq_path, get_sol_path, solvers_to_skip
 
 
 def sec_to_str(t):
@@ -25,7 +25,7 @@ def sec_to_str(t):
 @ click.option('--iterations', default=2, help='number of iterations for each parameter set', type=int)
 @ click.option('--log_path_brief', default=Path("comparison_log_brief.txt"), help='the path to the brief log')
 @ click.option('--log_path_verbose', default=Path("comparison_log_verbose.txt"), help='the path to the verbose log')
-@ click.option('--to_skip', '-s', type=click.Choice(['cb_gpu', 'cb_orig', 'cms', 'libfes', 'magma', 'mq', 'wdsat', 'xl'], case_sensitive=False), multiple=True, help='the solvers to be skipped', default=[])
+@ click.option('--to_skip', '-s', type=click.Choice(['cb_gpu', 'cb_orig', 'cms', 'libfes', 'magma', 'mq', 'wdsat', 'xl'], case_sensitive=False), multiple=True, help='the solvers to be skipped', default=solvers_to_skip())
 @ click.option('--timeout', '-t', default=1000,  help='the maximum time (in seconds) allowed for running the solver')
 def main(o2_min, o2_max, iterations, log_path_brief, log_path_verbose, to_skip, timeout):
 

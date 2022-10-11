@@ -3,6 +3,10 @@ from math import log
 from pathlib import Path
 
 
+def solvers_to_skip():
+    return ['cb_gpu', 'cb_orig', 'magma', 'xl']
+
+
 def get_eq_format(solver):
     formats = {
         'cb_gpu': 'cb_gpu',
