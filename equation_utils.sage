@@ -1,5 +1,7 @@
 from pathlib import Path
 
+from config_utils import use_weil
+
 
 def elt_to_str(q, a):
     if q.is_prime():
@@ -344,7 +346,7 @@ Order : graded reverse lex order
         eq_formats = ['anf', 'cb_gpu', 'cb_orig', 'cnf', 'magma', 'mq', 'xl']
         for eq_format in eq_formats:
             # choose Weil descent for formats intended for GF(2)
-            if eq_format in ['anf', 'cb_gpu', 'cb_orig', 'cnf', 'mq'] and self.weil is not None:
+            if use_weil(eq_format) and self.weil is not None:
                 dim_str = f"_M_{self.weil.M}_N_{self.weil.N}_weil" if append_dims else ""
                 eq_path = Path(folder, f"{base_system_name}{dim_str}.{eq_format}")
                 self.weil.save_one(eq_format, eq_path, overwrite=overwrite)
