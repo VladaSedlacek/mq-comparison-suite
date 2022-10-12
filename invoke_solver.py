@@ -15,7 +15,7 @@ def invoke_solver(solver, equations_path, q, m, n, log_path=Path(".", "log.txt")
         exit()
 
     if not Path(equations_path).exists():
-        print("Please specify an existing equation file.")
+        print(f"The equation file {equations_path} does not exist.")
         exit()
 
     if solver == 'cb_orig':
