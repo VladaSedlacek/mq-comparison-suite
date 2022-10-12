@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from config_utils import use_weil
+from config_utils import get_dim_str, get_sol_path, use_weil
 
 
 def elt_to_str(q, a):
@@ -346,19 +346,19 @@ Order : graded reverse lex order
         eq_formats = ['anf', 'cb_gpu', 'cb_orig', 'cnf', 'magma', 'mq', 'xl']
         for eq_format in eq_formats:
             # choose Weil descent for formats intended for GF(2)
-            if use_weil(eq_format) and self.weil is not None:
-                dim_str = f"_M_{self.weil.M}_N_{self.weil.N}_weil" if append_dims else ""
-                eq_path = Path(folder, f"{base_system_name}{dim_str}.{eq_format}")
-                self.weil.save_one(eq_format, eq_path, overwrite=overwrite)
+            weil = use_weil(eq_format) and self.weil is not None
+            dim_str = get_dim_str(self.q, self.M, self.N, weil) if append_dims else ""
+            if weil:
+                s = self.weil
             else:
-                dim_str = f"_M_{self.M}_N_{self.N}" if append_dims else ""
-                eq_path = Path(folder, f"{base_system_name}{dim_str}.{eq_format}")
-                self.save_one(eq_format, eq_path, overwrite=overwrite)
+                s = self
+            eq_path = Path(folder, f"{base_system_name}{dim_str}.{eq_format}")
+            s.save_one(eq_format, eq_path, overwrite=overwrite)
         # save the solution
-        dim_str = f"_M_{self.M}_N_{self.N}"
-        self.save_solution(Path(folder, f"{base_system_name}{dim_str}.sol"), overwrite=overwrite)
-        if self.weil is not None:
-            self.weil.save_solution(Path(folder, f"{base_system_name}{dim_str}_weil.sol"), overwrite=overwrite)
+        for s, weil in zip([self, self.weil], [False, True]):
+            if s is not None:
+                dim_str = get_dim_str(self.q, self.M, self.N, weil)
+                s.save_solution(Path(folder, f"{base_system_name}{dim_str}.sol"), overwrite=overwrite)
 
     def check_solution(self):
         # check if the solution attribute actually satisfies the equations

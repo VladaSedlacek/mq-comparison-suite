@@ -57,7 +57,7 @@ def get_solution_from_log(log_path, format, N, q, ext_deg=1):
                     sol_str += line
                     if ">" in line:
                         end = sol_str.index(">")
-                        sol = [ZZ(x) for x in sol_str[3:end] if x not in [',', ' ', '\n']]
+                        sol = [GF(q)(x) for x in sol_str[3:end].split(",")]
                         parts = [sol[ext_deg * i:ext_deg * i + ext_deg]
                                  for i in range(len(sol) / ext_deg)]
                         return [linear_combination(bits, zs) for bits in parts]

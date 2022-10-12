@@ -52,6 +52,12 @@ def get_log_format(solver):
     return formats[solver]
 
 
+def get_dim_str(q, M, N, weil):
+    assert q % 2 == 0
+    d = int(log(q, 2))
+    return f"_M_{M * d}_N_{N * d}_weil" if (d > 1 and weil) else f"_M_{M}_N_{N}"
+
+
 def declare_paths(seed, q, o2, m, n):
     system_folder_path = Path("systems")
     Path(system_folder_path).mkdir(parents=True, exist_ok=True)
@@ -59,17 +65,13 @@ def declare_paths(seed, q, o2, m, n):
     return system_folder_path, base_system_name
 
 
-def get_sol_path(seed, q, o2, m, n, M, N, weil=True):
-    assert q % 2 == 0
-    d = int(log(q, 2))
-    dim_str = f"_M_{M * d}_N_{N * d}_weil" if (d > 1 and weil) else f"_M_{M}_N_{N}"
+def get_sol_path(seed, q, o2, m, n, M, N, weil):
+    dim_str = get_dim_str(q, M, N, weil)
     system_folder_path, base_system_name = declare_paths(seed, q, o2, m, n)
     return Path(system_folder_path, f"{base_system_name}{dim_str}.sol")
 
 
 def get_eq_path(seed, q, o2, m, n, M, N, solver):
-    assert q % 2 == 0
-    d = int(log(q, 2))
-    dim_str = f"_M_{M * d}_N_{N * d}_weil" if (d > 1 and use_weil(solver)) else f"_M_{M}_N_{N}"
+    dim_str = get_dim_str(q, M, N, use_weil(solver))
     system_folder_path, base_system_name = declare_paths(seed, q, o2, m, n)
     return Path(system_folder_path, f"{base_system_name}{dim_str}.{get_eq_format(solver)}")
