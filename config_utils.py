@@ -59,9 +59,12 @@ def declare_paths(seed, q, o2, m, n):
     return system_folder_path, base_system_name
 
 
-def get_sol_path(seed, q, o2, m, n):
+def get_sol_path(seed, q, o2, m, n, M, N, weil=True):
+    assert q % 2 == 0
+    d = int(log(q, 2))
+    dim_str = f"_M_{M * d}_N_{N * d}_weil" if (d > 1 and weil) else f"_M_{M}_N_{N}"
     system_folder_path, base_system_name = declare_paths(seed, q, o2, m, n)
-    return Path(system_folder_path, base_system_name + ".sol")
+    return Path(system_folder_path, f"{base_system_name}{dim_str}.sol")
 
 
 def get_eq_path(seed, q, o2, m, n, M, N, solver):

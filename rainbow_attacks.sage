@@ -5,7 +5,7 @@ from pathlib import Path
 import click
 import subprocess as sp
 from invoke_solver import invoke_solver
-from config_utils import declare_paths, get_eq_path, get_sol_path
+from config_utils import declare_paths, get_eq_path, get_sol_path, use_weil
 load("equation_utils.sage")
 
 
@@ -297,8 +297,8 @@ def main(q, n, m, o2, solver, gen_only, solve_only, log_path, inner_hybridation,
                   inner_hybridation=inner_hybridation, precompiled=precompiled)
 
     if not solve_only:
-        sol_path = get_sol_path(seed, q, o2, m, n)
-        check_cmd = f"sage check_solution.sage --sol_path {sol_path} --solver {solver}"
+        sol_path = get_sol_path(seed, q, o2, m, n, M, N, weil=use_weil(solver))
+        check_cmd = f"sage check_solution.sage --q {q} --sol_path {sol_path} --solver {solver}"
         proc = sp.run(check_cmd, stdout=sp.PIPE, stderr=sp.STDOUT, shell=True)
         print(proc.stdout.decode())
 

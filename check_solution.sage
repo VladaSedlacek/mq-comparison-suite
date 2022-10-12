@@ -5,17 +5,21 @@ from config_utils import get_log_format
 load("equation_utils.sage")
 
 
-def load_solution(solution_path):
+def load_solution(solution_path, q):
     try:
         with open(solution_path, 'r') as f:
-            sol_str = f.readlines()[0].strip()
-            return list(sage_eval(sol_str))
+            if ZZ(q).is_prime():
+                sol_str = f.readlines()[0].strip()
+                return list(sage_eval(sol_str))
+            else:
+                sol_strs = f.readlines()[0].strip().split("(")[1].split(")")[0].split(",")
+                return list(GF(q)(sol_str) for sol_str in sol_strs)
     except Exception as e:
         print("An error ocurred during loading the solution: ", e)
         exit()
 
 
-def get_solution_from_log(log_path, format, N, q=2, ext_deg=1):
+def get_solution_from_log(log_path, format, N, q, ext_deg=1):
     assert format in ['cb', 'cms', 'magma', 'mq', 'wdsat', 'xl']
     with open(log_path, 'r') as f:
         z = GF(q).gens()[0]
@@ -79,20 +83,21 @@ def get_solution_from_log(log_path, format, N, q=2, ext_deg=1):
             if format == 'xl':
                 if "  is sol" in line:
                     sol = line.split("  is sol")[0].split(" ")
-                    return [str_to_elt(rainbow.q, c) for c in sol]
+                    return [str_to_elt(q, c) for c in sol]
     return None
 
 
 @ click.command()
+@ click.option('--q', type=int, help='the size of the finite field')
 @ click.option('--sol_path', help='path to a log with the expected solution')
 @ click.option('--log_path', default=Path("log.txt"), help='path to a log with the found solution')
 @ click.option('--solver', type=click.Choice(['cb_orig', 'cb_gpu', 'cms', 'libfes', 'magma', 'mq', 'wdsat', 'xl'], case_sensitive=False), help='the solver used to find the solution')
-def main(sol_path, log_path, solver):
+def main(q, sol_path, log_path, solver):
     log_format = get_log_format(solver)
-    solution_expected = load_solution(sol_path)
+    solution_expected = load_solution(sol_path, q)
     N = len(solution_expected)
     try:
-        solution_found = list(get_solution_from_log(log_path, format=log_format, N=N))
+        solution_found = list(get_solution_from_log(log_path, format=log_format, N=N, q=q))
     except Exception as e:
         print("An error ocurred during parsing the log: ", e)
         solution_found = None

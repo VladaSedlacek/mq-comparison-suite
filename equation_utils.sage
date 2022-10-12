@@ -355,9 +355,10 @@ Order : graded reverse lex order
                 eq_path = Path(folder, f"{base_system_name}{dim_str}.{eq_format}")
                 self.save_one(eq_format, eq_path, overwrite=overwrite)
         # save the solution
-        self.save_solution(Path(folder, f"{base_system_name}.sol"), overwrite=overwrite)
+        dim_str = f"_M_{self.M}_N_{self.N}"
+        self.save_solution(Path(folder, f"{base_system_name}{dim_str}.sol"), overwrite=overwrite)
         if self.weil is not None:
-            self.weil.save_solution(Path(folder, f"{base_system_name}_weil.sol"), overwrite=overwrite)
+            self.weil.save_solution(Path(folder, f"{base_system_name}{dim_str}_weil.sol"), overwrite=overwrite)
 
     def check_solution(self):
         # check if the solution attribute actually satisfies the equations

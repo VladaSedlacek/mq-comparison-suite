@@ -11,7 +11,7 @@ import statistics
 import subprocess as sp
 from compile_solver import compile_solver
 from invoke_solver import invoke_solver
-from config_utils import get_eq_path, get_sol_path, solvers_to_skip
+from config_utils import get_eq_path, get_sol_path, solvers_to_skip, use_weil
 
 
 def sec_to_str(t):
@@ -121,8 +121,8 @@ def main(o2_min, o2_max, iterations, log_path_brief, log_path_verbose, to_skip, 
                         out, time_taken, rss = invoke_solver(
                             solver, equations_path, q, M, N, precompiled=True, timeout=timeout)
                         print_and_log(out, to_print="")
-                        sol_path = get_sol_path(seed, q, o2, m, n)
-                        check_cmd = f"sage check_solution.sage --sol_path {sol_path} --solver {solver}"
+                        sol_path = get_sol_path(seed, q, o2, m, n, M, N, weil=use_weil(solver))
+                        check_cmd = f"sage check_solution.sage --q {q} --sol_path {sol_path} --solver {solver}"
                         proc = sp.run(check_cmd, stdout=sp.PIPE, stderr=sp.STDOUT, shell=True)
                         print_and_log(proc.stdout.decode(), to_print="")
                         # successful solutions should yield code 0
