@@ -5,7 +5,7 @@ from pathlib import Path
 import click
 import subprocess as sp
 from invoke_solver import invoke_solver
-from config_utils import declare_paths, defaults, get_eq_path, get_rainbow_dims, get_sol_path, use_weil
+from config_utils import declare_paths, defaults, get_eq_path, get_rainbow_dims, get_sol_path, get_weil_dims, use_weil
 load("equation_utils.sage")
 
 
@@ -261,7 +261,9 @@ def main(q, o2, m, n, solver, gen_only, solve_only, log_path, inner_hybridation,
 
     equations_path = get_eq_path(seed, q, o2, m, n, M, N, solver)
     try:
-        invoke_solver(solver, equations_path, q, M, N, log_path=log_path,
+        # apply Weil descent if needed
+        _M, _N = get_weil_dims(q, M, N) if use_weil(solver) else (M, N)
+        invoke_solver(solver, equations_path, q, _M, _N, log_path=log_path,
                       inner_hybridation=inner_hybridation, precompiled=precompiled)
     except Exception as e:
         print("An error ocurred during invoking a solver: ", e)
