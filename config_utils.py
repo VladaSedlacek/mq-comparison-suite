@@ -52,6 +52,22 @@ def get_log_format(solver):
     return formats[solver]
 
 
+def get_rainbow_dims(o2, m=None, n=None):
+    if m is None:
+        m = 2 * o2
+    if n is None:
+        n = 3 * o2
+    M = m - 1
+    N = n - m - 2
+    return m, n, M, N
+
+
+def get_weil_dims(q, M, N):
+    assert q % 2 == 0
+    d = int(log(q, 2))
+    return M * d, N * d
+
+
 def get_dim_str(q, M, N, weil):
     assert q % 2 == 0
     d = int(log(q, 2))

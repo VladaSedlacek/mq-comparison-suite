@@ -11,7 +11,7 @@ import statistics
 import subprocess as sp
 from compile_solver import compile_solver
 from invoke_solver import invoke_solver
-from config_utils import get_eq_path, get_sol_path, solvers_to_skip, use_weil
+from config_utils import get_eq_path, get_sol_path, solvers_to_skip, use_weil, get_rainbow_dims, get_weil_dims
 
 
 def sec_to_str(t):
@@ -56,7 +56,6 @@ def main(o2_min, o2_max, iterations, log_path_brief, log_path_verbose, to_skip, 
     # Set up formatting
     star_length = 105
     stars = '*' * star_length
-    left_pad = ' ' * int((star_length - 72)/2)
 
     # Set up tables
     T = PrettyTable()
@@ -91,12 +90,9 @@ def main(o2_min, o2_max, iterations, log_path_brief, log_path_verbose, to_skip, 
     print_and_log(f"Current datetime: {datetime.datetime.now().isoformat(' ', 'seconds')}", include_brief=True)
     for q in q_range:
         for o2 in o2_range:
-            m = 2 * o2
-            n = 3 * o2
-            M = m - 1
-            N = n - m - 2
-            gen_msg = f"Generating equations for q = {q: 2}, o2 = {o2: 2}, m = {m: 2}, n = {n: 2}; {iterations: 2} iterations..."
-            print_and_log(f"\n\n{stars}\n{left_pad}{gen_msg}\n{stars}", include_brief=True)
+            m, n, M, N = get_rainbow_dims(o2)
+            gen_msg = f"Generating equations for q = {q: 2}, o2 = {o2: 2}  ==>  M = {M: 2}, N = {N: 2} (before Weil descent); {iterations: 2} iterations..."
+            print_and_log(f"\n\n{stars}\n{gen_msg}\n{stars}", include_brief=True)
             solver_stats = {solver: {"successes": 0, "times": [], "memories": [],
                                      "mean_time": None, "stdev_time": None, "mean_memory": None} for solver in solvers}
 
@@ -106,10 +102,15 @@ def main(o2_min, o2_max, iterations, log_path_brief, log_path_verbose, to_skip, 
                     gen_cmd = f"sage rainbow_attacks.sage --seed {seed} --q {q} --o2 {o2} --m {m} --n {n} --gen_only"
                     sp.call(gen_cmd, shell=True)
                     for solver in solvers:
+                        # Determine if Weil descent should be used
+                        weil = use_weil(solver)
+                        if weil:
+                            M_weil, N_weil = get_weil_dims(q, M, N)
+                        _q, _M, _N = (2, M_weil, N_weil) if weil else (q, M, N)
 
                         # Compile the solver for each parameter set if needed
                         if seed == 0 and solver in ["cb_orig", "xl", "wdsat"]:
-                            out = compile_solver(solver, q, M, N)
+                            out = compile_solver(solver, _q, _M, _N)
                             print_and_log(out, to_print="")
 
                         print_and_log(
@@ -117,11 +118,11 @@ def main(o2_min, o2_max, iterations, log_path_brief, log_path_verbose, to_skip, 
                         print_and_log(f"Solver: {solver}\n", to_print="")
 
                         # Measure the time and memory usage of the active process and all its subprocesses
-                        equations_path = get_eq_path(seed, q, o2, m, n, M, N, solver)
+                        eq_path = get_eq_path(seed, q, o2, m, n, M, N, solver)
                         out, time_taken, rss = invoke_solver(
-                            solver, equations_path, q, M, N, precompiled=True, timeout=timeout)
+                            solver, eq_path, _q, _M, _N, precompiled=True, timeout=timeout)
                         print_and_log(out, to_print="")
-                        sol_path = get_sol_path(seed, q, o2, m, n, M, N, weil=use_weil(solver))
+                        sol_path = get_sol_path(seed, q, o2, m, n, M, N, weil)
                         check_cmd = f"sage check_solution.sage --q {q} --sol_path {sol_path} --solver {solver}"
                         proc = sp.run(check_cmd, stdout=sp.PIPE, stderr=sp.STDOUT, shell=True)
                         print_and_log(proc.stdout.decode(), to_print="")
