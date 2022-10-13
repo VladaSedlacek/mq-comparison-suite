@@ -5,7 +5,7 @@ from pathlib import Path
 import click
 import subprocess as sp
 from invoke_solver import invoke_solver
-from config_utils import declare_paths, get_eq_path, get_sol_path, use_weil
+from config_utils import declare_paths, get_eq_path, get_rainbow_dims, get_sol_path, use_weil
 load("equation_utils.sage")
 
 
@@ -242,19 +242,11 @@ def save_setup(rainbow, setup_path, verbose=False):
         f.write("# W:" + str(rainbow.W) + "\n\n")
 
 
-def compute_system_size(q, m, n, attack_type='differential'):
-    '''Return the number of equations and the number of variables'''
-    if attack_type == 'differential':
-        if q % 2 == 0:
-            return m - 1, n - m - 2
-        return m, n - m - 1
-
-
 @ click.command()
-@ click.option('--q', default=16, help='the field order', type=int)
-@ click.option('--n', default=0, help='the number of variables', type=int)
-@ click.option('--m', default=0, help='the number of equations', type=int)
-@ click.option('--o2', default=16, help='the oil subspace dimension', type=int)
+@ click.option('--q', default=2, help='the field order', type=int)
+@ click.option('--o2', default=4, help='the oil subspace dimension', type=int)
+@ click.option('--m', default=None, help='the number of equations', type=int)
+@ click.option('--n', default=None, help='the number of variables', type=int)
 @ click.option('--solver', type=click.Choice(['cb_orig', 'cb_gpu', 'cms', 'libfes', 'magma', 'mq', 'wdsat', 'xl'], case_sensitive=False), help='the external solver to be used')
 @ click.option('--gen_only', default=False, is_flag=True, help='only generate equation systems')
 @ click.option('--solve_only', default=False, is_flag=True, help='only solve an existing system and check solutions')
@@ -263,19 +255,14 @@ def compute_system_size(q, m, n, attack_type='differential'):
 @ click.option('--verbose', '-v', default=False, is_flag=True, help='control the output verbosity')
 @ click.option('--seed', '-s', default=0, help='the seed for randomness replication', type=int)
 @ click.option('--precompiled', default=False, is_flag=True, help='indicates if all relevant solvers are already compiled w.r.t. the parameters')
-def main(q, n, m, o2, solver, gen_only, solve_only, log_path, inner_hybridation, verbose, seed, precompiled):
-    if m == 0:
-        m = 2*o2
-    if n == 0:
-        n = 3*o2
+def main(q, o2, m, n, solver, gen_only, solve_only, log_path, inner_hybridation, verbose, seed, precompiled):
+    m, n, M, N = get_rainbow_dims(o2, m, n)
     set_random_seed(seed)
     if verbose:
         print(f"Generating Rainbow instance for seed={seed}, q={q}, m={m}, n={n}, o2={o2}...")
     rainbow = Rainbow(q, m, n, o2, seed=seed)
     system_folder_path, base_system_name = declare_paths(seed, q, o2, m, n)
     setup_path = Path(system_folder_path, base_system_name + '.stp')
-    solution_path = Path(system_folder_path, base_system_name + '.sol')
-    M, N = compute_system_size(q, m, n)
 
     if not solve_only:
         # get the attack equations
