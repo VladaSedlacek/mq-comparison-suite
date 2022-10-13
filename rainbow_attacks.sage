@@ -135,7 +135,7 @@ class Rainbow():
             assert W.dimension() == o2
         return O1, O2, W
 
-    def differential_attack(self, debug=False, verbose=False):
+    def differential_attack(self, verbose=False):
         '''Adapted from https://github.com/WardBeullens/BreakingRainbow'''
         # odd characteristic is currently not supported
         q, m, n = self.q, self.m, self.n
@@ -203,30 +203,8 @@ class Rainbow():
         if Sol is not None:
             assert Eval(SSS, Sol[1:]) == vector((m - 1) * [0])
 
-        SS_orig = SS
-        SS = SSS
-
-        # In the real attack, YSol is found externally via a solver
-        YSol = vector([0] + list(Sol[1:]))
-        alpha = Eval([SS_orig[0] / Px[0]], YSol)[0]
-
-        xt = D_x_ker.transpose().solve_right(x)
-        assert xt == vector([1] + (n - m - 1) * [0])
-        assert Eval(SS_orig, xt) == Px
-        assert Eval(SS_orig, YSol) == alpha * Px
-
-        if alpha == 0:
-            NewSol = xt
-        else:
-            NewSol = xt + 1 / alpha.sqrt() * YSol
-        if NewSol[-1] != 0:
-            NewSol = NewSol / NewSol[-1]
-        # assert NewSol == Sol
-        # assert Eval(SS_orig, NewSol) == vector(m * [0])
-
-        # handle indexing from 0/1
         affine_vars = vector(list(self.xx[: n-m-2]) + [1])
-        equations = [affine_vars * s * affine_vars for s in SS]
+        equations = [affine_vars * s * affine_vars for s in SSS]
         return equations, Sol
 
 
@@ -267,7 +245,7 @@ def main(q, o2, m, n, solver, gen_only, solve_only, log_path, inner_hybridation,
     setup_path = Path(system_folder_path, base_system_name + '.stp')
 
     if not solve_only:
-        # get the attack equations
+        # get the attack equations, ignoring the first and last coordinate of the solution
         equations, solution = rainbow.differential_attack(verbose=verbose)
         EqSys = EquationSystem(equations, seed=seed, verbose=verbose, solution=solution[1:-1])
         assert (EqSys.M, EqSys.N) == (M, N)
