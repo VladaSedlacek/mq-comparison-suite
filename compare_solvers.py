@@ -98,7 +98,12 @@ def main(q, o2_min, o2_max, iterations, log_path_brief, log_path_verbose, to_ski
 
         # Go through all iterations for the given parameters
         for seed in range(iterations):
-            gen_cmd = f"sage rainbow_attacks.sage --seed {seed} --q {q} --o2 {o2} --m {m} --n {n} --gen_only"
+            try:
+                gen_cmd = f"sage rainbow_attacks.sage --seed {seed} --q {q} --o2 {o2} --m {m} --n {n} --gen_only"
+            except Exception as e:
+                print("An error ocurred during generating a Rainbow instance:", e)
+                continue
+
             sp.call(gen_cmd, shell=True)
             for solver in solvers:
                 # Determine if Weil descent should be used

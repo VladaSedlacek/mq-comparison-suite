@@ -137,7 +137,9 @@ class Rainbow():
 
     def differential_attack(self, debug=False, verbose=False):
         '''Adapted from https://github.com/WardBeullens/BreakingRainbow'''
-        q, m, n, o2 = self.q, self.m, self.n, self.o2
+        # odd characteristic is currently not supported
+        q, m, n = self.q, self.m, self.n
+        assert q % 2 == 0
         global attempts
         attempts = 0
 
@@ -151,8 +153,7 @@ class Rainbow():
                               for b in (self.F ^ n).basis()])
         D_x_ker = Matrix(D_x.kernel().basis())
 
-        if q % 2 == 0:
-            D_x_ker[0] = x
+        D_x_ker[0] = x
 
         if D_x_ker.rank() != n - m:
             return self.differential_attack()
@@ -194,40 +195,38 @@ class Rainbow():
         if not Sol is None:
             assert Eval(SS, Sol) == vector(m * [0])
 
-        if q % 2 == 0:
-            Px = Eval(self.PP, x)
-            # define Y by setting first coord to 0?
-            SSS = [(SS[i] * Px[0] + SS[0] * Px[i])[1:, 1:]
-                   for i in range(1, len(SS))]
+        Px = Eval(self.PP, x)
+        # define Y by setting first coord to 0?
+        SSS = [(SS[i] * Px[0] + SS[0] * Px[i])[1:, 1:]
+               for i in range(1, len(SS))]
 
-            if Sol is not None:
-                assert Eval(SSS, Sol[1:]) == vector((m - 1) * [0])
+        if Sol is not None:
+            assert Eval(SSS, Sol[1:]) == vector((m - 1) * [0])
 
-            SS_orig = SS
-            SS = SSS
+        SS_orig = SS
+        SS = SSS
 
-            # In the real attack, YSol is found externally via a solver
-            YSol = vector([0] + list(Sol[1:]))
-            alpha = Eval([SS_orig[0] / Px[0]], YSol)[0]
+        # In the real attack, YSol is found externally via a solver
+        YSol = vector([0] + list(Sol[1:]))
+        alpha = Eval([SS_orig[0] / Px[0]], YSol)[0]
 
-            xt = D_x_ker.transpose().solve_right(x)
-            assert xt == vector([1] + (n - m - 1) * [0])
-            assert Eval(SS_orig, xt) == Px
-            assert Eval(SS_orig, YSol) == alpha * Px
+        xt = D_x_ker.transpose().solve_right(x)
+        assert xt == vector([1] + (n - m - 1) * [0])
+        assert Eval(SS_orig, xt) == Px
+        assert Eval(SS_orig, YSol) == alpha * Px
 
-            if alpha == 0:
-                NewSol = xt
-            else:
-                NewSol = xt + 1 / alpha.sqrt() * YSol
-            if NewSol[-1] != 0:
-                NewSol = NewSol / NewSol[-1]
-            # assert NewSol == Sol
-            # assert Eval(SS_orig, NewSol) == vector(m * [0])
+        if alpha == 0:
+            NewSol = xt
+        else:
+            NewSol = xt + 1 / alpha.sqrt() * YSol
+        if NewSol[-1] != 0:
+            NewSol = NewSol / NewSol[-1]
+        # assert NewSol == Sol
+        # assert Eval(SS_orig, NewSol) == vector(m * [0])
 
-            # handle indexing from 0/1
-            affine_vars = vector(list(self.xx[: n-m-2]) + [1])
-            equations = [affine_vars * s * affine_vars for s in SS]
-        # TODO odd char
+        # handle indexing from 0/1
+        affine_vars = vector(list(self.xx[: n-m-2]) + [1])
+        equations = [affine_vars * s * affine_vars for s in SS]
         return equations, Sol
 
 
@@ -260,7 +259,10 @@ def main(q, o2, m, n, solver, gen_only, solve_only, log_path, inner_hybridation,
     set_random_seed(seed)
     if verbose:
         print(f"Generating Rainbow instance for seed={seed}, q={q}, m={m}, n={n}, o2={o2}...")
-    rainbow = Rainbow(q, m, n, o2, seed=seed)
+    try:
+        rainbow = Rainbow(q, m, n, o2, seed=seed)
+    except Exception as e:
+        print("An error ocurred during generating a Rainbow instance:", e)
     system_folder_path, base_system_name = declare_paths(seed, q, o2, m, n)
     setup_path = Path(system_folder_path, base_system_name + '.stp')
 
