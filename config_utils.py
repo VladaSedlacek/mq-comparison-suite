@@ -5,8 +5,8 @@ from pathlib import Path
 
 def defaults(key):
     defaults_dict = {
-        "solvers": ['cb_orig', 'cb_gpu', 'cms', 'libfes', 'magma', 'mq', 'wdsat', 'xl'],
-        "solvers_to_compile": ["cb_orig", "xl", "wdsat"],
+        "solvers": ['cb_gpu', 'cb_orig', 'cms', 'libfes', 'magma', 'mq', 'wdsat', 'xl'],
+        "solvers_to_compile": ["cb_orig", "wdsat", "xl"],
         "cb_gpu_path": Path("..", "mqsolver"),
         "cb_orig_path": Path("..", "crossbred"),
         "cms_path": Path("..", "cryptominisat", "build"),
