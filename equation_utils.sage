@@ -325,6 +325,8 @@ Order : graded reverse lex order
 
         elif eq_format == 'mq':
             var_list = [str(var) for var in self.var_list]
+            if self.N < 8:
+                var_list += [f"dummy_{i}" for i in range(1, 9 - self.N)]
             with open(file_path, 'w') as f:
                 f.write("# Variables:\n")
                 f.write(', '.join(var_list) + "\n#\n")
