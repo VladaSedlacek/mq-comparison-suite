@@ -12,12 +12,10 @@ from config_utils import defaults
 def invoke_solver(solver, equations_path, q, m, n, log_path=defaults("log_path"), cb_gpu_path=defaults("cb_gpu_path"), cb_orig_path=defaults("cb_orig_path"), cms_path=defaults("cms_path"), libfes_path=defaults("libfes_path"), magma_path=defaults("magma_path"), mq_path=defaults("mq_path"), wdsat_path=defaults("wdsat_path"), xl_path=defaults("xl_path"), inner_hybridation=-1, precompiled=False, timeout=1000):
 
     if not solver:
-        print("Please specify a solver.")
-        exit()
+        raise Exception("No solver specified.")
 
     if not Path(equations_path).exists():
-        print(f"The equation file {equations_path} does not exist.")
-        exit()
+        raise Exception(f"The equation file {equations_path} does not exist.")
 
     if solver == 'cb_orig':
         linalg_path = Path(cb_orig_path, "LinBlockLanczos")
@@ -42,7 +40,8 @@ def invoke_solver(solver, equations_path, q, m, n, log_path=defaults("log_path")
             res = check_out.split("\n")
             # ensure compatibility with mqsolver log
             if "solution found :)" in res:
-                assert res[1] == '0' * m
+                if res[1] != '0' * m:
+                    raise Exception(f"Equations do not evaluate to {m} zeros!")
                 out += f"solution found: \n[{res[0]}]\n"
             else:
                 out += f"does not work: \n[{res[0]}]\n\tevaluates to {res[1]}"
@@ -129,11 +128,14 @@ def invoke_solver(solver, equations_path, q, m, n, log_path=defaults("log_path")
 @ click.option('--precompiled', default=False, is_flag=True, help='indicates if all relevant solvers are already compiled w.r.t. the parameters')
 @ click.option('--timeout', '-t', default=1000,  help='the maximum time (in seconds) allowed for running the solver')
 def main(solver, equations_path, q, m, n, log_path, cb_gpu_path, cb_orig_path, cms_path, libfes_path, magma_path, mq_path, wdsat_path, xl_path, inner_hybridation, precompiled, timeout):
-    out, time_taken, rss = invoke_solver(solver, equations_path, q, m, n, log_path, cb_gpu_path, cb_orig_path,
-                                         cms_path, libfes_path, magma_path, mq_path, wdsat_path, xl_path, inner_hybridation, precompiled, timeout)
-    print(out)
-    print(f"Time taken: {time_taken: .2f} s")
-    print(f"Resident memory used: {( rss / 1000000): .2f} MB")
+    try:
+        out, time_taken, rss = invoke_solver(solver, equations_path, q, m, n, log_path, cb_gpu_path, cb_orig_path,
+                                             cms_path, libfes_path, magma_path, mq_path, wdsat_path, xl_path, inner_hybridation, precompiled, timeout)
+        print(out)
+        print(f"Time taken: {time_taken: .2f} s")
+        print(f"Resident memory used: {( rss / 1000000): .2f} MB")
+    except Exception as e:
+        print("An error ocurred during invoking a solver: ", e)
 
 
 if __name__ == '__main__':

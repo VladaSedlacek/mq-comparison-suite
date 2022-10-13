@@ -9,8 +9,7 @@ from config_utils import defaults
 
 def compile_solver(solver, q, m, n, cb_orig_path=defaults("cb_orig_path"), wdsat_path=defaults("wdsat_path"), xl_path=defaults("xl_path")):
     if not solver:
-        print("Please specify a solver.")
-        exit()
+        raise Exception("No solver specified.")
 
     M = m
     N = n
@@ -125,7 +124,10 @@ def get_trunc_var(M, N):
 @ click.option('--wdsat_path', default=defaults("wdsat_path"), help='the path the WDSat solver folder: https://github.com/mtrimoska/WDSat', type=str)
 @ click.option('--xl_path', default=defaults("xl_path"), help='the path the XL solver folder: http://polycephaly.org/projects/xl', type=str)
 def main(solver, q, m, n, cb_orig_path, wdsat_path, xl_path):
-    compile_solver(solver, q, m, n, cb_orig_path, wdsat_path, xl_path)
+    try:
+        compile_solver(solver, q, m, n, cb_orig_path, wdsat_path, xl_path)
+    except Exception as e:
+        print("An error ocurred during compiling a solver: ", e)
 
 
 if __name__ == '__main__':

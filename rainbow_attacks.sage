@@ -280,8 +280,11 @@ def main(q, o2, m, n, solver, gen_only, solve_only, log_path, inner_hybridation,
         exit()
 
     equations_path = get_eq_path(seed, q, o2, m, n, M, N, solver)
-    invoke_solver(solver, equations_path, q, M, N, log_path=log_path,
-                  inner_hybridation=inner_hybridation, precompiled=precompiled)
+    try:
+        invoke_solver(solver, equations_path, q, M, N, log_path=log_path,
+                      inner_hybridation=inner_hybridation, precompiled=precompiled)
+    except Exception as e:
+        print("An error ocurred during invoking a solver: ", e)
 
     if not solve_only:
         sol_path = get_sol_path(seed, q, o2, m, n, M, N, weil=use_weil(solver))

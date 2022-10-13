@@ -96,28 +96,31 @@ def main(o2_min, o2_max, iterations, log_path_brief, log_path_verbose, to_skip, 
             solver_stats = {solver: {"successes": 0, "times": [], "memories": [],
                                      "mean_time": None, "stdev_time": None, "mean_memory": None} for solver in solvers}
 
-            try:
-                # Go through all iterations for the given parameters
-                for seed in range(iterations):
-                    gen_cmd = f"sage rainbow_attacks.sage --seed {seed} --q {q} --o2 {o2} --m {m} --n {n} --gen_only"
-                    sp.call(gen_cmd, shell=True)
-                    for solver in solvers:
-                        # Determine if Weil descent should be used
-                        weil = use_weil(solver)
-                        if weil:
-                            M_weil, N_weil = get_weil_dims(q, M, N)
-                        _q, _M, _N = (2, M_weil, N_weil) if weil else (q, M, N)
+            # Go through all iterations for the given parameters
+            for seed in range(iterations):
+                gen_cmd = f"sage rainbow_attacks.sage --seed {seed} --q {q} --o2 {o2} --m {m} --n {n} --gen_only"
+                sp.call(gen_cmd, shell=True)
+                for solver in solvers:
+                    # Determine if Weil descent should be used
+                    weil = use_weil(solver)
+                    if weil:
+                        M_weil, N_weil = get_weil_dims(q, M, N)
+                    _q, _M, _N = (2, M_weil, N_weil) if weil else (q, M, N)
 
-                        # Compile the solver for each parameter set if needed
-                        if seed == 0 and solver in defaults("solvers_to_compile"):
+                    # Compile the solver for each parameter set if needed
+                    if seed == 0 and solver in defaults("solvers_to_compile"):
+                        try:
                             out = compile_solver(solver, _q, _M, _N)
                             print_and_log(out, to_print="")
+                        except Exception as e:
+                            print_and_log(str(e), to_print="")
 
-                        print_and_log(
-                            f"\n{stars}\nCurrent datetime: {datetime.datetime.now().isoformat(' ', 'seconds')}", to_print="")
-                        print_and_log(f"Solver: {solver}\n", to_print="")
+                    print_and_log(
+                        f"\n{stars}\nCurrent datetime: {datetime.datetime.now().isoformat(' ', 'seconds')}", to_print="")
+                    print_and_log(f"Solver: {solver}\n", to_print="")
 
-                        # Measure the time and memory usage of the active process and all its subprocesses
+                    # Measure the time and memory usage of the active process and all its subprocesses
+                    try:
                         eq_path = get_eq_path(seed, q, o2, m, n, M, N, solver)
                         out, time_taken, rss = invoke_solver(
                             solver, eq_path, _q, _M, _N, precompiled=True, timeout=timeout)
@@ -128,50 +131,51 @@ def main(o2_min, o2_max, iterations, log_path_brief, log_path_verbose, to_skip, 
                         print_and_log(proc.stdout.decode(), to_print="")
                         # successful solutions should yield code 0
                         code = int('Attack successful!' not in proc.stdout.decode())
+                    except Exception as e:
+                        print_and_log(str(e), to_print="")
+                        time_taken = 0
+                        rss = 0
+                        code = 1
 
-                        # Save the iteration results
-                        solver_stats[solver]["successes"] += (1-code)
-                        solver_stats[solver]["times"].append(time_taken)
-                        solver_stats[solver]["memories"].append(rss)
-                        print_and_log(f"Result: {outcomes[code]}", to_print="")
-                        print_and_log(f"Time:   {sec_to_str(time_taken)}", to_print="")
-                        print_and_log(f"Memory: {( rss / 1000000): .2f} MB", to_print="")
-                        print_and_log(stars, to_print="")
+                    # Save the iteration results
+                    solver_stats[solver]["successes"] += (1-code)
+                    solver_stats[solver]["times"].append(time_taken)
+                    solver_stats[solver]["memories"].append(rss)
+                    print_and_log(f"Result: {outcomes[code]}", to_print="")
+                    print_and_log(f"Time:   {sec_to_str(time_taken)}", to_print="")
+                    print_and_log(f"Memory: {( rss / 1000000): .2f} MB", to_print="")
+                    print_and_log(stars, to_print="")
 
-                # Save the aggregated results
-                for solver in solvers:
-                    successes = str(solver_stats[solver]["successes"])
-                    solver_stats[solver]["successes"] = f"{successes} of {iterations}"
-                    mean_time = statistics.mean(solver_stats[solver]["times"])
-                    solver_stats[solver]["mean_time"] = round(mean_time, 2)
-                    stdev_time = round(statistics.stdev(solver_stats[solver]["times"]), 2)
-                    solver_stats[solver]["stdev_time"] = stdev_time
-                    mean_memory = statistics.mean(solver_stats[solver]["memories"])
-                    mean_memory = round(mean_memory / 1000000, 2)
-                    solver_stats[solver]["mean_memory"] = mean_memory
-                    del solver_stats[solver]['times']
-                    del solver_stats[solver]['memories']
+            # Save the aggregated results
+            for solver in solvers:
+                successes = str(solver_stats[solver]["successes"])
+                solver_stats[solver]["successes"] = f"{successes} of {iterations}"
+                mean_time = statistics.mean(solver_stats[solver]["times"])
+                solver_stats[solver]["mean_time"] = round(mean_time, 2)
+                stdev_time = round(statistics.stdev(solver_stats[solver]["times"]), 2)
+                solver_stats[solver]["stdev_time"] = stdev_time
+                mean_memory = statistics.mean(solver_stats[solver]["memories"])
+                mean_memory = round(mean_memory / 1000000, 2)
+                solver_stats[solver]["mean_memory"] = mean_memory
+                del solver_stats[solver]['times']
+                del solver_stats[solver]['memories']
 
-                    T.add_row([solver, successes, sec_to_str(mean_time), stdev_time, f"{mean_memory:.1f}"])
-                    colored_successes = colors[successes != str(iterations)] + successes + reset
-                    T_color.add_row([solver, colored_successes, sec_to_str(
-                        mean_time), stdev_time, f"{mean_memory: .1f}"])
+                T.add_row([solver, successes, sec_to_str(mean_time), stdev_time, f"{mean_memory:.1f}"])
+                colored_successes = colors[successes != str(iterations)] + successes + reset
+                T_color.add_row([solver, colored_successes, sec_to_str(
+                    mean_time), stdev_time, f"{mean_memory: .1f}"])
 
-                    # Update the JSON with results
-                    with open(json_path) as j:
-                        results = json.load(j)
-                        results[f"q={q}"][f"o2={o2}"][solver] = solver_stats[solver]
-                    with open(json_path, 'w') as j:
-                        json.dump(results, j)
+                # Update the JSON with results
+                with open(json_path) as j:
+                    results = json.load(j)
+                    results[f"q={q}"][f"o2={o2}"][solver] = solver_stats[solver]
+                with open(json_path, 'w') as j:
+                    json.dump(results, j)
 
-                # Show the result table
-                print_and_log(T.get_string(), to_print=T_color.get_string(), include_brief=True)
-                T.clear_rows()
-                T_color.clear_rows()
-
-            except Exception as e:
-                print_and_log(str(e))
-                continue
+            # Show the result table
+            print_and_log(T.get_string(), to_print=T_color.get_string(), include_brief=True)
+            T.clear_rows()
+            T_color.clear_rows()
 
 
 if __name__ == '__main__':

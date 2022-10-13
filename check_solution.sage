@@ -6,17 +6,13 @@ load("equation_utils.sage")
 
 
 def load_solution(solution_path, q):
-    try:
-        with open(solution_path, 'r') as f:
-            if ZZ(q).is_prime():
-                sol_str = f.readlines()[0].strip()
-                return list(sage_eval(sol_str))
-            else:
-                sol_strs = f.readlines()[0].strip().split("(")[1].split(")")[0].split(",")
-                return list(GF(q)(sol_str) for sol_str in sol_strs)
-    except Exception as e:
-        print("An error ocurred during loading the solution: ", e)
-        exit()
+    with open(solution_path, 'r') as f:
+        if ZZ(q).is_prime():
+            sol_str = f.readlines()[0].strip()
+            return list(sage_eval(sol_str))
+        else:
+            sol_strs = f.readlines()[0].strip().split("(")[1].split(")")[0].split(",")
+            return list(GF(q)(sol_str) for sol_str in sol_strs)
 
 
 def get_solution_from_log(log_path, format, N, q, ext_deg=1):
@@ -93,10 +89,17 @@ def get_solution_from_log(log_path, format, N, q, ext_deg=1):
 @ click.option('--log_path', default=defaults("log_path"), help='path to a log with the found solution')
 @ click.option('--solver', type=click.Choice(defaults("solvers"), case_sensitive=False), help='the solver used to find the solution')
 def main(q, sol_path, log_path, solver):
-    log_format = get_log_format(solver)
-    solution_expected = load_solution(sol_path, q)
-    N = len(solution_expected)
+    # load the expected solution
     try:
+        solution_expected = load_solution(sol_path, q)
+    except Exception as e:
+        print("An error ocurred during loading the solution: ", e)
+        return False
+    N = len(solution_expected)
+
+    # load the actual solution from a log
+    try:
+        log_format = get_log_format(solver)
         solution_found = list(get_solution_from_log(log_path, format=log_format, N=N, q=q))
     except Exception as e:
         print("An error ocurred during parsing the log: ", e)
@@ -109,6 +112,7 @@ def main(q, sol_path, log_path, solver):
     except TypeError:
         pass
 
+    # check if the two solutions agree
     print(f"\n{'First solution found: ' : <25} {solution_found} ")
     print(f"{'Expected solution: ' : <25} {solution_expected}\n")
     success = solution_found == solution_expected
