@@ -38,7 +38,7 @@ class Rainbow():
     """A class for the Rainbow scheme."""
 
     def __init__(self, q, m, n, o2, seed=0, debug=True):
-        assert 2 < o2 and o2 < m and m < n
+        assert 2 < o2 and o2 < m and m < n and 2 < n-m
         self.seed = seed
         self.debug = debug
         self.q = q
