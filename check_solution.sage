@@ -1,7 +1,7 @@
 #!/usr/bin/env sage
 import click
 import re
-from config_utils import get_log_format
+from config_utils import defaults, get_log_format
 load("equation_utils.sage")
 
 
@@ -90,8 +90,8 @@ def get_solution_from_log(log_path, format, N, q, ext_deg=1):
 @ click.command()
 @ click.option('--q', type=int, help='the size of the finite field')
 @ click.option('--sol_path', help='path to a log with the expected solution')
-@ click.option('--log_path', default=Path("log.txt"), help='path to a log with the found solution')
-@ click.option('--solver', type=click.Choice(['cb_orig', 'cb_gpu', 'cms', 'libfes', 'magma', 'mq', 'wdsat', 'xl'], case_sensitive=False), help='the solver used to find the solution')
+@ click.option('--log_path', default=defaults("log_path"), help='path to a log with the found solution')
+@ click.option('--solver', type=click.Choice(defaults("solvers"), case_sensitive=False), help='the solver used to find the solution')
 def main(q, sol_path, log_path, solver):
     log_format = get_log_format(solver)
     solution_expected = load_solution(sol_path, q)

@@ -3,6 +3,25 @@ from math import log
 from pathlib import Path
 
 
+def defaults(key):
+    defaults_dict = {
+        "solvers": ['cb_orig', 'cb_gpu', 'cms', 'libfes', 'magma', 'mq', 'wdsat', 'xl'],
+        "solvers_to_compile": ["cb_orig", "xl", "wdsat"],
+        "cb_gpu_path": Path("..", "mqsolver"),
+        "cb_orig_path": Path("..", "crossbred"),
+        "cms_path": Path("..", "cryptominisat", "build"),
+        "libfes_path": Path("..", "libfes-lite", "build"),
+        "magma_path": Path("magma"),
+        "mq_path": Path("..", "mq"),
+        "wdsat_path": Path("..", "WDSat"),
+        "xl_path": Path("..", "xl"),
+        "log_path": Path("log.txt"),
+        "comparison_brief": Path("comparison_log_brief.txt"),
+        "comparison_verbose": Path("comparison_log_verbose.txt"),
+    }
+    return defaults_dict[key]
+
+
 def solvers_to_skip():
     return ['cb_gpu', 'cb_orig', 'magma', 'xl']
 

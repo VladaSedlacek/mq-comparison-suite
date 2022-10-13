@@ -6,9 +6,10 @@ import subprocess as sp
 import psutil
 import time
 from compile_solver import compile_solver
+from config_utils import defaults
 
 
-def invoke_solver(solver, equations_path, q, m, n, log_path=Path(".", "log.txt"), cb_gpu_path=Path("..", "mqsolver"), cb_orig_path=Path("..", "crossbred"), cms_path=Path("..", "cryptominisat", "build"), libfes_path=Path("..", "libfes-lite", "build"), magma_path=Path("magma"), mq_path=Path("..", "mq"), wdsat_path=Path("..", "WDSat"), xl_path=Path("..", "xl"), inner_hybridation=-1, precompiled=False, timeout=1000):
+def invoke_solver(solver, equations_path, q, m, n, log_path=defaults("log_path"), cb_gpu_path=defaults("cb_gpu_path"), cb_orig_path=defaults("cb_orig_path"), cms_path=defaults("cms_path"), libfes_path=defaults("libfes_path"), magma_path=defaults("magma_path"), mq_path=defaults("mq_path"), wdsat_path=defaults("wdsat_path"), xl_path=defaults("xl_path"), inner_hybridation=-1, precompiled=False, timeout=1000):
 
     if not solver:
         print("Please specify a solver.")
@@ -110,20 +111,20 @@ def invoke_solver(solver, equations_path, q, m, n, log_path=Path(".", "log.txt")
 
 
 @ click.command()
-@ click.option('--solver', type=click.Choice(['cb_gpu', 'cb_orig', 'cms', 'libfes', 'magma', 'mq', 'wdsat', 'xl'], case_sensitive=False), help='the external solver to be used')
+@ click.option('--solver', type=click.Choice(defaults("solvers"), case_sensitive=False), help='the external solver to be used')
 @ click.option('--equations_path', '-e', help='the path to the equation system', type=str)
 @ click.option('--q', help='field characteristic - needed for XL compilation', type=int)
 @ click.option('--m', help='number of equations - needed for XL and WDSAT compilation', type=int)
 @ click.option('--n', help='number of variables - needed for XL and WDSAT compilation', type=int)
-@ click.option('--log_path', '-l', default=Path(".", "log.txt"), help='the path to the output log', type=str)
-@ click.option('--cb_gpu_path', default=Path("..", "mqsolver"), help='the path the crossbred solver folder: https://github.com/kcning/mqsolver', type=str)
-@ click.option('--cb_orig_path', default=Path("..", "crossbred"), help='the path the crossbred (original) solver folder', type=str)
-@ click.option('--cms_path', default=Path("..", "cryptominisat", "build"), help='the path the CMS solver folder: https://github.com/msoos/cryptominisat', type=str)
-@ click.option('--libfes_path', default=Path("..", "libfes-lite", "build"), help='the path the libfes solver folder: https://github.com/cbouilla/libfes-lite', type=str)
-@ click.option('--magma_path', default=Path("magma"), help='the path the Magma binary: https://magma.maths.usyd.edu.au', type=str)
-@ click.option('--mq_path', default=Path("..", "mq"), help='the path the MQ solver folder: https://gitlab.lip6.fr/almasty/mq', type=str)
-@ click.option('--wdsat_path', default=Path("..", "WDSat"), help='the path the WDSat solver folder: https://github.com/mtrimoska/WDSat', type=str)
-@ click.option('--xl_path', default=Path("..", "xl"), help='the path the XL solver folder: http://polycephaly.org/projects/xl', type=str)
+@ click.option('--log_path', '-l', default=defaults("log_path"), help='the path to the output log', type=str)
+@ click.option('--cb_gpu_path', default=defaults("cb_gpu_path"), help='the path the crossbred solver folder: https://github.com/kcning/mqsolver', type=str)
+@ click.option('--cb_orig_path', default=defaults("cb_orig_path"), help='the path the crossbred (original) solver folder', type=str)
+@ click.option('--cms_path', default=defaults("cms_path"), help='the path the CMS solver folder: https://github.com/msoos/cryptominisat', type=str)
+@ click.option('--libfes_path', default=defaults("libfes_path"), help='the path the libfes solver folder: https://github.com/cbouilla/libfes-lite', type=str)
+@ click.option('--magma_path', default=defaults("magma_path"), help='the path the Magma binary: https://magma.maths.usyd.edu.au', type=str)
+@ click.option('--mq_path', default=defaults("mq_path"), help='the path the MQ solver folder: https://gitlab.lip6.fr/almasty/mq', type=str)
+@ click.option('--wdsat_path', default=defaults("wdsat_path"), help='the path the WDSat solver folder: https://github.com/mtrimoska/WDSat', type=str)
+@ click.option('--xl_path', default=defaults("xl_path"), help='the path the XL solver folder: http://polycephaly.org/projects/xl', type=str)
 @ click.option('--inner_hybridation', '-h', default="-1", help='the number of variable that are not guessed in MQ', type=int)
 @ click.option('--precompiled', default=False, is_flag=True, help='indicates if all relevant solvers are already compiled w.r.t. the parameters')
 @ click.option('--timeout', '-t', default=1000,  help='the maximum time (in seconds) allowed for running the solver')

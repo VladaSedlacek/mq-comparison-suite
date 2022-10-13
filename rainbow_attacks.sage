@@ -5,7 +5,7 @@ from pathlib import Path
 import click
 import subprocess as sp
 from invoke_solver import invoke_solver
-from config_utils import declare_paths, get_eq_path, get_rainbow_dims, get_sol_path, use_weil
+from config_utils import declare_paths, defaults, get_eq_path, get_rainbow_dims, get_sol_path, use_weil
 load("equation_utils.sage")
 
 
@@ -247,10 +247,10 @@ def save_setup(rainbow, setup_path, verbose=False):
 @ click.option('--o2', default=4, help='the oil subspace dimension', type=int)
 @ click.option('--m', default=None, help='the number of equations', type=int)
 @ click.option('--n', default=None, help='the number of variables', type=int)
-@ click.option('--solver', type=click.Choice(['cb_orig', 'cb_gpu', 'cms', 'libfes', 'magma', 'mq', 'wdsat', 'xl'], case_sensitive=False), help='the external solver to be used')
+@ click.option('--solver', type=click.Choice(defaults("solvers"), case_sensitive=False), help='the external solver to be used')
 @ click.option('--gen_only', default=False, is_flag=True, help='only generate equation systems')
 @ click.option('--solve_only', default=False, is_flag=True, help='only solve an existing system and check solutions')
-@ click.option('--log_path', default=Path("log.txt"), help='path to a log with the solution')
+@ click.option('--log_path', default=defaults("log_path"), help='path to a log with the solution')
 @ click.option('--inner_hybridation', '-h', default="-1", help='the number of variable that are not guessed in MQ', type=int)
 @ click.option('--verbose', '-v', default=False, is_flag=True, help='control the output verbosity')
 @ click.option('--seed', '-s', default=0, help='the seed for randomness replication', type=int)

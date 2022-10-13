@@ -11,7 +11,7 @@ import statistics
 import subprocess as sp
 from compile_solver import compile_solver
 from invoke_solver import invoke_solver
-from config_utils import get_eq_path, get_sol_path, solvers_to_skip, use_weil, get_rainbow_dims, get_weil_dims
+from config_utils import defaults, get_eq_path, get_sol_path, solvers_to_skip, use_weil, get_rainbow_dims, get_weil_dims
 
 
 def sec_to_str(t):
@@ -23,14 +23,14 @@ def sec_to_str(t):
 @ click.option('--o2_min', default=10, help='lower bound for o2', type=int)
 @ click.option('--o2_max', default=16, help='upper bound for o2', type=int)
 @ click.option('--iterations', default=2, help='number of iterations for each parameter set', type=int)
-@ click.option('--log_path_brief', default=Path("comparison_log_brief.txt"), help='the path to the brief log')
-@ click.option('--log_path_verbose', default=Path("comparison_log_verbose.txt"), help='the path to the verbose log')
-@ click.option('--to_skip', '-s', type=click.Choice(['cb_gpu', 'cb_orig', 'cms', 'libfes', 'magma', 'mq', 'wdsat', 'xl'], case_sensitive=False), multiple=True, help='the solvers to be skipped', default=solvers_to_skip())
+@ click.option('--log_path_brief', default=defaults("comparison_brief"), help='the path to the brief log')
+@ click.option('--log_path_verbose', default=defaults("comparison_verbose"), help='the path to the verbose log')
+@ click.option('--to_skip', '-s', type=click.Choice(defaults("solvers"), case_sensitive=False), multiple=True, help='the solvers to be skipped', default=solvers_to_skip())
 @ click.option('--timeout', '-t', default=1000,  help='the maximum time (in seconds) allowed for running the solver')
 def main(o2_min, o2_max, iterations, log_path_brief, log_path_verbose, to_skip, timeout):
 
     # Set up main parameters
-    solvers = [s for s in ['cb_gpu', 'cb_orig', 'cms', 'libfes', 'magma', 'mq', 'wdsat', 'xl'] if s not in set(to_skip)]
+    solvers = [s for s in defaults("solvers") if s not in set(to_skip)]
     q_range = [2]
     o2_range = range(o2_min, o2_max + 1, 2)
     outcomes = ["success", "failure"]
@@ -109,7 +109,7 @@ def main(o2_min, o2_max, iterations, log_path_brief, log_path_verbose, to_skip, 
                         _q, _M, _N = (2, M_weil, N_weil) if weil else (q, M, N)
 
                         # Compile the solver for each parameter set if needed
-                        if seed == 0 and solver in ["cb_orig", "xl", "wdsat"]:
+                        if seed == 0 and solver in defaults("solvers_to_compile"):
                             out = compile_solver(solver, _q, _M, _N)
                             print_and_log(out, to_print="")
 
