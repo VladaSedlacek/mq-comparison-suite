@@ -93,7 +93,7 @@ def invoke_solver(solver, equations_path, q, m, n, log_path=defaults("log_path")
 
         if solver == 'wdsat':
             if not (precompiled and Path(wdsat_path, "wdsat_solver").exists()):
-                compile_solver('wdsat', q, m, n, wdsat_path, eq_path=equations_path)
+                compile_solver('wdsat', q, m, n, wdsat_path)
             print("Starting the WDSat solver...")
             p = Path(wdsat_path, "wdsat_solver")
             solve_cmd = f"{p} -i {equations_path}"
