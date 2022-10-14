@@ -4,12 +4,12 @@ from pathlib import Path
 import subprocess as sp
 import click
 import json
+from config_utils import defaults
 
 
-def compile_solver(solver, q, m, n, cb_orig_path=Path("..", "crossbred"), wdsat_path=Path("..", "WDSat"), xl_path=Path("..", "xl")):
+def compile_solver(solver, q, m, n, cb_orig_path=defaults("cb_orig_path"), wdsat_path=defaults("wdsat_path"), xl_path=defaults("xl_path")):
     if not solver:
-        print("Please specify a solver.")
-        exit()
+        raise Exception("No solver specified.")
 
     M = m
     N = n
@@ -116,15 +116,18 @@ def get_trunc_var(M, N):
 
 
 @ click.command()
-@ click.option('--solver', type=click.Choice(['cb_orig', 'xl', 'wdsat'], case_sensitive=False), help='the external solver to be compiled')
+@ click.option('--solver', type=click.Choice(defaults("solvers_to_compile"), case_sensitive=False), help='the external solver to be compiled')
 @ click.option('--q', help='field characteristic - needed for XL compilation', type=int)
 @ click.option('--m', help='number of equations - needed for XL and WDSAT compilation', type=int)
 @ click.option('--n', help='number of variables - needed for XL and WDSAT compilation', type=int)
-@ click.option('--cb_orig_path', default=Path("..", "crossbred"), help='the path the crossbred (original) solver folder', type=str)
-@ click.option('--wdsat_path', default=Path("..", "WDSat"), help='the path the WDSat solver folder: https://github.com/mtrimoska/WDSat', type=str)
-@ click.option('--xl_path', default=Path("..", "xl"), help='the path the XL solver folder: http://polycephaly.org/projects/xl', type=str)
+@ click.option('--cb_orig_path', default=defaults("cb_orig_path"), help='the path the crossbred (original) solver folder', type=str)
+@ click.option('--wdsat_path', default=defaults("wdsat_path"), help='the path the WDSat solver folder: https://github.com/mtrimoska/WDSat', type=str)
+@ click.option('--xl_path', default=defaults("xl_path"), help='the path the XL solver folder: http://polycephaly.org/projects/xl', type=str)
 def main(solver, q, m, n, cb_orig_path, wdsat_path, xl_path):
-    compile_solver(solver, q, m, n, cb_orig_path, wdsat_path, xl_path)
+    try:
+        compile_solver(solver, q, m, n, cb_orig_path, wdsat_path, xl_path)
+    except Exception as e:
+        print("An error ocurred during compiling a solver: ", e)
 
 
 if __name__ == '__main__':
