@@ -38,7 +38,7 @@ class Rainbow():
     """A class for the Rainbow scheme."""
 
     def __init__(self, q, m, n, o2, seed=0, debug=True):
-        assert 2 < o2 and o2 < m and m < n and 2 < n-m
+        assert 2 < o2 and o2 < m and m < n and 2 < n-m, "The chosen Rainbow parameters are invalid"
         self.seed = seed
         self.debug = debug
         self.q = q
@@ -242,6 +242,7 @@ def main(q, o2, m, n, solver, gen_only, solve_only, log_path, inner_hybridation,
         rainbow = Rainbow(q, m, n, o2, seed=seed)
     except Exception as e:
         print("An error ocurred during generating a Rainbow instance:", e)
+        exit()
     system_folder_path, base_system_name = declare_paths(seed, q, o2, m, n)
     setup_path = Path(system_folder_path, base_system_name + '.stp')
 
