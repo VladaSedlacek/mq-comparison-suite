@@ -5,14 +5,24 @@ from config_utils import defaults, get_log_format
 load("equation_utils.sage")
 
 
-def load_solution(solution_path, q):
+def load_solution(solution_path, q, ext_format='alg'):
     with open(solution_path, 'r') as f:
         if ZZ(q).is_prime():
             sol_str = f.readlines()[0].strip()
             return list(sage_eval(sol_str))
-        else:
+        elif ext_format == 'alg':
             sol_strs = f.readlines()[0].strip().split("(")[1].split(")")[0].split(",")
             return list(GF(q)(sol_str) for sol_str in sol_strs)
+        elif ext_format == 'hex':
+            sol_strs = f.readlines()[0].strip().split("[")[1].split("]")[0].split(",")
+            return list(str_to_elt(q, sol_str) for sol_str in sol_strs)
+        elif ext_format == 'hex_to_weil':
+            # used when the solution file is hex encoded, but we need a Weil format (e.g., for Fukuoka challenge answers)
+            sol_strs = f.readlines()[0].strip().split("[")[1].split("]")[0].split(",")
+            hex_sols = list(str_to_elt(q, sol_str) for sol_str in sol_strs)
+            return([bit for hex_sol in hex_sols for bit in weil_decomposition(hex_sol)])
+        else:
+            raise Exception("ext_format must be either 'alg', 'hex', or 'hex_to_weil'")
 
 
 def get_solution_from_log(log_path, format, N, q, ext_deg=1):
@@ -88,14 +98,15 @@ def get_solution_from_log(log_path, format, N, q, ext_deg=1):
 @ click.option('--sol_path', help='path to a log with the expected solution')
 @ click.option('--log_path', default=defaults("log_path"), help='path to a log with the found solution')
 @ click.option('--solver', type=click.Choice(defaults("solvers"), case_sensitive=False), help='the solver used to find the solution')
-def main(q, sol_path, log_path, solver):
+@ click.option('--ext_format', default='alg', type=click.Choice(['alg', 'hex', 'hex_to_weil'], case_sensitive=False), help='the format of the expected solution')
+def main(q, sol_path, log_path, solver, ext_format):
     # load the expected solution
     try:
         if q is None:
             raise Exception("No field order q specified.")
         if sol_path is None:
             raise Exception("No solution path specified.")
-        solution_expected = load_solution(sol_path, q)
+        solution_expected = load_solution(sol_path, q, ext_format)
     except Exception as e:
         print("An error ocurred during loading the solution: ", e)
         return False
