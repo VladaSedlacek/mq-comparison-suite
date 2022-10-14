@@ -1,6 +1,6 @@
 # MQ Comparison Suite
 
-This project aims to provide a simple unified interface for state-of-the-art solvers for the multivariate quadratic ([MQ](https://eprint.iacr.org/2005/393)) problem, and to facilitate comparing their practical performance.
+This project aims to provide a simple unified interface for state-of-the-art solvers for the multivariate quadratic ([MQ](https://eprint.iacr.org/2005/393)) problem, and to facilitate comparing their practical performance. Pull requests are welcome!
 
 ## Solvers
 
