@@ -111,11 +111,12 @@ def main(q, o2_min, o2_max, iterations, log_path_brief, log_path_verbose, to_ski
                 if weil:
                     M_weil, N_weil = get_weil_dims(q, M, N)
                 _q, _M, _N = (2, M_weil, N_weil) if weil else (q, M, N)
+                eq_path = get_eq_path(seed, q, o2, m, n, M, N, solver)
 
                 # Compile the solver for each parameter set if needed
-                if seed == 0 and solver in defaults("solvers_to_compile"):
+                if (seed == 0 and solver in defaults("solvers_to_compile")) or solver == 'wdsat':
                     try:
-                        out = compile_solver(solver, _q, _M, _N)
+                        out = compile_solver(solver, _q, _M, _N, eq_path=eq_path)
                         print_and_log(out, to_print="")
                     except Exception as e:
                         print_and_log(str(e), to_print="")
@@ -126,7 +127,6 @@ def main(q, o2_min, o2_max, iterations, log_path_brief, log_path_verbose, to_ski
 
                 # Measure the time and memory usage of the active process and all its subprocesses
                 try:
-                    eq_path = get_eq_path(seed, q, o2, m, n, M, N, solver)
                     out, time_taken, rss = invoke_solver(solver, eq_path, _q, _M, _N, precompiled=True, timeout=timeout)
                     print_and_log(out, to_print="")
                     sol_path = get_sol_path(seed, q, o2, m, n, M, N, weil)
