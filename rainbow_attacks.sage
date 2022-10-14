@@ -1,6 +1,5 @@
 #!/usr/bin/env sage
 
-from itertools import product
 from pathlib import Path
 import click
 import subprocess as sp

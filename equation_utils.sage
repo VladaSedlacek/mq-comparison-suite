@@ -1,3 +1,4 @@
+from itertools import product
 from pathlib import Path
 
 from config_utils import get_dim_str, get_sol_path, use_weil
@@ -342,7 +343,7 @@ Order : graded reverse lex order
         if self.verbose:
             print("Equation system written to: " + str(file_path))
 
-    def save_all(self, folder, base_system_name, append_dims=True, overwrite=False):
+    def save_all(self, folder, base_system_name, append_dims=True, overwrite=False, save_sol=True):
         Path(folder).mkdir(parents=True, exist_ok=True)
         # save the equations
         eq_formats = ['anf', 'cb_gpu', 'cb_orig', 'cnf', 'magma', 'mq', 'xl']
@@ -356,11 +357,12 @@ Order : graded reverse lex order
                 s = self
             eq_path = Path(folder, f"{base_system_name}{dim_str}.{eq_format}")
             s.save_one(eq_format, eq_path, overwrite=overwrite)
-        # save the solution
-        for s, weil in zip([self, self.weil], [False, True]):
-            if s is not None:
-                dim_str = get_dim_str(self.q, self.M, self.N, weil)
-                s.save_solution(Path(folder, f"{base_system_name}{dim_str}.sol"), overwrite=overwrite)
+        if save_sol:
+            # save the solution
+            for s, weil in zip([self, self.weil], [False, True]):
+                if s is not None:
+                    dim_str = get_dim_str(self.q, self.M, self.N, weil)
+                    s.save_solution(Path(folder, f"{base_system_name}{dim_str}.sol"), overwrite=overwrite)
 
     def check_solution(self):
         # check if the solution attribute actually satisfies the equations
