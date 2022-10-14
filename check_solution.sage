@@ -91,6 +91,10 @@ def get_solution_from_log(log_path, format, N, q, ext_deg=1):
 def main(q, sol_path, log_path, solver):
     # load the expected solution
     try:
+        if q is None:
+            raise Exception("No field order q specified.")
+        if sol_path is None:
+            raise Exception("No solution path specified.")
         solution_expected = load_solution(sol_path, q)
     except Exception as e:
         print("An error ocurred during loading the solution: ", e)
@@ -99,6 +103,8 @@ def main(q, sol_path, log_path, solver):
 
     # load the actual solution from a log
     try:
+        if solver is None:
+            raise Exception("No solver specified.")
         log_format = get_log_format(solver)
         solution_found = list(get_solution_from_log(log_path, format=log_format, N=N, q=q))
     except Exception as e:
