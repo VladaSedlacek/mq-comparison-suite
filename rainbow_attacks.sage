@@ -232,7 +232,8 @@ def save_setup(rainbow, setup_path, verbose=False):
 @ click.option('--verbose', '-v', default=False, is_flag=True, help='control the output verbosity')
 @ click.option('--seed', '-s', default=0, help='the seed for randomness replication', type=int)
 @ click.option('--precompiled', default=False, is_flag=True, help='indicates if all relevant solvers are already compiled w.r.t. the parameters')
-def main(q, o2, m, n, solver, gen_only, solve_only, log_path, inner_hybridation, verbose, seed, precompiled):
+@ click.option('--timeout', '-t', default=defaults("timeout"),  help='the maximum time (in seconds) allowed for running the solver')
+def main(q, o2, m, n, solver, gen_only, solve_only, log_path, inner_hybridation, verbose, seed, precompiled, timeout):
     m, n, M, N = get_rainbow_dims(o2, m, n)
     set_random_seed(seed)
     if verbose:
@@ -264,7 +265,7 @@ def main(q, o2, m, n, solver, gen_only, solve_only, log_path, inner_hybridation,
         # apply Weil descent if needed
         _M, _N = get_weil_dims(q, M, N) if use_weil(solver) else (M, N)
         invoke_solver(solver, equations_path, q, _M, _N, log_path=log_path,
-                      inner_hybridation=inner_hybridation, precompiled=precompiled)
+                      inner_hybridation=inner_hybridation, precompiled=precompiled, timeout=timeout)
     except Exception as e:
         print("An error ocurred during invoking a solver: ", e)
 

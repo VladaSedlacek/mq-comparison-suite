@@ -9,7 +9,9 @@ from compile_solver import compile_solver
 from config_utils import defaults
 
 
-def invoke_solver(solver, equations_path, q, m, n, log_path=defaults("log_path"), cb_gpu_path=defaults("cb_gpu_path"), cb_orig_path=defaults("cb_orig_path"), cms_path=defaults("cms_path"), libfes_path=defaults("libfes_path"), magma_path=defaults("magma_path"), mq_path=defaults("mq_path"), wdsat_path=defaults("wdsat_path"), xl_path=defaults("xl_path"), inner_hybridation=-1, precompiled=False, timeout=1000):
+def invoke_solver(solver, equations_path, q, m, n, log_path=defaults("log_path"), cb_gpu_path=defaults("cb_gpu_path"), cb_orig_path=defaults("cb_orig_path"), cms_path=defaults("cms_path"), libfes_path=defaults("libfes_path"), magma_path=defaults("magma_path"), mq_path=defaults("mq_path"), wdsat_path=defaults("wdsat_path"), xl_path=defaults("xl_path"), inner_hybridation=-1, precompiled=False, timeout=defaults("timeout")):
+    # determine how often to measure the running processes, affecting precision
+    sleep_granularity = 0.1
 
     if not solver:
         raise Exception("No solver specified.")
@@ -24,19 +26,28 @@ def invoke_solver(solver, equations_path, q, m, n, log_path=defaults("log_path")
             compile_solver('cb_orig', q, m, n, cb_orig_path)
         print("Starting the crossbred (original) solver...")
         solve_cmd = f"{linalg_path} {equations_path} | tee {log_path}"
+        # measure both time and memory of the linear algebra process
+        rss_max = 0
         start_time = time.time()
         proc = sp.Popen(solve_cmd, stdout=sp.PIPE, stderr=sp.STDOUT, shell=True)
         while proc.poll() is None:
             rss = psutil.Process(proc.pid).memory_info().rss
-            # the memory used in the checking part is neglected
-            proc.wait(timeout)
+            if rss > rss_max:
+                rss_max = rss
+            time.sleep(sleep_granularity)
+            if time.time() - start_time > timeout:
+                raise Exception(f"Process timed out after {timeout} seconds")
+        time_taken = time.time() - start_time
         out = proc.communicate()[0].decode()
         candidates = [cand for cand in out.strip().split("\n") if "@" in cand]
         out += "\n"
         for cand in candidates:
             out += f"Candidate: {cand}\n"
             check_cmd = f"echo {cand} | {check_path} {equations_path}"
+            # measure the time of the checking process, neglecting memory
+            start_time = time.time()
             check_out = sp.run(check_cmd, stdout=sp.PIPE, stderr=sp.STDOUT, shell=True).stdout.decode()
+            time_taken += time.time() - start_time
             res = check_out.split("\n")
             # ensure compatibility with mqsolver log
             if "solution found :)" in res:
@@ -45,7 +56,6 @@ def invoke_solver(solver, equations_path, q, m, n, log_path=defaults("log_path")
                 out += f"solution found: \n[{res[0]}]\n"
             else:
                 out += f"does not work: \n[{res[0]}]\n\tevaluates to {res[1]}"
-        time_taken = time.time() - start_time
 
     else:
         cwd = Path.cwd()
@@ -95,18 +105,23 @@ def invoke_solver(solver, equations_path, q, m, n, log_path=defaults("log_path")
             p = Path(xl_path, "xl")
             solve_cmd = f"{p} --challenge {equations_path} --all"
 
+        # measure both time and memory of the process
+        rss_max = 0
         start_time = time.time()
         proc = sp.Popen(solve_cmd, stdout=sp.PIPE, stderr=sp.STDOUT, shell=True, cwd=cwd)
         while proc.poll() is None:
             rss = psutil.Process(proc.pid).memory_info().rss
-            proc.wait(timeout)
+            if rss > rss_max:
+                rss_max = rss
+            time.sleep(sleep_granularity)
+            if time.time() - start_time > timeout:
+                raise Exception(f"Process timed out after {timeout} seconds")
         time_taken = time.time() - start_time
         out = proc.communicate()[0].decode()
-
     with open(log_path, 'w') as f:
         f.write(out)
 
-    return out, time_taken, rss
+    return out, time_taken, rss_max
 
 
 @ click.command()
@@ -126,7 +141,7 @@ def invoke_solver(solver, equations_path, q, m, n, log_path=defaults("log_path")
 @ click.option('--xl_path', default=defaults("xl_path"), help='the path the XL solver folder: http://polycephaly.org/projects/xl', type=str)
 @ click.option('--inner_hybridation', '-h', default="-1", help='the number of variable that are not guessed in MQ', type=int)
 @ click.option('--precompiled', default=False, is_flag=True, help='indicates if all relevant solvers are already compiled w.r.t. the parameters')
-@ click.option('--timeout', '-t', default=1000,  help='the maximum time (in seconds) allowed for running the solver')
+@ click.option('--timeout', '-t', default=defaults("timeout"),  help='the maximum time (in seconds) allowed for running the solver')
 def main(solver, equations_path, q, m, n, log_path, cb_gpu_path, cb_orig_path, cms_path, libfes_path, magma_path, mq_path, wdsat_path, xl_path, inner_hybridation, precompiled, timeout):
     try:
         out, time_taken, rss = invoke_solver(solver, equations_path, q, m, n, log_path, cb_gpu_path, cb_orig_path,

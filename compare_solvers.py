@@ -27,7 +27,7 @@ def sec_to_str(t):
 @ click.option('--log_path_brief', default=defaults("comparison_brief"), help='the path to the brief log')
 @ click.option('--log_path_verbose', default=defaults("comparison_verbose"), help='the path to the verbose log')
 @ click.option('--to_skip', '-s', default=solvers_to_skip(), type=click.Choice(defaults("solvers"), case_sensitive=False), multiple=True, help='the solvers to be skipped')
-@ click.option('--timeout', '-t', default=1000,  help='the maximum time (in seconds) allowed for running the solver')
+@ click.option('--timeout', '-t', default=defaults("timeout"),  help='the maximum time (in seconds) allowed for running the solver')
 def main(q, o2_min, o2_max, iterations, log_path_brief, log_path_verbose, to_skip, timeout):
 
     # Set up main parameters

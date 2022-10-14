@@ -18,6 +18,7 @@ def defaults(key):
         "log_path": Path("log.txt"),
         "comparison_brief": Path("comparison_log_brief.txt"),
         "comparison_verbose": Path("comparison_log_verbose.txt"),
+        "timeout": 1000
     }
     return defaults_dict[key]
 
